@@ -94,6 +94,7 @@ monogatari.script ({
 		'centered Le nubi, la pece, la sabbia, l’angoscia, la fiamma, l’attesa. l’inesorabile scorrere dei minuti che afferra e ti scuote e rimargina i segni del tempo, mentre tu affondi lentamente.',
 		'centered Allora, dimmi, qual è la soluzione?',
 		'centered Attendere inerme o dimenarsi nella speranza di un appiglio che sia salvezza?',
+		
 
 		/*'show scene #f7f6f6 with fadeIn',
 		'show notification Welcome',

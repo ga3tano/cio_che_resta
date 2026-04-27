@@ -1,6 +1,6 @@
 {
-  "name": "my-game",
-  "productName": "My Game",
+  "name": "cio_che_resta_rimane",
+  "productName": "Cio che resta rimane",
   "version": "0.1.0",
   "main": "engine/electron/index.js",
   "description": "A description of your game",
