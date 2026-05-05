@@ -54,7 +54,7 @@ monogatari.assets ('voices', {
 
 // Define the sounds used in the game.
 monogatari.assets ('sounds', {
-
+	typewriter: 'typewriter.mp3'
 });
 
 // Define the videos used in the game.
@@ -86,7 +86,10 @@ monogatari.script ({
 	'Start': [
 		'show scene #000000 with fadeIn',
 		
+		'centered ...',
+		'play sound typewriter',
 		'centered Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?',
+		'play sound typewriter',
 		'centered la soffocante sensazione di affondare le gambe nelle sabbie mobili, che ti trascinano giù, sempre più giù',
 		'centered e tu ti dimeni e pensi che provare ad uscirne in questo modo sia il punto di rottura che ti permetterà di trascinare fuori i polpacci pesanti dal fango',
 		'centered ma le sabbie mobili illudono e tu speri che la soluzione si alesi nella forma più semplice ai tuoi occhi',
