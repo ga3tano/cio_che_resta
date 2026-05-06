@@ -89,40 +89,42 @@ monogatari.characters ({
 monogatari.script ({
 	// The game starts here.
 	
-	'negazione': [
-        'show scene negazione widh fadeIn',
-        'window hide',
-
-        'centered <div style="color: #888; font-style: italic;">Non si vede nulla... forse meglio accendere la torcia.</div>',
-
-        //attendi 2 secondi, poi accendi la torcia automaticamente
-        'wait 2',
-
-        {
-            'Function': () => {
-   
-                    //accendi la torica
-                    attivaTorcia();
-
-                    monogatari.message('<div style="color: #ffaa00;">Il fascio di luce rivela una stanza polverosa.</div>')
-            }
-        }
-    ],
+	
 	
 	'Start': [
 		'show scene #000000 with fadeIn',
 		
-		'centered ...',
-		'play sound typewriter',
-		'centered Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?',
-		'play sound typewriter',
-		'centered la soffocante sensazione di affondare le gambe nelle sabbie mobili, che ti trascinano giù, sempre più giù',
-		'centered e tu ti dimeni e pensi che provare ad uscirne in questo modo sia il punto di rottura che ti permetterà di trascinare fuori i polpacci pesanti dal fango',
-		'centered ma le sabbie mobili illudono e tu speri che la soluzione si alesi nella forma più semplice ai tuoi occhi',
-		'centered per poi pietrificarti, nell’angosciante consapevolezza che l’unica cosa da fare è rallentare e aspettare e respirare appena.',
-		'centered Le nubi, la pece, la sabbia, l’angoscia, la fiamma, l’attesa. l’inesorabile scorrere dei minuti che afferra e ti scuote e rimargina i segni del tempo, mentre tu affondi lentamente.',
-		'centered Allora, dimmi, qual è la soluzione?',
-		'centered Attendere inerme o dimenarsi nella speranza di un appiglio che sia salvezza?',
+		{
+			TypeCentered: `Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?`
+		},
+
+		{
+			TypeCentered: `la soffocante sensazione di affondare le gambe nelle sabbie mobili, che ti trascinano giù, sempre più giù`
+		},
+
+		{
+			TypeCentered: `e tu ti dimeni e pensi che provare ad uscirne in questo modo sia il punto di rottura che ti permetterà di trascinare fuori i polpacci pesanti dal fango`
+		},
+
+		{
+			TypeCentered: `ma le sabbie mobili illudono e tu speri che la soluzione si palesi nella forma più semplice ai tuoi occhi`
+		},
+
+		{
+			TypeCentered: `per poi pietrificarti, nell’angosciante consapevolezza che l’unica cosa da fare è rallentare e aspettare e respirare appena.`
+		},
+
+		{
+			TypeCentered: `Le nubi, la pece, la sabbia, l’angoscia, la fiamma, l’attesa. L’inesorabile scorrere dei minuti che afferra e ti scuote e rimargina i segni del tempo, mentre tu affondi lentamente.`
+		},
+
+		{
+			TypeCentered: `Allora, dimmi, qual  è la soluzione?`
+		},
+
+		{
+			TypeCentered: `Attendere inerme o dimenarsi nella speranza di un appiglio che sia salvezza?`
+		},
 
 		//transizione verso la stanza
 		'show scene #000000 with fadeOut',
@@ -130,9 +132,6 @@ monogatari.script ({
 		//salta alla prima scena
 		'jump negazione'
 	
-
-	
-
 		/*'show scene #f7f6f6 with fadeIn',
 		'show notification Welcome',
 		{
@@ -174,6 +173,26 @@ monogatari.script ({
 			}
 		}*/
 	],
+
+	'negazione': [
+        'show scene negazione widh fadeIn',
+        'window hide',
+
+        'centered <div style="color: #888; font-style: italic;">Non si vede nulla... forse meglio accendere la torcia.</div>',
+
+        //attendi 2 secondi, poi accendi la torcia automaticamente
+        'wait 2',
+
+        {
+            'Function': () => {
+   
+                    //accendi la torica
+                    attivaTorcia();
+
+                    monogatari.message('<div style="color: #ffaa00;">Il fascio di luce rivela una stanza polverosa.</div>')
+            }
+        }
+    ],
 
 	/*
 	'Yes': [
