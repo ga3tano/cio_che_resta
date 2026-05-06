@@ -126,6 +126,18 @@ monogatari.script ({
 			TypeCentered: `Attendere inerme o dimenarsi nella speranza di un appiglio che sia salvezza?`
 		},
 
+		'show scene #666666 with fadeIn',
+		//'play sound breathing with loop volume 35',
+
+			{
+				'Choice': {
+					'Respira': {
+						'Text': 'RESPIRA',
+						//'Do': 'stop sound breathing with fade 1'
+					}
+				}
+			},
+
 		//transizione verso la stanza
 		'show scene #000000 with fadeOut',
 

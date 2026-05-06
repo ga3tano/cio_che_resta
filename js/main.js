@@ -42,7 +42,7 @@ class TypeCentered extends Monogatari.Action {
 			: statement.TypeCentered;
 
 		this.text = options.text ?? '';
-		this.speed = options.speed ?? 45;
+		this.speed = options.speed ?? 55;
 		this.sound = options.sound ?? 'assets/sounds/typewriter.mp3';
 		this.volume = options.volume ?? 0.25;
 		this.fontFamily = options.fontFamily ?? 'monospace';
