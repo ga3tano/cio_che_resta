@@ -129,15 +129,15 @@ monogatari.script ({
 					'Respira': {
 						'Text': 'RESPIRA',
 						//'Do': 'stop sound breathing with fade 1'
+						'Do': 'jump Negazione_Cellulare'
 					}
 				}
 			},
 
-		//transizione verso la stanza
-		'show scene #000000 with fadeOut',
+
 
 		//salta alla prima scena
-		'jump negazione'
+		'jump Negazione_Cellulare'
 	
 		/*'show scene #f7f6f6 with fadeIn',
 		'show notification Welcome',
@@ -180,6 +180,101 @@ monogatari.script ({
 			}
 		}*/
 	],
+
+	'Negazione_Cellulare': [
+        'show scene room with fadeIn',
+        'play sound phone_vibration',
+        'vibrate 200 100 200',
+
+        {'Function': {
+            'Apply': function () {
+                PhoneUI.reset();
+                PhoneUI.show('Giulia');
+                PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
+                PhoneUI.vibrate();
+                return true;
+            },
+            'Revert': function () {
+                PhoneUI.hide();
+                return true;
+            }
+        }},
+
+        {'Choice': {
+            'Rispondi': {
+                'Text': 'RISPONDI',
+                'Do': 'jump Negazione_Rispondi'
+            },
+            'Ignora': {
+                'Text': 'IGNORA',
+                'Do': 'jump Negazione_Ignora'
+            }
+        }}
+    ],
+
+    'Negazione_Rispondi': [
+        {'Function': {
+            'Apply': function () {
+                PhoneUI.addOutgoing('Oggi non ho le forze per uscire, scusami.');
+                return true;
+            },
+            'Revert': function () {
+                PhoneUI.reset();
+                PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
+                return true;
+            }
+        }},
+
+        'play sound crash',
+        'show scene #300000 with fadeIn',
+        'jump Esercizio_Respirazione'
+    ],
+
+    'Negazione_Ignora': [
+        {'Function': {
+            'Apply': function () {
+                PhoneUI.hide();
+                return true;
+            },
+            'Revert': function () {
+                PhoneUI.show('Giulia');
+                return true;
+            }
+        }},
+
+        'wait 2000',
+        'jump Secondo_Messaggio'
+    ],
+
+    'Secondo_Messaggio': [
+        'play sound phone_vibration',
+        'vibrate 200 100 200',
+
+        {'Function': {
+            'Apply': function () {
+                PhoneUI.reset();
+                PhoneUI.show('Giulia');
+                PhoneUI.addIncoming('Sai che può solo farti bene, hai bisogno di aria. Ti aspetto.');
+                PhoneUI.vibrate();
+                return true;
+            },
+            'Revert': function () {
+                PhoneUI.hide();
+                return true;
+            }
+        }},
+
+        {'Choice': {
+            'Esci': {
+                'Text': 'ESCI',
+                'Do': 'jump Esci_Casa'
+            },
+            'Rimani': {
+                'Text': 'RIMANI A CASA',
+                'Do': 'jump Rimani_A_Casa'
+            }
+        }}
+    ],
 
 	'negazione': [
         'show scene room widh fadeIn',

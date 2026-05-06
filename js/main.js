@@ -158,6 +158,79 @@ class TypeCentered extends Monogatari.Action {
 
 monogatari.registerAction (TypeCentered);
 
+const PhoneUI = {
+    layer: null,
+    shell: null,
+    chat: null,
+    contact: null,
+
+    init() {
+        this.layer = document.getElementById('phone-layer');
+        this.shell = document.getElementById('phone-shell');
+        this.chat = document.getElementById('phone-chat');
+        this.contact = document.getElementById('phone-contact');
+    },
+
+    show(contactName = 'Giulia') {
+        if (!this.layer) this.init();
+
+        this.contact.textContent = contactName;
+        this.layer.classList.add('visible');
+        this.layer.setAttribute('aria-hidden', 'false');
+    },
+
+    hide() {
+        if (!this.layer) this.init();
+
+        this.layer.classList.remove('visible');
+        this.layer.setAttribute('aria-hidden', 'true');
+        this.stopVibration();
+    },
+
+    reset() {
+        if (!this.layer) this.init();
+        this.chat.innerHTML = '';
+    },
+
+    addIncoming(text) {
+        this.addBubble(text, 'incoming');
+    },
+
+    addOutgoing(text) {
+        this.addBubble(text, 'outgoing');
+    },
+
+    addBubble(text, type) {
+        if (!this.layer) this.init();
+
+        const bubble = document.createElement('div');
+        bubble.className = `phone-bubble ${type}`;
+        bubble.textContent = text;
+
+        this.chat.appendChild(bubble);
+        this.chat.scrollTop = this.chat.scrollHeight;
+    },
+
+    vibrate(duration = 900) {
+        if (!this.layer) this.init();
+
+        this.shell.classList.add('vibrating');
+
+        if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+        }
+
+        setTimeout(() => {
+            this.stopVibration();
+        }, duration);
+    },
+
+    stopVibration() {
+        if (!this.shell) return;
+        this.shell.classList.remove('vibrating');
+    }
+};
+
 $_ready (() => {
 	// 2. Inside the $_ready function:
 
