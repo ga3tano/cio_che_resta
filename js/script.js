@@ -69,12 +69,9 @@ monogatari.assets ('images', {
 
 // Define the backgrounds for each scene.
 monogatari.assets ('scenes', {
-	'negazione': {
-		'name': 'Negazione',
-		'background': 'url("assets/scenes/room.jpeg")',
-		'foreground': ''
-	}
-	
+	'room': 'room.jpeg',
+	'room_red': 'room_red.jpeg',
+	'room_green': 'room_green.jpeg',
 });
 
 
@@ -88,8 +85,6 @@ monogatari.characters ({
 
 monogatari.script ({
 	// The game starts here.
-	
-	
 	
 	'Start': [
 		'show scene #000000 with fadeIn',
@@ -187,10 +182,11 @@ monogatari.script ({
 	],
 
 	'negazione': [
-        'show scene negazione widh fadeIn',
-        'window hide',
+        'show scene room widh fadeIn',
+        //'window hide',
 
-        'centered <div style="color: #888; font-style: italic;">Non si vede nulla... forse meglio accendere la torcia.</div>',
+        //'centered <div style="color: #888; font-style: italic;">Non si vede nulla... forse meglio accendere la torcia.</div>',
+		'Non si vede nulla... forse meglio accendere la torcia.',
 
         //attendi 2 secondi, poi accendi la torcia automaticamente
         'wait 2',
