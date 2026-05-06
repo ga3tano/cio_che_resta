@@ -77,6 +77,9 @@
 
 		<!-- Third Party JavaScript Libraries -->
 
+		<!-- File delle scene  -->
+		<script src="./js/scenes/negazione.js"></script>
+
 		<!-- Monogatari JavaScript Libraries -->
 		<script src="./engine/debug/debug.js"></script>
 		<script src="./engine/core/monogatari.js"></script>
@@ -95,6 +98,22 @@
 				<small>To play this game, please enable JavaScript executing or use a different browser.</small>
 			</div>
 		</noscript>
+
+		<!-- Custom elements -->
+		
+		<!-- Torcia overlay -->
+		<div id="torcia" 
+			 style="position: fixed;
+					top: 0;
+					left: 0;
+					width: 100%; 
+					height: 100%; 
+					background: radial-gradient(circle at center, transparent 0%, transparent 60px, black 160px); 
+					display: none; 
+					mix-blend-mode: multiply; 
+					pointer-events: none;">
+		</div>
+
 
 		<div id="monogatari">
 			<visual-novel>

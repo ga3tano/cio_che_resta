@@ -69,7 +69,12 @@ monogatari.assets ('images', {
 
 // Define the backgrounds for each scene.
 monogatari.assets ('scenes', {
-
+	'negazione': {
+		'name': 'Negazione',
+		'background': 'url("assets/scenes/room.jpeg")',
+		'foreground': ''
+	}
+	
 });
 
 
@@ -83,6 +88,27 @@ monogatari.characters ({
 
 monogatari.script ({
 	// The game starts here.
+	
+	'negazione': [
+        'show scene negazione widh fadeIn',
+        'window hide',
+
+        'centered <div style="color: #888; font-style: italic;">Non si vede nulla... forse meglio accendere la torcia.</div>',
+
+        //attendi 2 secondi, poi accendi la torcia automaticamente
+        'wait 2',
+
+        {
+            'Function': () => {
+   
+                    //accendi la torica
+                    attivaTorcia();
+
+                    monogatari.message('<div style="color: #ffaa00;">Il fascio di luce rivela una stanza polverosa.</div>')
+            }
+        }
+    ],
+	
 	'Start': [
 		'show scene #000000 with fadeIn',
 		
@@ -97,7 +123,15 @@ monogatari.script ({
 		'centered Le nubi, la pece, la sabbia, l’angoscia, la fiamma, l’attesa. l’inesorabile scorrere dei minuti che afferra e ti scuote e rimargina i segni del tempo, mentre tu affondi lentamente.',
 		'centered Allora, dimmi, qual è la soluzione?',
 		'centered Attendere inerme o dimenarsi nella speranza di un appiglio che sia salvezza?',
-		
+
+		//transizione verso la stanza
+		'show scene #000000 with fadeOut',
+
+		//salta alla prima scena
+		'jump negazione'
+	
+
+	
 
 		/*'show scene #f7f6f6 with fadeIn',
 		'show notification Welcome',
