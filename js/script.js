@@ -54,7 +54,8 @@ monogatari.assets ('voices', {
 
 // Define the sounds used in the game.
 monogatari.assets ('sounds', {
-	typewriter: 'typewriter.mp3'
+	typewriter: 'typewriter.mp3',
+	crash: 'crash.mp3'
 });
 
 // Define the videos used in the game.
@@ -220,7 +221,7 @@ monogatari.script ({
             }
         }},
 
-        'play sound crash',
+        'play sound crash with volume 100',
         'show scene #300000 with fadeIn',
         //'jump Esercizio_Respirazione'
     ],
