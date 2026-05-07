@@ -133,11 +133,6 @@ monogatari.script ({
 					}
 				}
 			},
-
-
-
-		//salta alla prima scena
-		'jump Negazione_Cellulare'
 	
 		/*'show scene #f7f6f6 with fadeIn',
 		'show notification Welcome',
@@ -227,7 +222,7 @@ monogatari.script ({
 
         'play sound crash',
         'show scene #300000 with fadeIn',
-        'jump Esercizio_Respirazione'
+        //'jump Esercizio_Respirazione'
     ],
 
     'Negazione_Ignora': [
@@ -267,11 +262,11 @@ monogatari.script ({
         {'Choice': {
             'Esci': {
                 'Text': 'ESCI',
-                'Do': 'jump Esci_Casa'
+                //'Do': 'jump Esci_Casa'
             },
             'Rimani': {
                 'Text': 'RIMANI A CASA',
-                'Do': 'jump Rimani_A_Casa'
+                //'Do': 'jump Rimani_A_Casa'
             }
         }}
     ],

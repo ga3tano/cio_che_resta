@@ -45,7 +45,7 @@ button:hover {
 
 /* Main Menu Styling */
 [data-screen="main"] {
-
+    background: #000000;
 }
 
 /* Main Menu Buttons Styling */
@@ -97,7 +97,7 @@ button:hover {
 
 /* Text Box styling */
 [data-component="text-box"] {
-
+    display: none !important;
 }
 
 /* Character Name Style */
