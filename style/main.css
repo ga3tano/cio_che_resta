@@ -352,3 +352,19 @@ input[type=range]::-ms-fill-upper {
         transform: translateY(0) scale(1);
     }
 }
+
+.night-overlay{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 9999;
+    display: none;
+    pointer-events: none;
+}
+
+.night-overlay.visible{
+    display: block;
+}

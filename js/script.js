@@ -86,10 +86,13 @@ monogatari.characters ({
 
 monogatari.script ({
 	// The game starts here.
-	
+
 	'Start': [
 		'show scene #000000 with fadeIn',
-		
+
+		//Test negazione
+		'jump Torcia',
+
 		{
 			TypeCentered: `Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?`
 		},
@@ -125,16 +128,16 @@ monogatari.script ({
 		'show scene #666666 with fadeIn',
 		//'play sound breathing with loop volume 35',
 
-			{
-				'Choice': {
-					'Respira': {
-						'Text': 'RESPIRA',
-						//'Do': 'stop sound breathing with fade 1'
-						'Do': 'jump Negazione_Cellulare'
-					}
+		{
+			'Choice': {
+				'Respira': {
+					'Text': 'RESPIRA',
+					//'Do': 'stop sound breathing with fade 1'
+					'Do': 'jump Negazione_Cellulare'
 				}
-			},
-	
+			}
+		},
+
 		/*'show scene #f7f6f6 with fadeIn',
 		'show notification Welcome',
 		{
@@ -223,7 +226,7 @@ monogatari.script ({
 
         'play sound crash with volume 100',
         'show scene #300000 with fadeIn',
-        //'jump Esercizio_Respirazione'
+        'jump Esercizio_Respirazione'
     ],
 
     'Negazione_Ignora': [
@@ -263,34 +266,28 @@ monogatari.script ({
         {'Choice': {
             'Esci': {
                 'Text': 'ESCI',
-                //'Do': 'jump Esci_Casa'
+                // 'Do': 'jump Esci_Casa'
             },
             'Rimani': {
                 'Text': 'RIMANI A CASA',
-                //'Do': 'jump Rimani_A_Casa'
+                // 'Do': 'jump Rimani_A_Casa'
             }
         }}
     ],
 
-	'negazione': [
-        'show scene room widh fadeIn',
+	'Torcia': [
+        'show scene room with fadeIn',
         //'window hide',
+		() => NightOverlay.show(),
+		'centered <div style="color: #888; font-style: italic;">Non si vede nulla... forse meglio accendere la torcia.</div>',
+		'wait 2',
 
-        //'centered <div style="color: #888; font-style: italic;">Non si vede nulla... forse meglio accendere la torcia.</div>',
-		'Non si vede nulla... forse meglio accendere la torcia.',
-
-        //attendi 2 secondi, poi accendi la torcia automaticamente
-        'wait 2',
-
-        {
-            'Function': () => {
-   
-                    //accendi la torica
-                    attivaTorcia();
-
-                    monogatari.message('<div style="color: #ffaa00;">Il fascio di luce rivela una stanza polverosa.</div>')
-            }
-        }
+        // {'Function': {
+		// 	'Apply': function () {
+		// 		TorchUI.activate();	
+		// 		return true;		
+		// 	}
+        // }}
     ],
 
 	/*

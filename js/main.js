@@ -231,6 +231,26 @@ const PhoneUI = {
     }
 };
 
+const NightOverlay = {
+	element: null,
+
+	init(){
+		this.element = document.getElementById('night-overlay');
+	},
+
+	show(){
+		if(!this.element) this.init();
+		this.element.classList.add('visible');
+		this.element.setAttribute('aria-hidden', 'false');
+	},
+
+	hide(){
+		if(!this.element) this.init();
+		this.element.classList.remove('visible');
+		this.element.setAttribute('aria-hidden', 'true');
+	}
+};
+
 $_ready (() => {
 	// 2. Inside the $_ready function:
 
