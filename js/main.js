@@ -233,21 +233,76 @@ const PhoneUI = {
 
 const NightOverlay = {
 	element: null,
+	radius: 180,
+	hasPlayedSound: false,
+	torchSound: new Audio('assets/sounds/torch-click.mp3'),
 
 	init(){
 		this.element = document.getElementById('night-overlay');
+		
+		//Desktop (capire se serve)
+		document.addEventListener('mousemove', (e) => {
+			if(!this.element.classList.contains('torch')) return;
+			this.updateTorch(e.clientX, e.clientY);
+		});
+
+		//Mobile
+		document.addEventListener('touchstart', (e) => {
+			if(!this.element.classList.contains('torch')) return;
+			
+			const touch = e.touches[0];
+			this.updateTorch(touch.clientX, touch.clientY);
+		});
+
+		document.addEventListener('touchmove', (e) => {
+			if(!this.element.classList.contains('torch')) return;
+			
+			const touch = e.touches[0];
+			this.updateTorch(touch.clientX, touch.clientY);
+		});
 	},
 
-	show(){
+	showNight(){
 		if(!this.element) this.init();
+		
 		this.element.classList.add('visible');
-		this.element.setAttribute('aria-hidden', 'false');
+		this.element.classList.remove('torch');
+
+		this.element.style.maskImage = 'none';
+		this.element.style.webkitMaskImage = 'none';
+	},
+
+	showTorch(){
+		this.element.classList.add('visible');
+		this.element.classList.add('torch');
+		document.body.classList.add('torch-active');
 	},
 
 	hide(){
 		if(!this.element) this.init();
 		this.element.classList.remove('visible');
-		this.element.setAttribute('aria-hidden', 'true');
+		this.element.classList.remove('torch');
+	},
+
+	updateTorch(x,y){
+		//Riproduco suono solo alla prima volta del metodo
+		if(!this.hasPlayedSound){
+			this.torchSound.currentTime = 0;
+			this.torchSound.play();
+			this.hasPlayedSound = true;
+		}
+
+		const mask = `
+			radial-gradient(
+				circle ${this.radius}px at ${x}px ${y}px,
+                transparent 0%,
+                transparent 40%,
+                black 100%
+			)
+		`;
+
+		this.element.style.maskImage = mask;
+        this.element.style.webkitMaskImage = mask;
 	}
 };
 
@@ -259,3 +314,5 @@ $_ready (() => {
 
 	});
 });
+
+

@@ -359,12 +359,25 @@ input[type=range]::-ms-fill-upper {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.95);
-    z-index: 9999;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1;
     display: none;
     pointer-events: none;
+
+    mask-image: none;
+    -webkit-mask-image: none;
+
+    transition: mask-image 0.2s ease, -webkit-mask-image 0.2s ease;
 }
 
 .night-overlay.visible{
     display: block;
+}
+
+.night-overlay.torch{
+    cursor: none;
+}
+
+body.torch-active{
+    cursor: none;
 }

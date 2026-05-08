@@ -278,17 +278,12 @@ monogatari.script ({
 	'Torcia': [
         'show scene room with fadeIn',
         //'window hide',
-		() => NightOverlay.show(),
-		'centered <div style="color: #888; font-style: italic;">Non si vede nulla... forse meglio accendere la torcia.</div>',
+		() => NightOverlay.showNight(),
+		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 2;">Non si vede nulla... forse meglio accendere la torcia.</div>',
 		'wait 2',
-
-        // {'Function': {
-		// 	'Apply': function () {
-		// 		TorchUI.activate();	
-		// 		return true;		
-		// 	}
-        // }}
-    ],
+    
+		() => NightOverlay.showTorch(),
+	],
 
 	/*
 	'Yes': [
