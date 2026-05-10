@@ -375,9 +375,71 @@ input[type=range]::-ms-fill-upper {
 }
 
 .night-overlay.torch{
-    cursor: none;
+    cursor: none !important;
+    pointer-events: none;
 }
 
-body.torch-active{
-    cursor: none;
+.torch-hole{
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 40%;
+    pointer-events: none;
 }
+
+/*Le particelle mi bloccano i click sugli items*/
+#tsparticles {
+    pointer-events: none !important;
+}
+
+/*Utile solo per mouse, nel caso decommentare*/
+/* body.torch-active{
+    cursor: none;
+} */
+
+.detail-blur {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.5);
+    z-index: 10;
+}
+
+.detail-zoom {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 50vw;
+    max-height: 50vh;
+    z-index: 11;
+}
+
+.detail-desc{
+    position: fixed;
+    top: 65%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70vw;
+    color: #fff;
+    font-size: 1.2rem;
+    text-align: center;
+    z-index: 12;
+}
+
+.detail-back {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    background: #ffffffaa;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 13;
+    font-weight: bold;
+}
+

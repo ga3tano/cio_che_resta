@@ -239,7 +239,7 @@ const NightOverlay = {
 
 	init(){
 		this.element = document.getElementById('night-overlay');
-		
+
 		//Desktop (capire se serve)
 		document.addEventListener('mousemove', (e) => {
 			if(!this.element.classList.contains('torch')) return;
@@ -249,14 +249,14 @@ const NightOverlay = {
 		//Mobile
 		document.addEventListener('touchstart', (e) => {
 			if(!this.element.classList.contains('torch')) return;
-			
+
 			const touch = e.touches[0];
 			this.updateTorch(touch.clientX, touch.clientY);
 		});
 
 		document.addEventListener('touchmove', (e) => {
 			if(!this.element.classList.contains('torch')) return;
-			
+
 			const touch = e.touches[0];
 			this.updateTorch(touch.clientX, touch.clientY);
 		});
@@ -264,7 +264,7 @@ const NightOverlay = {
 
 	showNight(){
 		if(!this.element) this.init();
-		
+
 		this.element.classList.add('visible');
 		this.element.classList.remove('torch');
 
@@ -275,7 +275,11 @@ const NightOverlay = {
 	showTorch(){
 		this.element.classList.add('visible');
 		this.element.classList.add('torch');
-		document.body.classList.add('torch-active');
+
+		// Debug sui click
+		// document.addEventListener("click", (e) => {
+   		// 	console.log("CLICK SU ELEMENTO:", e.target);
+		// });
 	},
 
 	hide(){
@@ -305,6 +309,87 @@ const NightOverlay = {
         this.element.style.webkitMaskImage = mask;
 	}
 };
+
+function showClickableObjects(){
+	const container = document.createElement("div");
+	container.id = "clickable-objects";
+	container.style.position = "absolute";
+	container.style.top = "0";
+	container.style.left = "0";
+	container.style.width = "100%";
+	container.style.height = "100%";
+	container.style.pointerEvents = "none"; //gli oggetti stessi avranno pointerEvents
+
+	const objects = [
+		{ id: "obj1", img: "assets/images/placeholder.png", x:"70%", y:"60%", w:"80px"},
+		{ id: "obj2", img: "assets/images/placeholder.png", x: "20%", y: "50%", w: "100px"}
+	];
+
+	objects.forEach(o => {
+		const element = document.createElement("img");
+		element.src = o.img;
+		element.id = o.id;
+		element.classList.add("clickable-object");
+		element.style.position = "absolute";
+		element.style.left = o.x;
+		element.style.top = o.y;
+		element.style.width = o.w;
+		element.style.pointerEvents = "auto";
+		element.addEventListener("click", (e) => {
+			e.stopPropagation(); //NON TOGLIERE, necessario per non far mangiare il click dal global listener di monogatari
+			monogatari.storage().lastClickedObject = o.id; //Mantengo in memoria l'ultimo oggetto clickato
+			showDetail(o.img);
+		});
+		container.appendChild(element);
+	});
+
+	document.body.appendChild(container);
+}
+
+function showDetail(objectId, imageSrc) {
+	const store = monogatari.storage();
+
+	store.lastClickedObject = objectId;
+
+	if(!store.clickedObjects.includes(objectId)){
+		store.clickedObjects.push(objectId);
+	}
+	
+	// Overlay blur
+	const blur = document.createElement("div");
+	blur.id = "detail-blur";
+	blur.className = "detail-blur";
+
+	// Immagine zoommata
+	const zoom = document.createElement("img");
+	zoom.id = "detail-zoom";
+	zoom.className = "detail-zoom";
+	zoom.src = imageSrc;
+
+	// Descrizione
+	const desc = document.createElement("div");
+	desc.id = "detail-desc";
+	desc.className ="detail-desc";
+
+	// Pulsante indietro
+	const back = document.createElement("div");
+	back.id = "detail-back";
+	back.className = "detail-back";
+	back.innerText = "Chiudi";
+	back.onclick = hideDetail;
+
+	document.body.appendChild(blur);
+	document.body.appendChild(zoom);
+	document.body.appendChild(back);
+}
+
+function hideDetail() {	
+	document.getElementById("detail-blur")?.remove();
+	document.getElementById("detail-zoom")?.remove();
+	document.getElementById("detail-back")?.remove();
+
+	monogatari.proceed();
+}
 
 $_ready (() => {
 	// 2. Inside the $_ready function:

@@ -274,16 +274,46 @@ monogatari.script ({
             }
         }}
     ],
+	
+	'loop_torcia': [
+		{'Conditional': {
+        	'Condition': function () {
+            	const store = monogatari.storage();
+
+            	if (store.clickedObjects.length === store.allObjects.length) {
+                	return 'finito';
+            	}
+
+            	return 'ancora';
+        	},
+
+        	'finito': 'jump Continua',
+        	'ancora': 'jump loop_torcia',
+    	}},
+	],
 
 	'Torcia': [
         'show scene room with fadeIn',
-        //'window hide',
-		() => NightOverlay.showNight(),
+		() => {
+			NightOverlay.showNight();
+		},
+
 		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 2;">Non si vede nulla... forse meglio accendere la torcia.</div>',
-		'wait 2',
-    
-		() => NightOverlay.showTorch(),
+		'wait 10',
+
+		{'Function': {
+			'Apply': function() {
+				showClickableObjects();
+				NightOverlay.showTorch();
+			}
+		}},
+
+		'jump loop_torcia',
 	],
+
+	'Continua': [
+		'centered Ciao',
+	]
 
 	/*
 	'Yes': [

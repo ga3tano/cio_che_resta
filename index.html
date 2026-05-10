@@ -96,6 +96,25 @@
 			</div>
 		</noscript>
 
+		<svg style="display: none;">
+		<filter id="contour-outline" x="-20%" y="-20%" width="140%" height="140%">
+			<!-- Prende l'alfa dell'immagine -->
+			<feColorMatrix in="SourceAlpha" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="alpha"/>
+			<!-- Espande la silhouette (3px, regolabile) -->
+			<feMorphology in="alpha" operator="dilate" radius="3" result="dilated"/>
+			<!-- Colora l'espansione di giallo (puoi cambiare il colore) -->
+			<feFlood flood-color="#ffff00" flood-opacity="1" result="yellow"/>
+			<feComposite in="yellow" in2="dilated" operator="in" result="coloredDilated"/>
+			<!-- Sottrai la silhouette originale per lasciare solo il bordo -->
+			<feComposite in="coloredDilated" in2="alpha" operator="out" result="outline"/>
+			<!-- Sovrapponi il bordo e l'immagine originale -->
+			<feMerge>
+			<feMergeNode in="outline"/>
+			<feMergeNode in="SourceGraphic"/>
+			</feMerge>
+		</filter>
+		</svg>
+
 		<div id="monogatari">
 			<visual-novel>
 				<language-selection-screen></language-selection-screen>
@@ -117,6 +136,7 @@
 			</visual-novel>
 		</div>
 
+		
 		<div id="phone-layer" class="phone-layer" aria-hidden="true">
 			<div id="phone-shell" class="phone-shell">
 				<div class="phone-speaker"></div>
@@ -135,4 +155,5 @@
 		<div id="night-overlay" class="night-overlay"></div>
 
 	</body>
+
 </html>
