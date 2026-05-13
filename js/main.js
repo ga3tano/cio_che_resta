@@ -239,7 +239,7 @@ const NightOverlay = {
 
 	init(){
 		this.element = document.getElementById('night-overlay');
-
+		
 		//Desktop (capire se serve)
 		document.addEventListener('mousemove', (e) => {
 			if(!this.element.classList.contains('torch')) return;
@@ -249,14 +249,14 @@ const NightOverlay = {
 		//Mobile
 		document.addEventListener('touchstart', (e) => {
 			if(!this.element.classList.contains('torch')) return;
-
+			
 			const touch = e.touches[0];
 			this.updateTorch(touch.clientX, touch.clientY);
 		});
 
 		document.addEventListener('touchmove', (e) => {
 			if(!this.element.classList.contains('torch')) return;
-
+			
 			const touch = e.touches[0];
 			this.updateTorch(touch.clientX, touch.clientY);
 		});
@@ -264,7 +264,7 @@ const NightOverlay = {
 
 	showNight(){
 		if(!this.element) this.init();
-
+		
 		this.element.classList.add('visible');
 		this.element.classList.remove('torch');
 
@@ -275,6 +275,11 @@ const NightOverlay = {
 	showTorch(){
 		this.element.classList.add('visible');
 		this.element.classList.add('torch');
+
+		const x = window.innerWidth / 2;
+    	const y = window.innerHeight / 2;
+
+    	this.updateTorch(x, y);
 
 		// Debug sui click
 		// document.addEventListener("click", (e) => {
@@ -292,6 +297,7 @@ const NightOverlay = {
 		//Riproduco suono solo alla prima volta del metodo
 		if(!this.hasPlayedSound){
 			this.torchSound.currentTime = 0;
+			this.torchSound.volume = 1;
 			this.torchSound.play();
 			this.hasPlayedSound = true;
 		}
@@ -338,7 +344,7 @@ function showClickableObjects(){
 		element.addEventListener("click", (e) => {
 			e.stopPropagation(); //NON TOGLIERE, necessario per non far mangiare il click dal global listener di monogatari
 			monogatari.storage().lastClickedObject = o.id; //Mantengo in memoria l'ultimo oggetto clickato
-			showDetail(o.img);
+			showDetail(o.id, o.img);
 		});
 		container.appendChild(element);
 	});

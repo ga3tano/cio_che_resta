@@ -288,7 +288,7 @@ monogatari.script ({
         	},
 
         	'finito': 'jump Continua',
-        	'ancora': 'jump loop_torcia',
+        	'ancora': '',
     	}},
 	],
 
@@ -299,12 +299,12 @@ monogatari.script ({
 		},
 
 		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 2;">Non si vede nulla... forse meglio accendere la torcia.</div>',
-		'wait 10',
 
 		{'Function': {
 			'Apply': function() {
 				showClickableObjects();
 				NightOverlay.showTorch();
+				return true;
 			}
 		}},
 
