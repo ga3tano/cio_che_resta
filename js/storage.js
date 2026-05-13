@@ -10,7 +10,7 @@ monogatari.storage ({
 	lastClickedObject: null,
 	objectDescriptions: {
 		obj1: "Descrizione oggetto 1, pappappero.",
-		obj2: "Descrizione oggetto 2, pappapperollà"
+		obj2: "Descrizione oggetto 2, pappapperollà."
 	},
 	allClicked: false,
 	torchInitialized: false,

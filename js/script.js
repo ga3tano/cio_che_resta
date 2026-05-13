@@ -279,17 +279,17 @@ monogatari.script ({
 		{'Conditional': {
         	'Condition': function () {
             	const store = monogatari.storage();
-
-            	if (store.clickedObjects.length === store.allObjects.length) {
-                	return 'finito';
-            	}
-
-            	return 'ancora';
+				return store.clickedObjects.length === store.allObjects.length;
         	},
 
-        	'finito': 'jump Continua',
-        	'ancora': '',
+        	'True': 'jump Continua with fadeOut',
+        	'False': 'jump wait_torcia'
     	}},
+	],
+
+	'wait_torcia': [
+		'wait 300',
+		'jump loop_torcia'
 	],
 
 	'Torcia': [
@@ -312,7 +312,17 @@ monogatari.script ({
 	],
 
 	'Continua': [
-		'centered Ciao',
+		'show scene #000000 with fadeIn',
+
+		() => {
+			NightOverlay.hide();
+			hideClickableObjects();
+		},
+		'wait 2000',
+		'show scene room with fadeIn',
+		{
+			TypeCentered : `Ciao`
+		}
 	]
 
 	/*

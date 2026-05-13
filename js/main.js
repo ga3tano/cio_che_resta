@@ -235,6 +235,7 @@ const NightOverlay = {
 	element: null,
 	radius: 180,
 	hasPlayedSound: false,
+	isFrozen: false,
 	torchSound: new Audio('assets/sounds/torch-click.mp3'),
 
 	init(){
@@ -294,6 +295,7 @@ const NightOverlay = {
 	},
 
 	updateTorch(x,y){
+		if(this.isFrozen) return;
 		//Riproduco suono solo alla prima volta del metodo
 		if(!this.hasPlayedSound){
 			this.torchSound.currentTime = 0;
@@ -352,14 +354,15 @@ function showClickableObjects(){
 	document.body.appendChild(container);
 }
 
+function hideClickableObjects(){
+	document.getElementById("clickable-objects")?.remove();
+}
+
 function showDetail(objectId, imageSrc) {
 	const store = monogatari.storage();
-
+	NightOverlay.isFrozen = true;
+	
 	store.lastClickedObject = objectId;
-
-	if(!store.clickedObjects.includes(objectId)){
-		store.clickedObjects.push(objectId);
-	}
 	
 	// Overlay blur
 	const blur = document.createElement("div");
@@ -376,25 +379,34 @@ function showDetail(objectId, imageSrc) {
 	const desc = document.createElement("div");
 	desc.id = "detail-desc";
 	desc.className ="detail-desc";
+	desc.textContent = store.objectDescriptions[objectId];
 
 	// Pulsante indietro
 	const back = document.createElement("div");
 	back.id = "detail-back";
 	back.className = "detail-back";
 	back.innerText = "Chiudi";
-	back.onclick = hideDetail;
+	back.onclick = () => hideDetail(objectId);
 
 	document.body.appendChild(blur);
 	document.body.appendChild(zoom);
 	document.body.appendChild(back);
+	document.body.appendChild(desc);
 }
 
-function hideDetail() {	
+function hideDetail(objectId) {	
+	NightOverlay.isFrozen = false;
+	const store = monogatari.storage();
+
+	if(!store.clickedObjects.includes(objectId)){
+		store.clickedObjects.push(objectId);
+	}
+
 	document.getElementById("detail-blur")?.remove();
 	document.getElementById("detail-zoom")?.remove();
 	document.getElementById("detail-back")?.remove();
+	document.getElementById("detail-desc")?.remove();
 
-	monogatari.proceed();
 }
 
 $_ready (() => {
