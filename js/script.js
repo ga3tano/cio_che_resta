@@ -298,7 +298,7 @@ monogatari.script ({
 			NightOverlay.showNight();
 		},
 
-		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 2;">Non si vede nulla... forse meglio accendere la torcia.</div>',
+		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">Non si vede nulla... forse meglio accendere la torcia.</div>',
 
 		{'Function': {
 			'Apply': function() {
@@ -312,6 +312,11 @@ monogatari.script ({
 	],
 
 	'Continua': [
+		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">Si è fatta una certa ora...provo a riaddormentarmi.</div>',
+		() => {
+			NightOverlay.hideTorch();
+		},
+
 		'show scene #000000 with fadeIn',
 
 		() => {
@@ -321,7 +326,7 @@ monogatari.script ({
 		'wait 2000',
 		'show scene room with fadeIn',
 		{
-			TypeCentered : `Ciao`
+			TypeCentered : `Buongiornissimo, caffè?`
 		}
 	]
 

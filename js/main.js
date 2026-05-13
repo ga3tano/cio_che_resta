@@ -290,18 +290,29 @@ const NightOverlay = {
 
 	hide(){
 		if(!this.element) this.init();
-		this.element.classList.remove('visible');
+		
+		this.element.classList.remove('visible');		
+	},
+
+	hideTorch(){
+		if(!this.element) this.init();
+
+		this.playTorchSound();
 		this.element.classList.remove('torch');
+	},
+
+	playTorchSound(){
+		this.torchSound.currentTime = 0;
+		this.torchSound.volume = 1;
+		this.torchSound.play();
+		this.hasPlayedSound = true;
 	},
 
 	updateTorch(x,y){
 		if(this.isFrozen) return;
 		//Riproduco suono solo alla prima volta del metodo
 		if(!this.hasPlayedSound){
-			this.torchSound.currentTime = 0;
-			this.torchSound.volume = 1;
-			this.torchSound.play();
-			this.hasPlayedSound = true;
+			this.playTorchSound();
 		}
 
 		const mask = `
