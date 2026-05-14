@@ -444,3 +444,13 @@ input[type=range]::-ms-fill-upper {
     font-weight: bold;
 }
 
+.clickable-object {
+    transition: filter 0.2s ease,  transform 0.2s ease;
+}
+
+.clickable-object.highlight{
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.7))
+            brightness(1.2)
+            contrast(1.1);
+    transform: scale(1.05);
+}

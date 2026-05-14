@@ -233,10 +233,18 @@ const PhoneUI = {
 
 const NightOverlay = {
 	element: null,
-	radius: 180,
+	radius: 120,
 	hasPlayedSound: false,
-	isFrozen: false,
+	isFrozen: true,
 	torchSound: new Audio('assets/sounds/torch-click.mp3'),
+
+	//Posizione attuale della torica
+	torchX: window.innerWidth /2,
+	torchY: window.innerHeight / 2,
+
+	//Posizione target (dita o mouse)
+	targetX: window.innerWidth /2,
+	targetY: window.innerHeight / 2,
 
 	init(){
 		this.element = document.getElementById('night-overlay');
@@ -244,23 +252,42 @@ const NightOverlay = {
 		//Desktop (capire se serve)
 		document.addEventListener('mousemove', (e) => {
 			if(!this.element.classList.contains('torch')) return;
-			this.updateTorch(e.clientX, e.clientY);
+			this.updateTorch(e.clientX, e.clientY);	//Per il mouse non serve il target perchè tanto il movimento è sempre fluido e costante
 		});
 
 		//Mobile
 		document.addEventListener('touchstart', (e) => {
 			if(!this.element.classList.contains('torch')) return;
-			
 			const touch = e.touches[0];
-			this.updateTorch(touch.clientX, touch.clientY);
+			//this.updateTorch(touch.clientX, touch.clientY);	//old
+			this.targetX = touch.clientX;
+			this.targetY = touch.clientY;
 		});
 
 		document.addEventListener('touchmove', (e) => {
 			if(!this.element.classList.contains('torch')) return;
-			
 			const touch = e.touches[0];
-			this.updateTorch(touch.clientX, touch.clientY);
+			// this.updateTorch(touch.clientX, touch.clientY);	//old
+			this.targetX = touch.clientX;
+			this.targetY = touch.clientY;
 		});
+
+		this.loop();
+	},
+
+	loop(){			
+		const speed = 0.15;
+
+		if(!this.isFrozen){		
+			// LERP verso il target (LERP = Linear Interpolation)
+			this.torchX += (this.targetX - this.torchX) * speed;
+			this.torchY += (this.targetY - this.torchY) * speed;
+
+			//Aggiorno la torcia
+			this.updateTorch(this.torchX, this.torchY);
+		}
+
+		requestAnimationFrame(() => this.loop());
 	},
 
 	showNight(){
@@ -274,6 +301,7 @@ const NightOverlay = {
 	},
 
 	showTorch(){
+		this.isFrozen = false;
 		this.element.classList.add('visible');
 		this.element.classList.add('torch');
 
@@ -318,14 +346,44 @@ const NightOverlay = {
 		const mask = `
 			radial-gradient(
 				circle ${this.radius}px at ${x}px ${y}px,
-                transparent 0%,
-                transparent 40%,
-                black 100%
+
+				/* Centro molto luminoso */
+				rgba(0,0,0,0) 0%,
+				rgba(0,0,0,0.02) 10%,
+
+				/* Decadimento lento (curva piatta) */
+				rgba(0,0,0,0.08) 25%,
+				rgba(0,0,0,0.18) 40%,
+
+				/* Decadimento più veloce */
+				rgba(0,0,0,0.35) 55%,
+				rgba(0,0,0,0.55) 70%,
+
+				/* Crollo finale (curva ripida) */
+				rgba(0,0,0,0.75) 85%,
+				rgba(0,0,0,1) 100%
 			)
 		`;
 
 		this.element.style.maskImage = mask;
         this.element.style.webkitMaskImage = mask;
+
+		document.querySelectorAll('.clickable-object').forEach(obj => {
+			const rect = obj.getBoundingClientRect();
+
+			const objCenterX = rect.left + rect.width / 2;
+			const objCenterY = rect.top + rect.height / 2;
+
+			const dx = objCenterX - x;
+			const dy = objCenterY - y;
+
+			const distance = Math.sqrt(dx*dx + dy*dy);
+
+			if(distance < this.radius)
+				obj.classList.add('highlight');
+			else
+				obj.classList.remove('highlight');
+		})
 	}
 };
 
@@ -348,7 +406,7 @@ function showClickableObjects(){
 		const element = document.createElement("img");
 		element.src = o.img;
 		element.id = o.id;
-		element.classList.add("clickable-object");
+		element.classList.add('clickable-object');
 		element.style.position = "absolute";
 		element.style.left = o.x;
 		element.style.top = o.y;
