@@ -91,7 +91,7 @@ monogatari.script ({
 		'show scene #000000 with fadeIn',
 
 		//Test negazione
-		'jump Torcia',
+		'jump Rabbia',
 
 		{
 			TypeCentered: `Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?`
@@ -328,6 +328,21 @@ monogatari.script ({
 		{
 			TypeCentered : `Buongiornissimo, caffè?`
 		}
+	],
+
+	'Rabbia': [
+		'show scene room_red with fade in',
+		() => {
+			Glitch.start();
+		},
+		'wait 12000',
+		() => {
+			Glitch.stop();
+		}
+
+		// TODO - Minigame scritte che appaiono
+		// 	 	- Overlay bordi rossi che si intensificano
+		// 	 	- Eventuale schermata di "game over" con salto a scene precedenti
 	]
 
 	/*

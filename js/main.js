@@ -27,6 +27,10 @@ const { $_ready, $_ } = Monogatari;
 
 // 1. Outside the $_ready function:
 
+/*
+CLASSI CUSTOM
+*/
+
 class TypeCentered extends Monogatari.Action {
 	static id = 'TypeCentered';
 
@@ -157,6 +161,10 @@ class TypeCentered extends Monogatari.Action {
 }
 
 monogatari.registerAction (TypeCentered);
+
+/*
+OGGETTI CUSTOM
+*/
 
 const PhoneUI = {
     layer: null,
@@ -387,6 +395,151 @@ const NightOverlay = {
 	}
 };
 
+//G - Animazione fatta armandomi di codex, ho commentato il più possibile per renderla manutenibile, in ogni caso per qualsiasi aggiustamento cambiare i parametri in config
+const Glitch={
+	active: false,
+	timer: null,
+	intensity: 0,	//range 0 = calma, 1 = furia
+	zoom: 1,	//partenza zoom, aumenta gradualmente
+
+	config: {
+		// Quanto velocemente cresce la rabbia.
+		intensityStep: 0.009,
+
+		// Timing generale del loop.
+		baseDelay: 90,
+		minDelay: 35,
+		delayRamp: 58,
+
+		// Quanti px max di spostamento durante lo shake dello schermo
+		maxShakePx: 30,
+
+		// Tempo di zoom e esponenzialità con cui cresce.
+		rampDuration: 10000,
+		rampExponent: 2.2,
+
+		// Zoom emotivo: piccolo all'inizio, poi cresce di più nella fase finale.
+		baseZoomExtra: 0.018,
+		rageZoomExtra: 0.055,
+
+		// Rotazione massima casuale.
+		rotationMaxDeg: 1.8,
+
+		// Distorsione su asse x (stretch) e y (squeeze).
+		stretchMax: 0.028,
+		squeezeMax: 0.022,
+
+		// Ogni tanto inserisce un colpo più sporco e improvviso.
+		spikeChance: 0.16,
+		spikeMultiplier: 1.65
+	},
+
+	start(){
+		if (this.active) return;
+
+		const bg = document.getElementById('background');
+		if(!bg) return;
+
+		this.active = true;
+		this.intensity = 0;
+		this.startTime = performance.now();
+
+		// Lo zoom deve avvenire dal centro reale dell'immagine
+		bg.style.transformOrigin= "center center";
+		bg.style.willChange = "transform";
+
+		const loop = () => {
+			if(!this.active) return;
+
+			//Mi calcolo quanto tempo è passato dall'inizio del loop
+			const now = performance.now();
+			const elapsed = now - this.startTime; 
+
+			//Intensità progressiva
+			this.intensity = Math.min(1, this.intensity + this.config.intensityStep);
+			
+			//Calcoli per arrivare gradualmente alla scala del bg minima per non avere bordi (zoom iniziale)
+			const rampLinear = Math.min(1, elapsed / this.config.rampDuration);
+			const rampProgress = Math.pow(rampLinear, this.config.rampExponent);
+			
+			const vw = window.innerWidth;
+			const vh = window.innerHeight;
+			const safeScaleX = (vw + this.config.maxShakePx * 2)/vw;
+			const safeScaleY = (vh + this.config.maxShakePx * 2)/vh;
+			
+			//Scala minima per non mostrare bordi al massimo shake
+			const safeScale = Math.max(safeScaleX, safeScaleY);
+
+			//Transizione lineare da scale(1) a scale(scaleSafe)
+			const safeScaleProgressive = 1 + (safeScale - 1) * rampProgress;
+
+			//Zoom
+			const emotionalZoom = 
+				this.config.baseZoomExtra * this.intensity +
+				this.config.rageZoomExtra * Math.pow(this.intensity, 2); //Uso una funzione quadratica per aumentare l'intensità verso la fine più velocemente
+
+			const totalScale = safeScaleProgressive + emotionalZoom;
+
+			//Shake con curva non lineare:
+			let shakeStrength = 
+				this.config.maxShakePx * 
+				(0.15 * this.intensity + 0.85 * Math.pow(this.intensity, 2));
+
+			//Durante il buildup iniziale limitiamo lo shake fino al raggiungimento della safeScale
+			shakeStrength *= rampProgress;
+
+			//Aggiungo degli spike randomici
+			const hasSpike = Math.random() < this.config.spikeChance;
+			if (hasSpike){
+				shakeStrength *= this.config.spikeMultiplier;
+			}
+
+			//Movimento casuale sugli assi:
+			const shakeX = (Math.random() * 2 - 1) * shakeStrength;
+			const shakeY = (Math.random() * 2 - 1) * shakeStrength;
+
+			//Rotazione irregolare: poco all'inizio, più instabile dopo
+			const rotate = 
+				(Math.random() * 2 - 1) * 
+				this.config.rotationMaxDeg * 
+				Math.pow(this.intensity, 1.2);
+
+			//Distorsione asimmetrica per simulare perdita di controllo visivo
+			const stretchX = 1 + this.config.stretchMax * this.intensity * (0.6 + Math.random() * 0.4);
+			const stretchY = 1 + this.config.squeezeMax * this.intensity * (0.6 + Math.random() * 0.4);
+
+			//Applico tutti gli effetti
+			bg.style.transform = 
+			`translate(${shakeX}px, ${shakeY}px) ` + //shake
+			`rotate(${rotate}deg) ` + 	//rotazione
+			`scale(${totalScale * stretchX}, ${totalScale * stretchY})`;	//zoom + distorsione 
+
+			//Al crescere della rabbia, il ritmo accelera
+			const nextDelay = this.config.baseDelay - this.intensity * this.config.delayRamp;
+			this.timer = setTimeout(loop, Math.max(this.config.minDelay, nextDelay));
+		};
+
+		loop();
+	},
+
+	stop() {
+		this.active = false;
+		clearTimeout(this.timer);
+		this.timer = null;
+
+		const bg = document.getElementById("background");
+		if (!bg) return;
+
+		//Per adesso il ritorno alla "normalità" è abbastanza brusco, valutare se farlo in maniera più lineare
+		bg.style.transform = "translate3d(0, 0, 0) rotate(0deg) scale(1, 1)";
+	},
+};
+
+/*
+FUNZIONI CUSTOM
+*/ 
+
+/*OGGETTI CLICKABILI*/
 function showClickableObjects(){
 	const container = document.createElement("div");
 	container.id = "clickable-objects";
