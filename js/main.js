@@ -288,8 +288,8 @@ const NightOverlay = {
 
 		if(!this.isFrozen){		
 			// LERP verso il target (LERP = Linear Interpolation)
-			this.torchX += (this.targetX - this.torchX) * speed;
-			this.torchY += (this.targetY - this.torchY) * speed;
+			this.torchX = lerp(this.targetX, this.torchX, speed);
+			this.torchY = lerp(this.targetY, this.torchY, speed);
 
 			//Aggiorno la torcia
 			this.updateTorch(this.torchX, this.torchY);
@@ -508,6 +508,13 @@ const Glitch={
 			const stretchX = 1 + this.config.stretchMax * this.intensity * (0.6 + Math.random() * 0.4);
 			const stretchY = 1 + this.config.squeezeMax * this.intensity * (0.6 + Math.random() * 0.4);
 
+			//Bordo rosso che aumenta con la rabbia
+			const border = document.getElementById("rage-border");
+			if(border){
+				const borderIntensity = 0.25 * this.intensity + 0.75 * Math.pow(this.intensity, 2);
+				border.style.opacity = borderIntensity;
+			}
+
 			//Applico tutti gli effetti
 			bg.style.transform = 
 			`translate(${shakeX}px, ${shakeY}px) ` + //shake
@@ -522,17 +529,78 @@ const Glitch={
 		loop();
 	},
 
+	//Stessa animazione, ma a specchio e molto più brusca. Evito l'effetto "taglio netto".
+	cooldown() {
+		const bg = document.getElementById("background");
+		if (!bg) return;
+
+		let intensity = this.intensity;
+
+		// Durata molto più breve
+		const duration = 400; // prima era 1200
+
+		const startTime = performance.now();
+
+		const loop = () => {
+			const now = performance.now();
+			const t = Math.min(1, (now - startTime) / duration);
+
+			// Curva più ripida = rientro più veloce ma coerente
+			const ease = 1 - Math.pow(t, 1.6);
+
+			const currentIntensity = intensity * ease;
+
+			// Zoom emotivo
+			const emotionalZoom =
+				this.config.baseZoomExtra * currentIntensity +
+				this.config.rageZoomExtra * Math.pow(currentIntensity, 2);
+
+			// Shake
+			let shakeStrength =
+				this.config.maxShakePx *
+				(0.15 * currentIntensity + 0.85 * Math.pow(currentIntensity, 2));
+
+			const shakeX = (Math.random() * 2 - 1) * shakeStrength;
+			const shakeY = (Math.random() * 2 - 1) * shakeStrength;
+
+			// Rotazione
+			const rotate =
+				(Math.random() * 2 - 1) *
+				this.config.rotationMaxDeg *
+				Math.pow(currentIntensity, 1.2);
+
+			// Distorsione
+			const stretchX = 1 + this.config.stretchMax * currentIntensity;
+			const stretchY = 1 + this.config.squeezeMax * currentIntensity;
+
+			const totalScale = 1 + emotionalZoom;
+
+			const border = document.getElementById("rage-border");
+			if(border) border.style.opacity = currentIntensity;
+
+			bg.style.transform =
+				`translate(${shakeX}px, ${shakeY}px) ` +
+				`rotate(${rotate}deg) ` +
+				`scale(${totalScale * stretchX}, ${totalScale * stretchY})`;
+
+			if (t < 1) {
+				requestAnimationFrame(loop);
+			} else {
+				bg.style.transform = "translate(0,0) rotate(0deg) scale(1,1)";
+			}
+		};
+
+		requestAnimationFrame(loop);
+	},
+
 	stop() {
+		
 		this.active = false;
 		clearTimeout(this.timer);
 		this.timer = null;
 
-		const bg = document.getElementById("background");
-		if (!bg) return;
-
-		//Per adesso il ritorno alla "normalità" è abbastanza brusco, valutare se farlo in maniera più lineare
-		bg.style.transform = "translate3d(0, 0, 0) rotate(0deg) scale(1, 1)";
-	},
+		this.cooldown();
+	}
 };
 
 /*
@@ -630,6 +698,11 @@ function hideDetail(objectId) {
 	document.getElementById("detail-desc")?.remove();
 
 }
+
+/*UTILITY*/
+function lerp (a, b, t){
+	return a + (b - a) * t;
+} 
 
 $_ready (() => {
 	// 2. Inside the $_ready function:
