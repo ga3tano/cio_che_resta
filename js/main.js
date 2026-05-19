@@ -603,6 +603,13 @@ const Glitch={
 	}
 };
 
+const WordsGame={
+	start(){
+		const store = monogatari.storage();
+	}
+
+}
+
 /*
 FUNZIONI CUSTOM
 */ 
