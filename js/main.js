@@ -603,12 +603,287 @@ const Glitch={
 	}
 };
 
-const WordsGame={
-	start(){
-		const store = monogatari.storage();
-	}
+const WordsGame = {
+	element: null,
+	store: null,
+	activeWords: 0,
 
-}
+	config: {
+		spawnDelay: 700,
+		screenPadding: 20,
+		maxRotation: 12,
+		swipeThreshold: 70,
+		swipeEscape: 180,
+		jitterX: 28,
+		jitterY: 36
+	},
+
+	init() {
+		this.element = document.getElementById("word-game-overlay");
+		this.store = monogatari.storage();
+	},
+
+	start() {
+		if (!this.element) this.init();
+		if (!this.element || !this.store) return;
+
+		this.clear();
+		this.element.classList.add("visible");
+		document.body.style.overflow = "hidden";
+
+		this.showWords();
+	},
+
+	clear() {
+		if (!this.element) return;
+		this.element.innerHTML = "";
+		this.activeWords = 0;
+	},
+
+	end() {
+		document.body.style.overflow = "";
+		this.activeWords = 0;
+
+		if (this.element) {
+			this.element.classList.remove("visible");
+			this.element.innerHTML = "";
+		}
+	},
+
+	async showWords() {
+		const words = this.store.frasiRabbia || [];
+		if (!words.length) {
+			this.end();
+			return;
+		}
+
+		const spawnPoints = this.getSpawnPoints();
+		this.shuffleArray(spawnPoints);
+		this.activeWords = words.length;
+
+		for (let i = 0; i < words.length; i++) {
+			const wordObj = this.createWordElement(words[i]);
+			this.element.appendChild(wordObj.wrapper);
+
+			this.freezeWordLayout(wordObj.textNode, wordObj.label, wordObj.wrapper);
+
+			const point = spawnPoints[i % spawnPoints.length];
+			this.placeWord(wordObj.wrapper, point);
+
+			this.attachTouchSwipe(wordObj.wrapper);
+
+			await sleep(this.config.spawnDelay);
+		}
+	},
+
+	createWordElement(text) {
+		const wrapper = document.createElement("div");
+		wrapper.className = "word-item";
+
+		const label = document.createElement("div");
+		label.className = "word-label";
+		label.style.setProperty(
+			"--word-rotation",
+			`${this.randomBetween(-this.config.maxRotation, this.config.maxRotation)}deg`
+		);
+
+		const textNode = document.createElement("span");
+		textNode.className = "word-text";
+		textNode.textContent = text;
+
+		label.appendChild(textNode);
+		wrapper.appendChild(label);
+
+		return { wrapper, label, textNode };
+	},
+
+	getSpawnPoints() {
+		const w = window.innerWidth;
+		const h = window.innerHeight;
+
+		return [
+			{ x: w * 0.22, y: h * 0.18 },
+			{ x: w * 0.74, y: h * 0.16 },
+			{ x: w * 0.50, y: h * 0.30 },
+			{ x: w * 0.25, y: h * 0.46 },
+			{ x: w * 0.77, y: h * 0.48 },
+			{ x: w * 0.34, y: h * 0.68 },
+			{ x: w * 0.70, y: h * 0.78 },
+			{ x: w * 0.50, y: h * 0.84 }
+		];
+	},
+
+	freezeWordLayout(textNode, label, wrapper) {
+		wrapper.style.visibility = "hidden";
+		wrapper.style.left = "0px";
+		wrapper.style.top = "0px";
+
+		const previousAnimation = label.style.animation;
+		const previousTransform = label.style.transform;
+
+		label.style.animation = "none";
+		label.style.transform = "none";
+
+		const textWidth = Math.ceil(textNode.offsetWidth);
+		const textHeight = Math.ceil(textNode.offsetHeight);
+
+		textNode.style.display = "inline-block";
+		textNode.style.width = `${textWidth}px`;
+		textNode.style.maxWidth = `${textWidth}px`;
+
+		label.style.width = `${textWidth}px`;
+		label.style.maxWidth = `${textWidth}px`;
+
+		wrapper.style.width = `${textWidth}px`;
+		wrapper.style.height = `${textHeight}px`;
+
+		label.style.animation = previousAnimation;
+		label.style.transform = previousTransform;
+	},
+
+	placeWord(wrapper, point) {
+		wrapper.style.visibility = "hidden";
+		wrapper.style.left = "0px";
+		wrapper.style.top = "0px";
+
+		const rect = wrapper.getBoundingClientRect();
+		const wordWidth = rect.width;
+		const wordHeight = rect.height;
+
+		const jitterX = this.randomBetween(-this.config.jitterX, this.config.jitterX);
+		const jitterY = this.randomBetween(-this.config.jitterY, this.config.jitterY);
+
+		const desiredLeft = point.x - (wordWidth / 2) + jitterX;
+		const desiredTop = point.y - (wordHeight / 2) + jitterY;
+
+		const safeLeft = this.clamp(
+			desiredLeft,
+			this.config.screenPadding,
+			window.innerWidth - this.config.screenPadding - wordWidth
+		);
+
+		const safeTop = this.clamp(
+			desiredTop,
+			this.config.screenPadding,
+			window.innerHeight - this.config.screenPadding - wordHeight
+		);
+
+		wrapper.style.left = `${safeLeft}px`;
+		wrapper.style.top = `${safeTop}px`;
+		wrapper.style.visibility = "visible";
+	},
+
+	attachTouchSwipe(wrapper) {
+		let dragging = false;
+		let startTouchX = 0;
+		let startTouchY = 0;
+		let offsetX = 0;
+		let offsetY = 0;
+		let currentLeft = 0;
+		let currentTop = 0;
+		let deltaX = 0;
+		let deltaY = 0;
+
+		wrapper.addEventListener("touchstart", (event) => {
+			const touch = event.touches[0];
+			if (!touch) return;
+
+			event.preventDefault();
+
+			const rect = wrapper.getBoundingClientRect();
+
+			dragging = true;
+			wrapper.classList.add("dragging");
+			wrapper.style.transition = "";
+
+			startTouchX = touch.clientX;
+			startTouchY = touch.clientY;
+
+			currentLeft = parseFloat(wrapper.style.left) || 0;
+			currentTop = parseFloat(wrapper.style.top) || 0;
+
+			offsetX = touch.clientX - rect.left;
+			offsetY = touch.clientY - rect.top;
+
+			deltaX = 0;
+			deltaY = 0;
+		}, { passive: false });
+
+		wrapper.addEventListener("touchmove", (event) => {
+			if (!dragging) return;
+			const touch = event.touches[0];
+			if (!touch) return;
+
+			event.preventDefault();
+
+			deltaX = touch.clientX - startTouchX;
+			deltaY = touch.clientY - startTouchY;
+
+			const newLeft = touch.clientX - offsetX;
+			const newTop = touch.clientY - offsetY;
+
+			wrapper.style.left = `${newLeft}px`;
+			wrapper.style.top = `${newTop}px`;
+		}, { passive: false });
+
+		const endDrag = () => {
+			if (!dragging) return;
+			dragging = false;
+			wrapper.classList.remove("dragging");
+
+			const distance = Math.hypot(deltaX, deltaY);
+
+			if (distance >= this.config.swipeThreshold) {
+				const norm = distance || 1;
+				const dirX = deltaX / norm;
+				const dirY = deltaY / norm;
+
+				const finalLeft = (parseFloat(wrapper.style.left) || 0) + dirX * this.config.swipeEscape;
+				const finalTop = (parseFloat(wrapper.style.top) || 0) + dirY * this.config.swipeEscape;
+
+				wrapper.style.transition = "left 220ms ease, top 220ms ease, opacity 220ms ease";
+				wrapper.style.left = `${finalLeft}px`;
+				wrapper.style.top = `${finalTop}px`;
+				wrapper.style.opacity = "0";
+
+				setTimeout(() => {
+					wrapper.remove();
+					this.activeWords -= 1;
+
+					if (this.activeWords <= 0) {
+						this.end();
+					}
+				}, 230);
+			} else {
+				wrapper.style.transition = "left 180ms ease, top 180ms ease";
+				wrapper.style.left = `${currentLeft}px`;
+				wrapper.style.top = `${currentTop}px`;
+
+				setTimeout(() => {
+					wrapper.style.transition = "";
+				}, 200);
+			}
+		};
+
+		wrapper.addEventListener("touchend", endDrag, { passive: true });
+		wrapper.addEventListener("touchcancel", endDrag, { passive: true });
+	},
+
+	shuffleArray(array) {
+		for (let i = array.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[array[i], array[j]] = [array[j], array[i]];
+		}
+	},
+
+	randomBetween(min, max) {
+		return min + Math.random() * (max - min);
+	},
+
+	clamp(value, min, max) {
+		return Math.max(min, Math.min(max, value));
+	}
+};
 
 /*
 FUNZIONI CUSTOM
@@ -704,6 +979,10 @@ function hideDetail(objectId) {
 	document.getElementById("detail-back")?.remove();
 	document.getElementById("detail-desc")?.remove();
 
+}
+
+function sleep(ms){
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /*UTILITY*/

@@ -12,13 +12,15 @@ monogatari.storage ({
 		obj1: "Descrizione oggetto 1, pappappero.",
 		obj2: "Descrizione oggetto 2, pappapperollà."
 	},
-	frasiRabbia: {
-		f1: "NO, NO, NO!",
-		f2: "NON DOVEVA\nSUCCEDERE",
-		f3: "È COLPA MIA",
-		f4: "PERCHÉ?!",
-		f5: "NON È\nGIUSTO!"
-	},
+	frasiRabbia: [
+		"NO, NO, NO!",
+		"NON DOVEVA SUCCEDERE!",
+		"DOVEVO PROTEGGERTI",
+		"È COLPA MIA!",
+		"PERCHÉ?!",
+		"NON È GIUSTO!",
+		"DOVEVO ESSERCI IO!"
+	],
 	allClicked: false,
 	torchInitialized: false,
 

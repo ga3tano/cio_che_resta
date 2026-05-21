@@ -332,13 +332,21 @@ monogatari.script ({
 
 	'Rabbia': [
 		'show scene room_red with fade in',
+		// () => {
+		// 	Glitch.start();
+		// },
+		// 'wait 12000',
+		// () => {
+		// 	Glitch.stop();
+		// }
+
 		() => {
 			Glitch.start();
+			WordsGame.start();
 		},
 		'wait 12000',
-		() => {
-			Glitch.stop();
-		}
+		() => {Glitch.stop();},
+
 
 		// TODO - Minigame scritte che appaiono
 		// 	 	- Overlay bordi rossi che si intensificano
