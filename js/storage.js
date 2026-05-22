@@ -23,5 +23,7 @@ monogatari.storage ({
 	],
 	allClicked: false,
 	torchInitialized: false,
+	glitchGameCompleted: false,
+	glitchGamePhase: 1,
 
 });

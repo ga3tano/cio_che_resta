@@ -91,7 +91,7 @@ monogatari.script ({
 		'show scene #000000 with fadeIn',
 
 		//Test negazione
-		'jump Rabbia',
+		'jump GlitchRabbia',
 
 		{
 			TypeCentered: `Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?`
@@ -330,27 +330,48 @@ monogatari.script ({
 		}
 	],
 
-	'Rabbia': [
-		'show scene room_red with fade in',
-		// () => {
-		// 	Glitch.start();
-		// },
-		// 'wait 12000',
-		// () => {
-		// 	Glitch.stop();
-		// }
+	'loop_glitch': [
+		{'Conditional': {
+			'Condition': function () {
+				const store = monogatari.storage();
+				return store.glitchGameCompleted === true;
+			},
+
+			'True': 'jump ContinuaGlitch with fadeOut',
+			'False': 'jump wait_glitch'
+		}}
+	],
+
+	'wait_glitch': [
+		'wait 250',
+		'jump loop_glitch'
+	],
+
+	'GlitchRabbia': [
+		'show scene room with fadeIn',
 
 		() => {
-			Glitch.start();
-			WordsGame.start();
+			const store = monogatari.storage();
+			store.glitchGameCompleted = false;
+			store.glitchGamePhase = 1;
 		},
-		'wait 12000',
-		() => {Glitch.stop();},
 
+		{'Function': {
+			'Apply': function () {
+				Glitch.start();
+				return true;
+			}
+		}},
 
-		// TODO - Minigame scritte che appaiono
-		// 	 	- Overlay bordi rossi che si intensificano
-		// 	 	- Eventuale schermata di "game over" con salto a scene precedenti
+		'jump loop_glitch'
+	],
+
+	'ContinuaGlitch': [
+		() => {
+			Glitch.stop(true);
+		},
+
+		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">...</div>'
 	]
 
 	/*

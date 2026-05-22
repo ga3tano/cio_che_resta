@@ -399,7 +399,10 @@ const NightOverlay = {
 const Glitch={
 	active: false,
 	timer: null,
+	startTime: 0,
 	intensity: 0,	//range 0 = calma, 1 = furia
+	currentPhaseIndex: 0,
+	phaseResolved: false,
 	zoom: 1,	//partenza zoom, aumenta gradualmente
 
 	config: {
@@ -434,99 +437,197 @@ const Glitch={
 		spikeMultiplier: 1.65
 	},
 
-	start(){
+	phases: [
+		{
+			label: "fase1",
+			timeLimit: 10000,
+			spawnDelay: 850,
+			intensityStart: 0.14,
+			intensityStepMultiplier: 0.9,
+			baseDelay: 90,
+			minDelay: 46,
+			delayRamp: 42,
+			maxShakePx: 16,
+			baseZoomExtra: 0.012,
+			rageZoomExtra: 0.024,
+			spikeChance: 0.08,
+			spikeMultiplier: 1.2
+		},
+		{
+			label: "fase2",
+			timeLimit: 8600,
+			spawnDelay: 600,
+			intensityStart: 0.32,
+			intensityStepMultiplier: 1.22,
+			baseDelay: 72,
+			minDelay: 34,
+			delayRamp: 56,
+			maxShakePx: 24,
+			baseZoomExtra: 0.018,
+			rageZoomExtra: 0.04,
+			spikeChance: 0.14,
+			spikeMultiplier: 1.45
+		},
+		{
+			label: "fase3",
+			timeLimit: 6200,
+			spawnDelay: 420,
+			intensityStart: 0.52,
+			intensityStepMultiplier: 1.55,
+			baseDelay: 56,
+			minDelay: 22,
+			delayRamp: 72,
+			maxShakePx: 34,
+			baseZoomExtra: 0.025,
+			rageZoomExtra: 0.062,
+			spikeChance: 0.2,
+			spikeMultiplier: 1.75
+		}
+	],
+
+	async start(){
 		if (this.active) return;
 
 		const bg = document.getElementById('background');
 		if(!bg) return;
 
+		const store = monogatari.storage();
+		store.glitchGameCompleted = false;
+		store.glichGamePhase = 1;
+
 		this.active = true;
-		this.intensity = 0;
-		this.startTime = performance.now();
+		this.phaseResolved = false;
+		this.currentPhaseIndex = 0;
 
 		// Lo zoom deve avvenire dal centro reale dell'immagine
 		bg.style.transformOrigin= "center center";
 		bg.style.willChange = "transform";
 
+		try {
+			while (this.currentPhaseIndex < this.phases.length && this.active) {
+				const phase = this.phases[this.currentPhaseIndex];
+				store.glitchGamePhase = this.currentPhaseIndex + 1;
+
+				this.beginPhase(phase);
+				const success = await WordsGame.start(phase);
+				this.endPhaseVisuals();
+
+				if (!this.active) {
+					return false;
+				}
+
+				if (success) {
+					this.currentPhaseIndex += 1;
+				} else {
+					this.resetToFirstPhase();
+				}
+			}
+
+			if (!this.active) return false;
+
+			store.glitchGameCompleted = true;
+			this.stop(true);
+			return true;
+		} catch (error) {
+			this.stop(false);
+			throw error;
+		}
+	},
+
+	//Fa partire la fase
+	beginPhase(phase) {
+		this.phaseResolved = false;
+		this.intensity = phase.intensityStart;
+		this.startTime = performance.now();
+		this.runLoop(phase);
+	},
+
+	runLoop(phase) {
+		const bg = document.getElementById("background");
+		if (!bg) return;
+
 		const loop = () => {
-			if(!this.active) return;
+			if (!this.active || this.phaseResolved) return;
 
-			//Mi calcolo quanto tempo è passato dall'inizio del loop
 			const now = performance.now();
-			const elapsed = now - this.startTime; 
+			const elapsed = now - this.startTime;
 
-			//Intensità progressiva
-			this.intensity = Math.min(1, this.intensity + this.config.intensityStep);
-			
-			//Calcoli per arrivare gradualmente alla scala del bg minima per non avere bordi (zoom iniziale)
+			this.intensity = Math.min(
+				1,
+				this.intensity + this.config.intensityStep * phase.intensityStepMultiplier
+			);
+
 			const rampLinear = Math.min(1, elapsed / this.config.rampDuration);
 			const rampProgress = Math.pow(rampLinear, this.config.rampExponent);
-			
+
 			const vw = window.innerWidth;
 			const vh = window.innerHeight;
-			const safeScaleX = (vw + this.config.maxShakePx * 2)/vw;
-			const safeScaleY = (vh + this.config.maxShakePx * 2)/vh;
-			
-			//Scala minima per non mostrare bordi al massimo shake
+			const safeScaleX = (vw + phase.maxShakePx * 2) / vw;
+			const safeScaleY = (vh + phase.maxShakePx * 2) / vh;
 			const safeScale = Math.max(safeScaleX, safeScaleY);
-
-			//Transizione lineare da scale(1) a scale(scaleSafe)
 			const safeScaleProgressive = 1 + (safeScale - 1) * rampProgress;
 
-			//Zoom
-			const emotionalZoom = 
-				this.config.baseZoomExtra * this.intensity +
-				this.config.rageZoomExtra * Math.pow(this.intensity, 2); //Uso una funzione quadratica per aumentare l'intensità verso la fine più velocemente
+			const emotionalZoom =
+				phase.baseZoomExtra * this.intensity +
+				phase.rageZoomExtra * Math.pow(this.intensity, 2);
 
 			const totalScale = safeScaleProgressive + emotionalZoom;
 
-			//Shake con curva non lineare:
-			let shakeStrength = 
-				this.config.maxShakePx * 
+			let shakeStrength =
+				phase.maxShakePx *
 				(0.15 * this.intensity + 0.85 * Math.pow(this.intensity, 2));
 
-			//Durante il buildup iniziale limitiamo lo shake fino al raggiungimento della safeScale
 			shakeStrength *= rampProgress;
 
-			//Aggiungo degli spike randomici
-			const hasSpike = Math.random() < this.config.spikeChance;
-			if (hasSpike){
-				shakeStrength *= this.config.spikeMultiplier;
+			if (Math.random() < phase.spikeChance) {
+				shakeStrength *= phase.spikeMultiplier;
 			}
 
-			//Movimento casuale sugli assi:
 			const shakeX = (Math.random() * 2 - 1) * shakeStrength;
 			const shakeY = (Math.random() * 2 - 1) * shakeStrength;
 
-			//Rotazione irregolare: poco all'inizio, più instabile dopo
-			const rotate = 
-				(Math.random() * 2 - 1) * 
-				this.config.rotationMaxDeg * 
+			const rotate =
+				(Math.random() * 2 - 1) *
+				this.config.rotationMaxDeg *
 				Math.pow(this.intensity, 1.2);
 
-			//Distorsione asimmetrica per simulare perdita di controllo visivo
-			const stretchX = 1 + this.config.stretchMax * this.intensity * (0.6 + Math.random() * 0.4);
-			const stretchY = 1 + this.config.squeezeMax * this.intensity * (0.6 + Math.random() * 0.4);
+			const stretchX =
+				1 + this.config.stretchMax * this.intensity * (0.6 + Math.random() * 0.4);
+			const stretchY =
+				1 + this.config.squeezeMax * this.intensity * (0.6 + Math.random() * 0.4);
 
-			//Bordo rosso che aumenta con la rabbia
 			const border = document.getElementById("rage-border");
-			if(border){
-				const borderIntensity = 0.25 * this.intensity + 0.75 * Math.pow(this.intensity, 2);
+			if (border) {
+				const borderIntensity =
+					0.25 * this.intensity + 0.75 * Math.pow(this.intensity, 2);
 				border.style.opacity = borderIntensity;
 			}
 
-			//Applico tutti gli effetti
-			bg.style.transform = 
-			`translate(${shakeX}px, ${shakeY}px) ` + //shake
-			`rotate(${rotate}deg) ` + 	//rotazione
-			`scale(${totalScale * stretchX}, ${totalScale * stretchY})`;	//zoom + distorsione 
+			bg.style.transform =
+				`translate(${shakeX}px, ${shakeY}px) ` +
+				`rotate(${rotate}deg) ` +
+				`scale(${totalScale * stretchX}, ${totalScale * stretchY})`;
 
-			//Al crescere della rabbia, il ritmo accelera
-			const nextDelay = this.config.baseDelay - this.intensity * this.config.delayRamp;
-			this.timer = setTimeout(loop, Math.max(this.config.minDelay, nextDelay));
+			const nextDelay = phase.baseDelay - this.intensity * phase.delayRamp;
+			this.timer = setTimeout(loop, Math.max(phase.minDelay, nextDelay));
 		};
 
+		clearTimeout(this.timer);
 		loop();
+	},
+
+	endPhaseVisuals() {
+		this.phaseResolved = true;
+		clearTimeout(this.timer);
+		this.timer = null;
+	},
+
+	resetToFirstPhase() {
+		this.endPhaseVisuals();
+		this.currentPhaseIndex = 0;
+		this.intensity = 0;
+		this.cooldown();
+		WordsGame.reset();
 	},
 
 	//Stessa animazione, ma a specchio e molto più brusca. Evito l'effetto "taglio netto".
@@ -534,49 +635,38 @@ const Glitch={
 		const bg = document.getElementById("background");
 		if (!bg) return;
 
-		let intensity = this.intensity;
-
-		// Durata molto più breve
-		const duration = 400; // prima era 1200
-
+		const startingIntensity = this.intensity;
+		const duration = 400;
 		const startTime = performance.now();
 
 		const loop = () => {
 			const now = performance.now();
 			const t = Math.min(1, (now - startTime) / duration);
-
-			// Curva più ripida = rientro più veloce ma coerente
 			const ease = 1 - Math.pow(t, 1.6);
+			const currentIntensity = startingIntensity * ease;
 
-			const currentIntensity = intensity * ease;
-
-			// Zoom emotivo
 			const emotionalZoom =
 				this.config.baseZoomExtra * currentIntensity +
 				this.config.rageZoomExtra * Math.pow(currentIntensity, 2);
 
-			// Shake
-			let shakeStrength =
+			const shakeStrength =
 				this.config.maxShakePx *
 				(0.15 * currentIntensity + 0.85 * Math.pow(currentIntensity, 2));
 
 			const shakeX = (Math.random() * 2 - 1) * shakeStrength;
 			const shakeY = (Math.random() * 2 - 1) * shakeStrength;
 
-			// Rotazione
 			const rotate =
 				(Math.random() * 2 - 1) *
 				this.config.rotationMaxDeg *
 				Math.pow(currentIntensity, 1.2);
 
-			// Distorsione
 			const stretchX = 1 + this.config.stretchMax * currentIntensity;
 			const stretchY = 1 + this.config.squeezeMax * currentIntensity;
-
 			const totalScale = 1 + emotionalZoom;
 
 			const border = document.getElementById("rage-border");
-			if(border) border.style.opacity = currentIntensity;
+			if (border) border.style.opacity = currentIntensity;
 
 			bg.style.transform =
 				`translate(${shakeX}px, ${shakeY}px) ` +
@@ -593,11 +683,18 @@ const Glitch={
 		requestAnimationFrame(loop);
 	},
 
-	stop() {
-		
+	stop(completed = false) {
 		this.active = false;
+		this.phaseResolved = true;
 		clearTimeout(this.timer);
 		this.timer = null;
+		WordsGame.reset();
+
+		if (!completed) {
+			const store = monogatari.storage();
+			store.glitchGameCompleted = false;
+			store.glitchGamePhase = 1;
+		}
 
 		this.cooldown();
 	}
@@ -607,6 +704,11 @@ const WordsGame = {
 	element: null,
 	store: null,
 	activeWords: 0,
+	runId: 0,
+	spawnTimer: null,
+	phaseTimer: null,
+	resolver: null,
+	isActive: false,
 
 	config: {
 		spawnDelay: 700,
@@ -623,15 +725,28 @@ const WordsGame = {
 		this.store = monogatari.storage();
 	},
 
-	start() {
+	start(phase) {
 		if (!this.element) this.init();
-		if (!this.element || !this.store) return;
+		if (!this.element || !this.store) return Promise.resolve(false);
 
-		this.clear();
+		this.reset();
+		this.runId += 1;
+		const currentRunId = this.runId;
+		this.isActive = true;
+
 		this.element.classList.add("visible");
 		document.body.style.overflow = "hidden";
 
-		this.showWords();
+		return new Promise((resolve) => {
+			this.resolver = resolve;
+
+			this.phaseTimer = setTimeout(() => {
+				if (!this.isCurrentRun(currentRunId)) return;
+				this.resolveRun(false, currentRunId);
+			}, phase.timeLimit);
+
+			this.showWords(phase, currentRunId);
+		});
 	},
 
 	clear() {
@@ -650,10 +765,34 @@ const WordsGame = {
 		}
 	},
 
-	async showWords() {
+	reset() {
+		this.abortCurrentRun(false);
+	},
+
+	abortCurrentRun(success = false) {
+		const resolve = this.resolver;
+		this.resolver = null;
+		this.isActive = false;
+		clearTimeout(this.spawnTimer);
+		clearTimeout(this.phaseTimer);
+		this.spawnTimer = null;
+		this.phaseTimer = null;
+		this.end();
+
+		if (typeof resolve === "function") {
+			resolve(success);
+		}
+	},
+
+	resolveRun(success, runId) {
+		if (!this.isCurrentRun(runId)) return;
+		this.abortCurrentRun(success);
+	},
+
+	async showWords(phase, runId) {
 		const words = this.store.frasiRabbia || [];
 		if (!words.length) {
-			this.end();
+			this.resolveRun(true, runId);
 			return;
 		}
 
@@ -662,6 +801,8 @@ const WordsGame = {
 		this.activeWords = words.length;
 
 		for (let i = 0; i < words.length; i++) {
+			if (!this.isCurrentRun(runId)) return;
+
 			const wordObj = this.createWordElement(words[i]);
 			this.element.appendChild(wordObj.wrapper);
 
@@ -669,10 +810,11 @@ const WordsGame = {
 
 			const point = spawnPoints[i % spawnPoints.length];
 			this.placeWord(wordObj.wrapper, point);
+			this.attachTouchSwipe(wordObj.wrapper, runId);
 
-			this.attachTouchSwipe(wordObj.wrapper);
-
-			await sleep(this.config.spawnDelay);
+			if (i < words.length - 1) {
+				await this.wait(phase.spawnDelay, runId);
+			}
 		}
 	},
 
@@ -773,7 +915,7 @@ const WordsGame = {
 		wrapper.style.visibility = "visible";
 	},
 
-	attachTouchSwipe(wrapper) {
+	attachTouchSwipe(wrapper, runId) {
 		let dragging = false;
 		let startTouchX = 0;
 		let startTouchY = 0;
@@ -785,6 +927,8 @@ const WordsGame = {
 		let deltaY = 0;
 
 		wrapper.addEventListener("touchstart", (event) => {
+			if (!this.isCurrentRun(runId)) return;
+
 			const touch = event.touches[0];
 			if (!touch) return;
 
@@ -798,19 +942,17 @@ const WordsGame = {
 
 			startTouchX = touch.clientX;
 			startTouchY = touch.clientY;
-
 			currentLeft = parseFloat(wrapper.style.left) || 0;
 			currentTop = parseFloat(wrapper.style.top) || 0;
-
 			offsetX = touch.clientX - rect.left;
 			offsetY = touch.clientY - rect.top;
-
 			deltaX = 0;
 			deltaY = 0;
 		}, { passive: false });
 
 		wrapper.addEventListener("touchmove", (event) => {
-			if (!dragging) return;
+			if (!dragging || !this.isCurrentRun(runId)) return;
+
 			const touch = event.touches[0];
 			if (!touch) return;
 
@@ -827,7 +969,8 @@ const WordsGame = {
 		}, { passive: false });
 
 		const endDrag = () => {
-			if (!dragging) return;
+			if (!dragging || !this.isCurrentRun(runId)) return;
+
 			dragging = false;
 			wrapper.classList.remove("dragging");
 
@@ -847,11 +990,13 @@ const WordsGame = {
 				wrapper.style.opacity = "0";
 
 				setTimeout(() => {
+					if (!this.isCurrentRun(runId)) return;
+
 					wrapper.remove();
 					this.activeWords -= 1;
 
 					if (this.activeWords <= 0) {
-						this.end();
+						this.resolveRun(true, runId);
 					}
 				}, 230);
 			} else {
@@ -860,13 +1005,28 @@ const WordsGame = {
 				wrapper.style.top = `${currentTop}px`;
 
 				setTimeout(() => {
-					wrapper.style.transition = "";
+					if (this.isCurrentRun(runId)) {
+						wrapper.style.transition = "";
+					}
 				}, 200);
 			}
 		};
 
 		wrapper.addEventListener("touchend", endDrag, { passive: true });
 		wrapper.addEventListener("touchcancel", endDrag, { passive: true });
+	},
+
+	wait(ms, runId) {
+		return new Promise((resolve) => {
+			this.spawnTimer = setTimeout(() => {
+				if (!this.isCurrentRun(runId)) return;
+				resolve();
+			}, ms);
+		});
+	},
+
+	isCurrentRun(runId) {
+		return this.isActive && this.runId === runId;
 	},
 
 	shuffleArray(array) {
@@ -884,6 +1044,12 @@ const WordsGame = {
 		return Math.max(min, Math.min(max, value));
 	}
 };
+
+//TODO - Adjustments tempi minigioco
+//	   - Creazione di un'animazione di "game over" quando si resetta alla prima fase (capire se voluto)
+//	   - Mini tutorial per far capire all'utente che deve swipare le parole via 
+//	   - Fare documentazione delle procedure per migliorare manutenibilità
+// 	   - Se necessario, vedere se far capire all'utente il passaggio da una fase all'altra / utilizzare frasi diverse per le varie fasi
 
 /*
 FUNZIONI CUSTOM
