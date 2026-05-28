@@ -404,6 +404,7 @@ const Glitch={
 	currentPhaseIndex: 0,
 	phaseResolved: false,
 	zoom: 1,	//partenza zoom, aumenta gradualmente
+	gameOverOverlay: null,
 
 	config: {
 		// Quanto velocemente cresce la rabbia.
@@ -493,36 +494,68 @@ const Glitch={
 
 		const store = monogatari.storage();
 		store.glitchGameCompleted = false;
-		store.glichGamePhase = 1;
+		store.glitchGamePhase = 1;
 
 		this.active = true;
 		this.phaseResolved = false;
 		this.currentPhaseIndex = 0;
-
+		
+		this.ensureGameOverOverlay();
 		// Lo zoom deve avvenire dal centro reale dell'immagine
 		bg.style.transformOrigin= "center center";
 		bg.style.willChange = "transform";
 
 		try {
+			//Gestione delle fasi fino al loro completamento
 			while (this.currentPhaseIndex < this.phases.length && this.active) {
 				const phase = this.phases[this.currentPhaseIndex];
 				store.glitchGamePhase = this.currentPhaseIndex + 1;
 
 				this.beginPhase(phase);
-				const success = await WordsGame.start(phase);
+				
+				const result = await WordsGame.start(phase);
 				this.endPhaseVisuals();
 
 				if (!this.active) {
 					return false;
 				}
 
-				if (success) {
+				if (result.success) {
 					this.currentPhaseIndex += 1;
+					switch (this.currentPhaseIndex){
+						case 1: 
+							await this.cooldown(700, 0.16);
+							break;
+						case 2: 
+							await this.cooldown(400, 0.05);
+							break;
+						default:
+							break;
+					}
 				} else {
+					const isTimeout = result.reason === "timeout";
+					const isFirstPhase = this.currentPhaseIndex === 0;
+
+					// Fallimento fase 1:
+					// niente overlay rosso cinematografico, solo shake delle parole
+					// e poi reset normale.
+					if (isTimeout && isFirstPhase) {
+						await this.playFirstPhaseFailFeedback();
+						await this.cooldown(520, 0);
+					}
+
+					// Fallimento fasi successive:
+					// niente shake parole, solo game over cinematografico completo.
+					if (isTimeout && !isFirstPhase) {
+						await this.playGameOverSequence();
+						WordsGame.clearVisibleWords();
+						await this.cooldown(700, 0);
+						await this.playRestartFadeOut();
+					}
+
 					this.resetToFirstPhase();
 				}
 			}
-
 			if (!this.active) return false;
 
 			store.glitchGameCompleted = true;
@@ -546,19 +579,26 @@ const Glitch={
 		const bg = document.getElementById("background");
 		if (!bg) return;
 
+		//Core animazione
 		const loop = () => {
 			if (!this.active || this.phaseResolved) return;
 
 			const now = performance.now();
 			const elapsed = now - this.startTime;
 
-			this.intensity = Math.min(
-				1,
-				this.intensity + this.config.intensityStep * phase.intensityStepMultiplier
-			);
+			// Progressione reale della fase: 0 all'inizio, 1 allo scadere del tempo.
+			const phaseProgress = Math.min(1, elapsed / phase.timeLimit);
 
-			const rampLinear = Math.min(1, elapsed / this.config.rampDuration);
-			const rampProgress = Math.pow(rampLinear, this.config.rampExponent);
+			// Sincronizzo l'intensità del glitch con quella del minigioco
+			WordsGame.setPhasePressure(phaseProgress);
+
+			// Curva emotiva del glitch:
+			// cresce lentamente all'inizio e accelera verso la fine.
+			const rampProgress = Math.pow(phaseProgress, this.config.rampExponent);
+
+			// L'intensità parte dal valore minimo della fase
+			// e arriva gradualmente a 1 man mano che si esaurisce il tempo.
+			this.intensity = phase.intensityStart + (1 - phase.intensityStart) * rampProgress;	
 
 			const vw = window.innerWidth;
 			const vh = window.innerHeight;
@@ -620,70 +660,234 @@ const Glitch={
 		this.phaseResolved = true;
 		clearTimeout(this.timer);
 		this.timer = null;
+		WordsGame.clearPhasePressure();
 	},
 
+	async playFirstPhaseFailFeedback() {
+		// Primo step: shake percepibile, per comunicare il fallimento.
+		WordsGame.shakeVisibleWords();
+		await this.wait(520);
+
+		// Secondo step: invece di sparire di colpo, le parole si dissolvono.
+		await WordsGame.fadeOutVisibleWords(280);
+
+		// Piccola pausa su schermo libero per far "sedimentare" il fallimento.
+		await this.wait(260);
+	},	
+	
+	async playRestartFadeOut() {
+		// Partiamo esplicitamente da nero pieno.
+		// Il rosso è ancora presente sotto, ma invisibile perché il nero lo copre.
+		this.renderGameOverOverlay(1, 1);
+
+		// Piccola pausa tecnica per evitare micro-flash tra i frame.
+		await this.wait(100);
+
+		// Dissolviamo contemporaneamente nero e rosso fino a tornare
+		// alla scena completamente pulita, PRIMA del restart del minigioco.
+		await this.animate(650, (t) => {
+			const progress = Math.min(1, Math.max(0, t));
+			const redAmount = 1 - progress;
+			const blackAmount = 1 - progress;
+
+			this.renderGameOverOverlay(redAmount, blackAmount);
+		});
+
+		// Pulizia finale dell'overlay.
+		this.hideGameOverOverlay();
+	},
+	
 	resetToFirstPhase() {
 		this.endPhaseVisuals();
 		this.currentPhaseIndex = 0;
 		this.intensity = 0;
-		this.cooldown();
 		WordsGame.reset();
 	},
 
 	//Stessa animazione, ma a specchio e molto più brusca. Evito l'effetto "taglio netto".
-	cooldown() {
+	cooldown(duration = 700, targetIntensity = 0) {
 		const bg = document.getElementById("background");
-		if (!bg) return;
+		if (!bg) return Promise.resolve();
 
+		const border = document.getElementById("rage-border");
+
+		// Salviamo l'intensità iniziale del rientro:
+		// da qui partiremo per tornare gradualmente a zero.
 		const startingIntensity = this.intensity;
-		const duration = 400;
-		const startTime = performance.now();
 
-		const loop = () => {
-			const now = performance.now();
-			const t = Math.min(1, (now - startTime) / duration);
-			const ease = 1 - Math.pow(t, 1.6);
-			const currentIntensity = startingIntensity * ease;
+		// Se siamo già praticamente al target, impostiamo direttamente
+		// lo stato finale coerente e chiudiamo.
+		if (Math.abs(startingIntensity - targetIntensity) <= 0.0001) {
+			this.intensity = targetIntensity;
 
-			const emotionalZoom =
-				this.config.baseZoomExtra * currentIntensity +
-				this.config.rageZoomExtra * Math.pow(currentIntensity, 2);
+			const finalZoom =
+				this.config.baseZoomExtra * targetIntensity +
+				this.config.rageZoomExtra * Math.pow(targetIntensity, 2);
 
-			const shakeStrength =
-				this.config.maxShakePx *
-				(0.15 * currentIntensity + 0.85 * Math.pow(currentIntensity, 2));
-
-			const shakeX = (Math.random() * 2 - 1) * shakeStrength;
-			const shakeY = (Math.random() * 2 - 1) * shakeStrength;
-
-			const rotate =
-				(Math.random() * 2 - 1) *
-				this.config.rotationMaxDeg *
-				Math.pow(currentIntensity, 1.2);
-
-			const stretchX = 1 + this.config.stretchMax * currentIntensity;
-			const stretchY = 1 + this.config.squeezeMax * currentIntensity;
-			const totalScale = 1 + emotionalZoom;
-
-			const border = document.getElementById("rage-border");
-			if (border) border.style.opacity = currentIntensity;
+			const finalScale = 1 + finalZoom;
+			const finalStretchX = 1 + this.config.stretchMax * 0.35 * targetIntensity;
+			const finalStretchY = 1 + this.config.squeezeMax * 0.35 * targetIntensity;
 
 			bg.style.transform =
-				`translate(${shakeX}px, ${shakeY}px) ` +
-				`rotate(${rotate}deg) ` +
-				`scale(${totalScale * stretchX}, ${totalScale * stretchY})`;
+				`translate(0px, 0px) rotate(0deg) ` +
+				`scale(${finalScale * finalStretchX}, ${finalScale * finalStretchY})`;
 
-			if (t < 1) {
-				requestAnimationFrame(loop);
-			} else {
-				bg.style.transform = "translate(0,0) rotate(0deg) scale(1,1)";
+			if (border) {
+				border.style.opacity = `${targetIntensity * 0.45}`;
 			}
-		};
 
-		requestAnimationFrame(loop);
+			return Promise.resolve();
+		}
+
+		const startTime = performance.now();
+
+		return new Promise((resolve) => {
+			const loop = () => {
+				const now = performance.now();
+				const t = Math.min(1, (now - startTime) / duration);
+
+				// Ease-out morbido:
+				// parte più deciso e rallenta bene verso la fine.
+				const eased = 1 - Math.pow(1 - t, 2.4);
+
+				// L'intensità scende gradualmente fino a al targetIntensity scelto (Default = 0).
+				const currentIntensity = startingIntensity + (targetIntensity - startingIntensity) * eased;
+
+				// Riduciamo molto lo shake durante il cooldown:
+				// il rientro deve sembrare un rilascio di tensione,
+				// non una prosecuzione dell'esplosione emotiva.
+				const shakeStrength =
+					this.config.maxShakePx *
+					(0.04 * currentIntensity + 0.18 * Math.pow(currentIntensity, 2));
+
+				const shakeX = (Math.random() * 2 - 1) * shakeStrength;
+				const shakeY = (Math.random() * 2 - 1) * shakeStrength;
+
+				const rotate =
+					(Math.random() * 2 - 1) *
+					this.config.rotationMaxDeg *
+					0.22 *
+					currentIntensity;
+
+				const stretchX = 1 + this.config.stretchMax * 0.35 * currentIntensity;
+				const stretchY = 1 + this.config.squeezeMax * 0.35 * currentIntensity;
+
+				const emotionalZoom =
+					this.config.baseZoomExtra * currentIntensity +
+					this.config.rageZoomExtra * Math.pow(currentIntensity, 2);
+
+				const totalScale = 1 + emotionalZoom;
+
+				if (border) {
+					border.style.opacity = `${currentIntensity * 0.45}`;
+				}
+
+				bg.style.transform =
+					`translate(${shakeX}px, ${shakeY}px) ` +
+					`rotate(${rotate}deg) ` +
+					`scale(${totalScale * stretchX}, ${totalScale * stretchY})`;
+
+				if (t < 1) {
+					requestAnimationFrame(loop);
+				} else {
+					// Chiusura esplicita sul valore finale,
+					// così non resta nessun micro-offset.
+					bg.style.transform = "translate(0, 0) rotate(0deg) scale(1, 1)";
+					if (border) border.style.opacity = "0";
+					resolve();
+				}
+			};
+
+			requestAnimationFrame(loop);
+		});
 	},
 
-	stop(completed = false) {
+	ensureGameOverOverlay() {
+		if (this.gameOverOverlay?.isConnected) return this.gameOverOverlay;
+
+		let overlay = document.getElementById("glitch-game-over");
+		if (!overlay) {
+			overlay = document.createElement("div");
+			overlay.id = "glitch-game-over";
+			overlay.className = "glitch-game-over";
+			document.body.appendChild(overlay);
+		}
+
+		this.gameOverOverlay = overlay;
+		return overlay;
+	},
+
+	hideGameOverOverlay() {
+		const overlay = this.ensureGameOverOverlay();
+		overlay.classList.remove("visible");
+		overlay.style.opacity = "0";
+		overlay.style.background = "transparent";
+	},
+
+	renderGameOverOverlay(redProgress, blackProgress) {
+		const overlay = this.ensureGameOverOverlay();
+		const red = Math.max(0, Math.min(1, redProgress));
+		const black = Math.max(0, Math.min(1, blackProgress));
+
+		const innerGlow = 0.08 + red * 0.42;
+		const midGlow = 0.16 + red * 0.46;
+		const edgeGlow = 0.32 + red * 0.58;
+		const globalRedWash = red * 0.34;
+
+		overlay.classList.add("visible");
+		overlay.style.opacity = "1";
+		overlay.style.background = [
+			`linear-gradient(rgba(0, 0, 0, ${black}), rgba(0, 0, 0, ${black}))`,
+			`radial-gradient(circle at center,
+				rgba(255, 40, 40, ${innerGlow}) 0%,
+				rgba(210, 0, 0, ${midGlow}) 45%,
+				rgba(120, 0, 0, ${edgeGlow}) 100%)`,
+			`linear-gradient(rgba(120, 0, 0, ${globalRedWash}), rgba(120, 0, 0, ${globalRedWash}))`
+		].join(", ");
+	},
+
+	animate(duration, renderFrame) {
+		return new Promise((resolve) => {
+			const start = performance.now();
+
+			const tick = (now) => {
+				const t = Math.min(1, (now - start) / duration);
+				renderFrame(t);
+
+				if (t < 1) {
+					requestAnimationFrame(tick);
+				} else {
+					resolve();
+				}
+			};
+
+			requestAnimationFrame(tick);
+		});
+	},
+
+	wait(ms) {
+		return new Promise((resolve) => setTimeout(resolve, ms));
+	},
+
+	async playGameOverSequence() {
+
+		await this.animate(850, (t) => {
+			const eased = 1 - Math.pow(1 - t, 2.2);
+			this.renderGameOverOverlay(eased, 0);
+		});
+
+		await this.animate(520, (t) => {
+			const eased = Math.pow(t, 1.2);
+			this.renderGameOverOverlay(1, eased);
+		});
+
+		this.renderGameOverOverlay(1, 1);
+
+		// Pausa nera finale per dare respiro e rendere il reset più cinematografico
+		await this.wait(1400);
+	},
+
+	async stop(completed = false) {
 		this.active = false;
 		this.phaseResolved = true;
 		clearTimeout(this.timer);
@@ -696,7 +900,7 @@ const Glitch={
 			store.glitchGamePhase = 1;
 		}
 
-		this.cooldown();
+		await this.cooldown(500,0);
 	}
 };
 
@@ -727,14 +931,15 @@ const WordsGame = {
 
 	start(phase) {
 		if (!this.element) this.init();
-		if (!this.element || !this.store) return Promise.resolve(false);
+		if (!this.element || !this.store) return Promise.resolve({success: false, reason: "missing-overlay"});
 
 		this.reset();
-		this.runId += 1;
+		this.runId += 1;	//Id fase, mi salvo lo stato quando la fase è completata per non ripeterla erroneamente
 		const currentRunId = this.runId;
 		this.isActive = true;
 
 		this.element.classList.add("visible");
+		this.element.classList.remove("locked");
 		document.body.style.overflow = "hidden";
 
 		return new Promise((resolve) => {
@@ -742,7 +947,7 @@ const WordsGame = {
 
 			this.phaseTimer = setTimeout(() => {
 				if (!this.isCurrentRun(currentRunId)) return;
-				this.resolveRun(false, currentRunId);
+				this.expireRun(currentRunId);
 			}, phase.timeLimit);
 
 			this.showWords(phase, currentRunId);
@@ -760,16 +965,17 @@ const WordsGame = {
 		this.activeWords = 0;
 
 		if (this.element) {
-			this.element.classList.remove("visible");
+			this.element.classList.remove("visible", "locked");
 			this.element.innerHTML = "";
 		}
 	},
 
 	reset() {
-		this.abortCurrentRun(false);
+		this.clearPhasePressure();
+		this.abortCurrentRun({success: false, reason: "reset"});
 	},
 
-	abortCurrentRun(success = false) {
+	abortCurrentRun(result = { success: false, reason: "aborted"}) {
 		const resolve = this.resolver;
 		this.resolver = null;
 		this.isActive = false;
@@ -780,13 +986,34 @@ const WordsGame = {
 		this.end();
 
 		if (typeof resolve === "function") {
-			resolve(success);
+			resolve(result);
 		}
 	},
 
 	resolveRun(success, runId) {
 		if (!this.isCurrentRun(runId)) return;
-		this.abortCurrentRun(success);
+		this.clearPhasePressure();
+		this.abortCurrentRun({success, reason: success ? "cleared" : "failed"});
+	},
+
+	expireRun(runId){
+		if (!this.isCurrentRun(runId)) return;
+
+		const resolve = this.resolver;
+		this.resolver = null;
+		this.isActive = false;
+		clearTimeout(this.spawnTimer);
+		clearTimeout(this.phaseTimer);
+		this.spawnTimer = null;
+		this.phaseTimer = null;
+
+		if (this.element) {
+			this.element.classList.add("visible", "locked");
+		}
+
+		if (typeof resolve === "function") {
+			resolve({ success: false, reason: "timeout" });
+		}
 	},
 
 	async showWords(phase, runId) {
@@ -915,6 +1142,48 @@ const WordsGame = {
 		wrapper.style.visibility = "visible";
 	},
 
+	shakeVisibleWords() {
+		if (!this.element) return;
+
+		const words = this.element.querySelectorAll(".word-item");
+		words.forEach((word) => word.classList.add("game-over-shake"));
+	},
+
+	setPhasePressure(progress) {
+		// progress va da 0 a 1 e rappresenta quanto siamo vicini
+		// alla fine della fase.
+		if (!this.element) return;
+
+		this.element.style.setProperty("--phase-pressure", `${progress}`);
+	},
+
+	clearPhasePressure() {
+		if (!this.element) return;
+		this.element.style.setProperty("--phase-pressure", "0");
+	},
+
+	fadeOutVisibleWords(duration = 260) {
+		// Dissolve tutte le parole correnti senza chiudere immediatamente
+		// l'intero overlay. Serve per dare una fine più elegante al fallimento.
+		if (!this.element) return Promise.resolve();
+
+		const words = Array.from(this.element.querySelectorAll(".word-item"));
+		if (!words.length) return Promise.resolve();
+
+		return new Promise((resolve) => {
+			words.forEach((word) => {
+				word.style.transition = `opacity ${duration}ms ease, transform ${duration}ms ease`;
+				word.style.opacity = "0";
+				word.style.transform = "scale(0.94) translateY(10px)";
+			});
+
+			setTimeout(() => {
+				this.clearVisibleWords();
+				resolve();
+			}, duration + 20);
+		});
+	},
+
 	attachTouchSwipe(wrapper, runId) {
 		let dragging = false;
 		let startTouchX = 0;
@@ -1016,6 +1285,15 @@ const WordsGame = {
 		wrapper.addEventListener("touchcancel", endDrag, { passive: true });
 	},
 
+	clearVisibleWords() {
+		// Rimuove immediatamente tutte le parole ancora presenti a schermo.
+		// Non chiude il minigioco intero: pulisce solo il contenuto visivo.
+		if (!this.element) return;
+
+		this.element.innerHTML = "";
+		this.activeWords = 0;
+	},
+
 	wait(ms, runId) {
 		return new Promise((resolve) => {
 			this.spawnTimer = setTimeout(() => {
@@ -1043,6 +1321,7 @@ const WordsGame = {
 	clamp(value, min, max) {
 		return Math.max(min, Math.min(max, value));
 	}
+
 };
 
 //TODO - Adjustments tempi minigioco

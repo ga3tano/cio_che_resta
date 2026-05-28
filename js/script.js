@@ -367,10 +367,6 @@ monogatari.script ({
 	],
 
 	'ContinuaGlitch': [
-		() => {
-			Glitch.stop(true);
-		},
-
 		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">...</div>'
 	]
 

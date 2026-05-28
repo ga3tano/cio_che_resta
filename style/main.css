@@ -482,10 +482,19 @@ input[type=range]::-ms-fill-upper {
 	z-index: 100;
 	background: transparent;
 	touch-action: none;
+
+    --phase-pressure: 0;
+	--word-shake-x: calc(1px + 4px * var(--phase-pressure));
+	--word-shake-y: calc(0.5px + 3px * var(--phase-pressure));
+	--word-rotate-extra: calc(0.4deg + 1.8deg * var(--phase-pressure));
 }
 
 .word-game.visible {
 	display: block;
+}
+
+.word-game.locked{
+    pointer-events: none;
 }
 
 .word-item {
@@ -502,6 +511,14 @@ input[type=range]::-ms-fill-upper {
 
 .word-item.dragging {
 	z-index: 20;
+}
+
+.word-item.game-over-shake{
+    animation: activeWordGameOverShake 90ms linear infinite;
+}
+
+.word-item.game-over-shake .word-label {
+	filter: saturate(1.1) brightness(1.05);
 }
 
 .word-label {
@@ -530,7 +547,7 @@ input[type=range]::-ms-fill-upper {
 
 	animation:
 		wordBurst 340ms cubic-bezier(.18, .89, .32, 1.28) forwards,
-		wordRageShake 220ms linear 90ms 2,
+		wordTimedShake 240ms linear 90ms infinite,
 		rageGlow 260ms ease-out forwards;
 }
 
@@ -566,6 +583,39 @@ input[type=range]::-ms-fill-upper {
 		opacity: 1;
 		transform: rotate(var(--word-rotation, 0deg)) scale(1);
 		filter: blur(0px);
+	}
+}
+
+@keyframes wordTimedShake {
+	0% {
+		transform: rotate(var(--word-rotation, 0deg));
+	}
+	20% {
+		transform:
+			translateX(calc(-1 * var(--word-shake-x)))
+			translateY(var(--word-shake-y))
+			rotate(calc(var(--word-rotation, 0deg) - var(--word-rotate-extra)));
+	}
+	40% {
+		transform:
+			translateX(var(--word-shake-x))
+			translateY(calc(-1 * var(--word-shake-y)))
+			rotate(calc(var(--word-rotation, 0deg) + var(--word-rotate-extra)));
+	}
+	60% {
+		transform:
+			translateX(calc(-0.6 * var(--word-shake-x)))
+			translateY(calc(-0.5 * var(--word-shake-y)))
+			rotate(calc(var(--word-rotation, 0deg) - calc(var(--word-rotate-extra) * 0.7)));
+	}
+	80% {
+		transform:
+			translateX(calc(0.6 * var(--word-shake-x)))
+			translateY(calc(0.6 * var(--word-shake-y)))
+			rotate(calc(var(--word-rotation, 0deg) + calc(var(--word-rotate-extra) * 0.7)));
+	}
+	100% {
+		transform: rotate(var(--word-rotation, 0deg));
 	}
 }
 
@@ -605,9 +655,44 @@ input[type=range]::-ms-fill-upper {
 	}
 }
 
+@keyframes activeWordGameOverShake {
+	0% {
+		transform: translate(0, 0) rotate(0deg) scale(1);
+	}
+	20% {
+		transform: translate(-10px, 4px) rotate(-2deg) scale(1.02);
+	}
+	40% {
+		transform: translate(9px, -5px) rotate(2deg) scale(0.99);
+	}
+	60% {
+		transform: translate(-8px, -3px) rotate(-1.5deg) scale(1.03);
+	}
+	80% {
+		transform: translate(7px, 6px) rotate(1.5deg) scale(0.98);
+	}
+	100% {
+		transform: translate(0, 0) rotate(0deg) scale(1);
+	}
+}
+
 @media (max-width: 480px) {
 	.word-label {
 		font-size: clamp(20px, 6vw, 34px);
 		max-width: 68vw;
 	}
+}
+
+.glitch-game-over {
+	position: fixed;
+	inset: 0;
+	z-index: 250;
+	pointer-events: none;
+	opacity: 0;
+	background: transparent;
+	will-change: opacity, background;
+}
+
+.glitch-game-over.visible {
+	opacity: 1;
 }
