@@ -44,6 +44,7 @@ monogatari.assets ('gallery', {
 
 // Define the music used in the game.
 monogatari.assets ('music', {
+	rage_scene: 'mus_rabbia_loop.mp3',
 
 });
 
@@ -70,9 +71,14 @@ monogatari.assets ('images', {
 
 // Define the backgrounds for each scene.
 monogatari.assets ('scenes', {
-	'room': 'room.jpeg',
-	'room_red': 'room_red.jpeg',
-	'room_green': 'room_green.jpeg',
+	room_night : 'stanza_sfondo_4.png',
+	room_rage: 'stanza_sfondo_2.png',
+	room_day_normal: 'stanza_sfondo_1.png',
+	room_day_dark: 'stanza_sfondo_3.png',
+	auto: 'Auto.png',
+	feet: 'Piedi.png',
+	teddybear: 'Orsacchiotto.png',
+	outside: 'scena2_mondo.png',
 });
 
 
@@ -91,7 +97,7 @@ monogatari.script ({
 		'show scene #000000 with fadeIn',
 
 		//Test negazione
-		'jump GlitchRabbia',
+		'jump Test',
 
 		{
 			TypeCentered: `Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?`
@@ -180,8 +186,14 @@ monogatari.script ({
 		}*/
 	],
 
+	'Test':[
+		() => {loadSky("giorno_1");},
+		'show scene room_day_normal',
+		() => {revealPreparedScene();},
+	],
+
 	'Negazione_Cellulare': [
-        'show scene room with fadeIn',
+        'show scene room_night with fadeIn',
         'play sound phone_vibration',
         'vibrate 200 100 200',
 
@@ -293,7 +305,7 @@ monogatari.script ({
 	],
 
 	'Torcia': [
-        'show scene room with fadeIn',
+        'show scene room_night with fadeIn',
 		() => {
 			NightOverlay.showNight();
 		},
@@ -348,12 +360,13 @@ monogatari.script ({
 	],
 
 	'GlitchRabbia': [
-		'show scene room with fadeIn',
+		'show scene room_rage with fadeIn',
 
 		() => {
 			const store = monogatari.storage();
 			store.glitchGameCompleted = false;
 			store.glitchGamePhase = 1;
+			loadSky("nuvolo");
 		},
 
 		{'Function': {

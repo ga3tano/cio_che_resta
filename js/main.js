@@ -1334,6 +1334,55 @@ const WordsGame = {
 FUNZIONI CUSTOM
 */ 
 
+async function loadSky(typeOfSky){
+	function preloadImage(src){
+		return new Promise((resolve, reject) => {
+			const img = new Image();
+			img.onload = resolve;
+			img.onerror = reject;
+			img.src = src;
+		});
+	}
+	
+	const sky = document.getElementById("sky");
+	const overlay = document.getElementById("sceneFadeOverlay");
+
+	//Imposto l'immagine di background del div
+	const imageSrc = `../assets/scenes/cielo_${typeOfSky}.png`;
+	
+	overlay.classList.add("covering");
+
+	await preloadImage(imageSrc);
+
+	sky.style.display = "block";
+	sky.style.backgroundImage= `url("${imageSrc}")`;
+
+	document.body.classList.add("composite-sky-scene");
+}
+
+function revealPreparedScene() {
+	const overlay = document.getElementById("sceneFadeOverlay");
+
+	/*
+	Aspetto 2 volte il frame:
+	Stato iniziale: Opacity 1, quindi tutto nero
+	Stato intermedio: rimuovo l'overlay e do il tempo al browser di far partire l'animazione
+	Stato finale: Opacity 0, quindi trasparente
+
+	Tecnica usata spesso per animazioni di questo tipo
+	*/ 
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			overlay.classList.remove("covering");
+		})
+	})
+}
+
+function hideSky(){
+	const sky = document.getElementById("sky");
+	sky.style.display = "none";
+}
+
 /*OGGETTI CLICKABILI*/
 function showClickableObjects(){
 	const container = document.createElement("div");
@@ -1426,17 +1475,24 @@ function hideDetail(objectId) {
 
 }
 
-function sleep(ms){
-	return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 /*UTILITY*/
 function lerp (a, b, t){
 	return a + (b - a) * t;
 } 
 
+function sleep(ms){
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 $_ready (() => {
 	// 2. Inside the $_ready function:
+
+	monogatari.on('start', () => {
+		const screens = document.querySelectorAll('game-screen[data-component="game-screen"]');
+		console.log("Sono entrato, screens:" + screens);
+		if(screens)
+			screens.forEach(s => {s.style.backgroundColor = "transparent";});
+	})
 
 	monogatari.init ('#monogatari').then (() => {
 		// 3. Inside the init function:
