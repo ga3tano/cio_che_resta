@@ -97,7 +97,7 @@ monogatari.script ({
 		'show scene #000000 with fadeIn',
 
 		//Test negazione
-		'jump Test',
+		// 'jump Test',
 
 		{
 			TypeCentered: `Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?`
@@ -132,17 +132,19 @@ monogatari.script ({
 		},
 
 		'show scene #666666 with fadeIn',
-		//'play sound breathing with loop volume 35',
+		() => {PanicBreath.start();},
 
 		{
 			'Choice': {
 				'Respira': {
 					'Text': 'RESPIRA',
 					//'Do': 'stop sound breathing with fade 1'
-					'Do': 'jump Negazione_Cellulare'
+					'Do': 'jump Intermezzo_Respira',
 				}
 			}
 		},
+
+		
 
 		/*'show scene #f7f6f6 with fadeIn',
 		'show notification Welcome',
@@ -186,10 +188,18 @@ monogatari.script ({
 		}*/
 	],
 
+	'Intermezzo_Respira': [
+		//Avvio rilascio del respiro
+		() => {PanicBreath.release();},
+		'wait 2000',
+
+		'jump Negazione_Cellulare'
+	],
+
 	'Test':[
-		() => {loadSky("giorno_1");},
-		'show scene room_day_normal',
-		() => {revealPreparedScene();},
+		() => {SceneWithSky.loadSky("giorno_2");},
+		'show scene room_day_dark',
+		() => {SceneWithSky.revealPreparedScene();},
 	],
 
 	'Negazione_Cellulare': [

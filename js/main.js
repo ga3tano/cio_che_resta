@@ -1333,55 +1333,211 @@ const WordsGame = {
 /*
 FUNZIONI CUSTOM
 */ 
+const SceneWithSky = {
+	async loadSky(typeOfSky){
+		function preloadImage(src){
+			return new Promise((resolve, reject) => {
+				const img = new Image();
+				img.onload = resolve;
+				img.onerror = reject;
+				img.src = src;
+			});
+		}
+		
+		const sky = document.getElementById("sky");
+		const overlay = document.getElementById("sceneFadeOverlay");
 
-async function loadSky(typeOfSky){
-	function preloadImage(src){
-		return new Promise((resolve, reject) => {
-			const img = new Image();
-			img.onload = resolve;
-			img.onerror = reject;
-			img.src = src;
-		});
-	}
-	
-	const sky = document.getElementById("sky");
-	const overlay = document.getElementById("sceneFadeOverlay");
+		//Imposto l'immagine di background del div
+		const imageSrc = `../assets/scenes/cielo_${typeOfSky}.png`;
+		
+		overlay.classList.add("covering");
 
-	//Imposto l'immagine di background del div
-	const imageSrc = `../assets/scenes/cielo_${typeOfSky}.png`;
-	
-	overlay.classList.add("covering");
+		await preloadImage(imageSrc);
 
-	await preloadImage(imageSrc);
+		sky.style.display = "block";
+		sky.style.backgroundImage= `url("${imageSrc}")`;
 
-	sky.style.display = "block";
-	sky.style.backgroundImage= `url("${imageSrc}")`;
+		document.body.classList.add("composite-sky-scene");
+	},
 
-	document.body.classList.add("composite-sky-scene");
-}
+	revealPreparedScene() {
+		const overlay = document.getElementById("sceneFadeOverlay");
 
-function revealPreparedScene() {
-	const overlay = document.getElementById("sceneFadeOverlay");
+		/*
+		Aspetto 2 volte il frame:
+		Stato iniziale: Opacity 1, quindi tutto nero
+		Stato intermedio: rimuovo l'overlay e do il tempo al browser di far partire l'animazione
+		Stato finale: Opacity 0, quindi trasparente
 
-	/*
-	Aspetto 2 volte il frame:
-	Stato iniziale: Opacity 1, quindi tutto nero
-	Stato intermedio: rimuovo l'overlay e do il tempo al browser di far partire l'animazione
-	Stato finale: Opacity 0, quindi trasparente
-
-	Tecnica usata spesso per animazioni di questo tipo
-	*/ 
-	requestAnimationFrame(() => {
+		Tecnica usata spesso per animazioni di questo tipo
+		*/ 
 		requestAnimationFrame(() => {
-			overlay.classList.remove("covering");
+			requestAnimationFrame(() => {
+				overlay.classList.remove("covering");
+			})
 		})
-	})
+	},
+
+	hideSky(){
+		const sky = document.getElementById("sky");
+		sky.style.display = "none";
+	}
 }
 
-function hideSky(){
-	const sky = document.getElementById("sky");
-	sky.style.display = "none";
+const PanicBreath = {
+	state: "idle",	//idle | buildup | plateau | release
+	rate: 1,	//1 = normale, 3 = panico
+	volume: 0.2,
+	inAudio: null,
+	outAudio: null,
+	timer: null,
+	phase: "in",	//in | out
+	startTime: 0,
+
+	init(){
+		if(!this.inAudio){
+			this.inAudio = new Audio("../assets/sounds/breath_in.mp3");
+			this.outAudio = new Audio("../assets/sounds/breath_out.mp3");
+		}
+	},
+
+	start(){
+		if(this.state !== "idle") return;
+
+		this.init();
+		this.state = "buildup";
+		this.rate = 1;
+		this.volume = 0.2;
+		this.phase = "in";
+		this.startTime = performance.now();
+
+		this.loop();
+	},
+
+	loop(){
+		const now = performance.now();
+		const elapsed = (now - this.startTime) / 1000;
+
+		switch(this.state){
+			case "idle":
+				return;
+			
+			case "buildup":
+				const t = Math.min(elapsed / 4, 1);	//normalizzato 0 -> 1
+				
+				this.volume = 0.2 + (1 - Math.pow(2, -10 * t)) *0.8;	//Easing esponenziale volume	
+				this.rate = 1 + t * 2; //rate cresce più velocemente da 1 a 3 
+				
+				if(t >= 1)
+					this.state = "plateau";
+				break;
+
+			case "plateau":
+				this.rate = 3;
+				this.volume = 1;
+				break;
+
+			case "release":
+				this.rate = Math.max(1, this.rate - 0.12);
+				this.volume = Math.max(0.2, this.volume - 0.05);
+
+				if(this.rate <= 1.05 && this.volume <= 0.25){
+					this.stop();
+					return;
+				}
+		}
+
+		// Applica volume
+        this.inAudio.volume = this.volume;
+        this.outAudio.volume = this.volume;
+
+        // Durate base
+        const baseIn = 0.7;
+        const baseOut = 0.8;
+
+		const MIN_PLATEAU_PAUSE = 0.12;
+
+        // Pause dipendono dal rate
+        const pauseBetween = 0.15 / this.rate + MIN_PLATEAU_PAUSE;
+        const pauseCycle = 0.4 / this.rate + MIN_PLATEAU_PAUSE;
+
+        let delay = 0;
+
+        if (this.phase === "in") {
+            this.inAudio.currentTime = 0;
+            this.inAudio.play();
+            delay = (baseIn / this.rate + pauseBetween) * 1000;
+            this.phase = "out";
+        } else {
+            this.outAudio.currentTime = 0;
+            this.outAudio.play();
+            delay = (baseOut / this.rate + pauseCycle) * 1000;
+            this.phase = "in";
+        }
+
+        this.timer = setTimeout(() => this.loop(), delay);
+	},
+
+	release(){
+		this.state = "release";
+	},
+
+	stop(){
+		this.state = "idle";
+		clearTimeout(this.timer);
+		this.inAudio.pause();
+		this.outAudio.pause();
+	}
 }
+
+// async function loadSky(typeOfSky){
+// 	function preloadImage(src){
+// 		return new Promise((resolve, reject) => {
+// 			const img = new Image();
+// 			img.onload = resolve;
+// 			img.onerror = reject;
+// 			img.src = src;
+// 		});
+// 	}
+	
+// 	const sky = document.getElementById("sky");
+// 	const overlay = document.getElementById("sceneFadeOverlay");
+
+// 	//Imposto l'immagine di background del div
+// 	const imageSrc = `../assets/scenes/cielo_${typeOfSky}.png`;
+	
+// 	overlay.classList.add("covering");
+
+// 	await preloadImage(imageSrc);
+
+// 	sky.style.display = "block";
+// 	sky.style.backgroundImage= `url("${imageSrc}")`;
+
+// 	document.body.classList.add("composite-sky-scene");
+// }
+
+// function revealPreparedScene() {
+// 	const overlay = document.getElementById("sceneFadeOverlay");
+
+// 	/*
+// 	Aspetto 2 volte il frame:
+// 	Stato iniziale: Opacity 1, quindi tutto nero
+// 	Stato intermedio: rimuovo l'overlay e do il tempo al browser di far partire l'animazione
+// 	Stato finale: Opacity 0, quindi trasparente
+
+// 	Tecnica usata spesso per animazioni di questo tipo
+// 	*/ 
+// 	requestAnimationFrame(() => {
+// 		requestAnimationFrame(() => {
+// 			overlay.classList.remove("covering");
+// 		})
+// 	})
+// }
+
+// function hideSky(){
+// 	const sky = document.getElementById("sky");
+// 	sky.style.display = "none";
+// }
 
 /*OGGETTI CLICKABILI*/
 function showClickableObjects(){
