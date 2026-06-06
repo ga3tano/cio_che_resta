@@ -1357,7 +1357,14 @@ const SceneWithSky = {
 		sky.style.display = "block";
 		sky.style.backgroundImage= `url("${imageSrc}")`;
 
+		this.toggleBackground();
+	},
+
+	toggleBackground(){
 		document.body.classList.add("composite-sky-scene");
+	},
+	enableBackground(){
+		document.body.classList.remove("composite-sky-scene");
 	},
 
 	revealPreparedScene() {
@@ -1487,6 +1494,30 @@ const PanicBreath = {
 		clearTimeout(this.timer);
 		this.inAudio.pause();
 		this.outAudio.pause();
+	}
+}
+
+const BlinkOverlay = {
+	speed: 300,
+	overlay: document.getElementById('blink-overlay'),
+
+	setSpeed(ms){
+		this.speed = ms;
+		this.overlay.style.setProperty('--speed', `${ms}ms`);
+	},
+
+	async blink(){
+		this.overlay.classList.add('closed');
+		await new Promise(r => setTimeout(r, this.speed));
+
+		this.overlay.classList.remove('closed');
+		await new Promise(r => setTimeout(r, this.speed));
+	},
+
+	async doubleBlink(){
+		await this.blink();
+		await new Promise(r => setTimeout(r, this.speed * 0.4));
+		await this.blink();
 	}
 }
 

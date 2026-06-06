@@ -732,8 +732,49 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	background-color: transparent;
 }
 
-game-screen[data-component="game-screen"].bg-transparent {
-    background-color: rgba(0,0,0,0);
+.blink-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999999;
+    overflow: hidden;
 }
+
+.eyelid {
+    position: absolute;
+    width: 100%;
+    height: 50%;
+    background: black;
+    transition: transform var(--speed, 300ms) ease-in-out;
+}
+
+/* Palpebra superiore */
+.eyelid.top {
+    top: 0;
+    border-bottom-left-radius: 50%;
+    border-bottom-right-radius: 50%;
+    transform: translateY(-100%);
+}
+
+/* Palpebra inferiore */
+.eyelid.bottom {
+    bottom: 0;
+    border-top-left-radius: 50%;
+    border-top-right-radius: 50%;
+    transform: translateY(100%);
+}
+
+/* Stato chiuso */
+.blink-overlay.closed .eyelid.top {
+    transform: translateY(0);
+}
+
+.blink-overlay.closed .eyelid.bottom {
+    transform: translateY(0);
+}
+
+/* game-screen[data-component="game-screen"].bg-transparent {
+    background-color: rgba(0,0,0,0);
+} */
 
 

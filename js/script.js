@@ -56,7 +56,9 @@ monogatari.assets ('voices', {
 // Define the sounds used in the game.
 monogatari.assets ('sounds', {
 	typewriter: 'typewriter.mp3',
-	crash: 'crash.mp3'
+	crash: 'crash.mp3',
+	phone_vibration: 'phone_vibration.mp3',
+	phone_notification: 'phone_notification.mp3'
 });
 
 // Define the videos used in the game.
@@ -97,7 +99,7 @@ monogatari.script ({
 		'show scene #000000 with fadeIn',
 
 		//Test negazione
-		// 'jump Test',
+		'jump Negazione_Cellulare',
 
 		{
 			TypeCentered: `Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?`
@@ -191,7 +193,7 @@ monogatari.script ({
 	'Intermezzo_Respira': [
 		//Avvio rilascio del respiro
 		() => {PanicBreath.release();},
-		'wait 2000',
+		'wait 8000',
 
 		'jump Negazione_Cellulare'
 	],
@@ -205,6 +207,7 @@ monogatari.script ({
 	'Negazione_Cellulare': [
         'show scene room_night with fadeIn',
         'play sound phone_vibration',
+		'play sound phone_notification',
         'vibrate 200 100 200',
 
         {'Function': {
@@ -292,10 +295,51 @@ monogatari.script ({
             },
             'Rimani': {
                 'Text': 'RIMANI A CASA',
-                // 'Do': 'jump Rimani_A_Casa'
+                'Do': 'jump Rimani_A_Casa'
             }
         }}
     ],
+
+	'Rimani_A_Casa':[
+		() => {PhoneUI.hide();},
+		'show scene #000000 with fadeIn',
+		'wait 5000',
+		() => {
+			PhoneUI.reset();
+			PhoneUI.show('Giulia');
+			PhoneUI.addIncoming('Non lasciarmi aspettare.');
+			PhoneUI.vibrate();
+
+			SceneWithSky.toggleBackground();
+		},
+
+		{'Choice':{
+			'Apri la porta': {
+				'Text': 'APRI LA PORTA',
+				'Do': 'jump Esci_Casa with fadeOut'
+			}
+		}}
+	],
+
+	'Esci_Casa':[
+		() => {PhoneUI.hide();},
+		'show scene outside with fadeIn',
+		() => {SceneWithSky.enableBackground();},
+		'wait 3000',
+		() => 
+		{
+			BlinkOverlay.setSpeed(2000);
+			BlinkOverlay.doubleBlink();
+		},
+		
+		'show scene piedi',
+		() => 
+		{
+			BlinkOverlay.setSpeed(500);
+			BlinkOverlay.blink();
+		}
+
+	],
 	
 	'loop_torcia': [
 		{'Conditional': {
