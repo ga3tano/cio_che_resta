@@ -1882,6 +1882,445 @@ function hideDetail(objectId) {
 
 }
 
+/*
+DEBUG MENU
+Toggle globale del menu di debug.
+Mettere a false per disattivarlo completamente: non viene creato il DOM,
+non vengono registrati eventi e non funziona la scorciatoia Ctrl/Cmd + Shift + D.
+*/
+const DEBUG_MENU_ENABLED = true;
+
+const DebugMenu = {
+	// Elemento radice che contiene sia il bottone "Debug" sia il pannello.
+	root: null,
+
+	// Pannello apribile con la lista delle scene raggiungibili.
+	panel: null,
+
+	// Riga di stato usata per mostrare label corrente, salti ed errori.
+	status: null,
+
+	// Bottone compatto visibile in alto a sinistra.
+	toggleButton: null,
+
+	// Chiave localStorage: ricorda se il pannello era aperto o chiuso.
+	storageKey: 'cio-debug-menu-open',
+
+	// Titolo dell'unico gruppo mostrato nel pannello.
+	groupTitle: 'Scene',
+
+	// Elenco dei label Monogatari disponibili nel menu.
+	// Ogni stringa e' sia il testo mostrato nel bottone sia il label usato da jump.
+	labels: [
+		'Start',
+		'Intermezzo_Respira',
+		'Negazione_Cellulare',
+		'Negazione_Rispondi',
+		'Negazione_Ignora',
+		'Secondo_Messaggio',
+		'Rimani_A_Casa',
+		'Esci_Casa',
+		'Torcia',
+		'Continua',
+		'Rabbia',
+		'GlitchRabbia',
+		'ContinuaGlitch'
+	],
+
+	init() {
+		// Se il toggle globale e' spento, il menu non viene inizializzato.
+		if (!DEBUG_MENU_ENABLED) return;
+
+		// Evita doppie inizializzazioni se Monogatari o Live Server ricaricano parti del DOM.
+		if (this.root) return;
+
+		// Costruisce il DOM del menu e poi collega click/scorciatoie.
+		this.create();
+		this.bindEvents();
+
+		// Decide se partire aperto: query string, preferenza salvata o runtime locale.
+		if (this.shouldOpenOnLoad()) {
+			this.open();
+		}
+	},
+
+	create() {
+		// Contenitore principale: viene appeso al body e isolato dal layout del gioco.
+		this.root = document.createElement('div');
+		this.root.className = 'debug-menu';
+
+		// Bottone sempre disponibile per aprire/chiudere il pannello.
+		this.toggleButton = document.createElement('button');
+		this.toggleButton.type = 'button';
+		this.toggleButton.className = 'debug-menu-toggle';
+		this.toggleButton.textContent = 'Debug';
+		this.toggleButton.setAttribute('aria-expanded', 'false');
+
+		// Pannello vero e proprio, nascosto finche' root non riceve la classe "open".
+		this.panel = document.createElement('div');
+		this.panel.className = 'debug-menu-panel';
+		this.panel.setAttribute('aria-hidden', 'true');
+
+		// Header del pannello: titolo + bottone di chiusura.
+		const header = document.createElement('div');
+		header.className = 'debug-menu-header';
+
+		const title = document.createElement('strong');
+		title.textContent = 'Salta scena';
+
+		const close = document.createElement('button');
+		close.type = 'button';
+		close.className = 'debug-menu-close';
+		close.textContent = 'x';
+		close.setAttribute('aria-label', 'Chiudi debug');
+		close.dataset.debugClose = 'true';
+
+		header.appendChild(title);
+		header.appendChild(close);
+
+		// Stato testuale: aiuta a capire quale label e' attivo o se un salto fallisce.
+		this.status = document.createElement('div');
+		this.status.className = 'debug-menu-status';
+		this.status.textContent = 'Label corrente: -';
+
+		// Griglia che contiene sezioni e bottoni di salto.
+		const grid = document.createElement('div');
+		grid.className = 'debug-menu-grid';
+
+		// Crea un solo titolo di gruppo per tutte le scene.
+		const group = document.createElement('div');
+		group.className = 'debug-menu-group';
+		group.textContent = this.groupTitle;
+		grid.appendChild(group);
+
+		// Trasforma ogni label in un bottone di salto.
+		this.labels.forEach((label) => {
+			// Bottone che memorizza nel dataset il label Monogatari di destinazione.
+			const button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'debug-menu-jump';
+			button.dataset.debugLabel = label;
+
+			// Testo visuale del bottone: coincide con il label tecnico.
+			const buttonTitle = document.createElement('span');
+			buttonTitle.textContent = label;
+
+			button.appendChild(buttonTitle);
+			grid.appendChild(button);
+		});
+
+		// Footer con azioni di manutenzione runtime.
+		const footer = document.createElement('div');
+		footer.className = 'debug-menu-footer';
+
+		const reset = document.createElement('button');
+		reset.type = 'button';
+		reset.className = 'debug-menu-reset';
+		reset.dataset.debugReset = 'true';
+		reset.textContent = 'Reset stato runtime';
+
+		footer.appendChild(reset);
+
+		// Montaggio finale del pannello.
+		this.panel.appendChild(header);
+		this.panel.appendChild(this.status);
+		this.panel.appendChild(grid);
+		this.panel.appendChild(footer);
+
+		// Montaggio finale del menu nel body.
+		this.root.appendChild(this.toggleButton);
+		this.root.appendChild(this.panel);
+		document.body.appendChild(this.root);
+
+		// Prima lettura del label corrente.
+		this.refreshStatus();
+	},
+
+	bindEvents() {
+		// Click sul bottone principale: apre o chiude il menu.
+		this.toggleButton.addEventListener('click', () => this.toggle());
+
+		// Event delegation: un solo listener gestisce chiusura, salti e reset.
+		this.root.addEventListener('click', async (event) => {
+			const closeButton = event.target.closest('[data-debug-close]');
+			const jumpButton = event.target.closest('[data-debug-label]');
+			const resetButton = event.target.closest('[data-debug-reset]');
+
+			if (closeButton) {
+				this.close();
+				return;
+			}
+
+			if (jumpButton) {
+				this.jumpTo(jumpButton.dataset.debugLabel);
+				return;
+			}
+
+			if (resetButton) {
+				await this.resetRuntimeState();
+				this.setStatus('Stato runtime pulito');
+			}
+		});
+
+		// Scorciatoia rapida: Ctrl + Shift + D su Windows/Linux, Cmd + Shift + D su macOS.
+		document.addEventListener('keydown', (event) => {
+			const key = (event.key || '').toLowerCase();
+			const modifier = event.ctrlKey || event.metaKey;
+
+			if (modifier && event.shiftKey && key === 'd') {
+				event.preventDefault();
+				this.toggle();
+			}
+		});
+	},
+
+	shouldOpenOnLoad() {
+		// Query string manuale:
+		// ?debug=1 forza apertura, ?debug=0 forza chiusura.
+		const params = new URLSearchParams(window.location.search);
+		const debugParam = params.get('debug');
+
+		// Preferenza persistente salvata quando apri/chiudi il pannello.
+		const storedOpenState = this.getStoredOpenState();
+
+		if (debugParam === '0') return false;
+		if (debugParam === '1') return true;
+		if (storedOpenState === '0') return false;
+		if (storedOpenState === '1') return true;
+
+		// In sviluppo locale il menu parte aperto la prima volta.
+		return this.isLocalRuntime();
+	},
+
+	isLocalRuntime() {
+		// Live Server di solito usa localhost o 127.0.0.1.
+		return window.location.protocol === 'file:' ||
+			window.location.hostname === 'localhost' ||
+			window.location.hostname === '127.0.0.1' ||
+			window.location.hostname === '';
+	},
+
+	open() {
+		// La classe "open" attiva il pannello via CSS.
+		this.root.classList.add('open');
+		this.panel.setAttribute('aria-hidden', 'false');
+		this.toggleButton.setAttribute('aria-expanded', 'true');
+
+		// Ricorda che lo sviluppatore lo ha lasciato aperto.
+		this.setStoredOpenState('1');
+		this.refreshStatus();
+	},
+
+	close() {
+		// Rimuove la classe "open" e aggiorna gli attributi aria.
+		this.root.classList.remove('open');
+		this.panel.setAttribute('aria-hidden', 'true');
+		this.toggleButton.setAttribute('aria-expanded', 'false');
+
+		// Ricorda che lo sviluppatore lo ha chiuso.
+		this.setStoredOpenState('0');
+	},
+
+	getStoredOpenState() {
+		try {
+			return localStorage.getItem(this.storageKey);
+		} catch (error) {
+			// Alcuni browser bloccano localStorage in modalita' particolari.
+			return null;
+		}
+	},
+
+	setStoredOpenState(value) {
+		try {
+			localStorage.setItem(this.storageKey, value);
+		} catch (error) {
+			// Il menu resta utilizzabile anche se localStorage non e' disponibile.
+		}
+	},
+
+	toggle() {
+		// Stato visivo unico: se il root ha "open" chiudiamo, altrimenti apriamo.
+		if (this.root.classList.contains('open')) {
+			this.close();
+		} else {
+			this.open();
+		}
+	},
+
+	async jumpTo(label) {
+		this.setStatus(`Salto a ${label}...`);
+
+		try {
+			// Prima di saltare puliamo overlay, audio e minigiochi custom.
+			await this.resetRuntimeState(label);
+
+			// Piccola pausa per permettere al DOM di rimuovere overlay e classi.
+			await sleep(30);
+
+			// Sblocca Monogatari se il gioco era fermo dentro wait, video, glitch, ecc.
+			if (typeof monogatari.global === 'function') {
+				monogatari.global('block', false);
+			}
+
+			// Salto effettivo: usa l'azione Monogatari "jump NomeLabel".
+			const result = monogatari.run(`jump ${label}`);
+
+			// Alcune versioni di Monogatari restituiscono una Promise.
+			if (result && typeof result.catch === 'function') {
+				result.catch((error) => this.handleJumpError(error, label));
+			}
+
+			this.setStatus(`Label corrente: ${label}`);
+		} catch (error) {
+			this.handleJumpError(error, label);
+		}
+	},
+
+	async resetRuntimeState(targetLabel = null) {
+		// Chiude eventuali testi TypeCentered rimasti sopra la scena.
+		this.resolveCenteredText();
+
+		// Tenta di sbloccare il motore prima di cambiare label.
+		if (typeof monogatari.global === 'function') {
+			monogatari.global('block', false);
+		}
+
+		// Ferma vibrazioni native del dispositivo, se supportate.
+		if (navigator.vibrate) {
+			navigator.vibrate(0);
+		}
+
+		// Ferma il loop audio della respirazione, se era partito.
+		if (PanicBreath.state !== 'idle') {
+			PanicBreath.stop();
+		}
+
+		// Ferma il glitch/minigioco se e' attivo; altrimenti pulisce solo WordsGame.
+		if (Glitch.active) {
+			await Glitch.stop(false);
+		} else {
+			WordsGame.reset();
+		}
+
+		// Pulisce il telefono e gli overlay custom prima del salto.
+		PhoneUI.hide();
+		PhoneUI.reset();
+		this.resetNightRuntime();
+		this.resetVisualOverlays();
+		this.resetStorageFlags(targetLabel);
+	},
+
+	resolveCenteredText() {
+		// TypeCentered prosegue al primo click e si chiude al secondo.
+		// Il remove finale e' una cintura di sicurezza se l'azione era gia' risolta.
+		document.querySelectorAll('.type-centered-container').forEach((container) => {
+			container.click();
+			container.click();
+			container.remove();
+		});
+	},
+
+	resetNightRuntime() {
+		// Riporta la torcia allo stato spento e bloccato.
+		NightOverlay.isFrozen = true;
+		NightOverlay.hasPlayedSound = false;
+
+		// Rimuove buio/maschera torcia dal DOM, se presenti.
+		const overlay = NightOverlay.element || document.getElementById('night-overlay');
+		if (overlay) {
+			overlay.classList.remove('visible', 'torch');
+			overlay.style.maskImage = 'none';
+			overlay.style.webkitMaskImage = 'none';
+		}
+
+		// Pulisce oggetti cliccabili e pannelli dettaglio della scena torcia.
+		hideClickableObjects();
+		document.getElementById('detail-blur')?.remove();
+		document.getElementById('detail-zoom')?.remove();
+		document.getElementById('detail-back')?.remove();
+		document.getElementById('detail-desc')?.remove();
+	},
+
+	resetVisualOverlays() {
+		// WordsGame blocca lo scroll del body: qui lo ripristiniamo.
+		document.body.style.overflow = '';
+
+		// Rimuove parole rimaste a schermo e pressione visiva della fase.
+		const wordGame = document.getElementById('word-game-overlay');
+		if (wordGame) {
+			wordGame.classList.remove('visible', 'locked');
+			wordGame.innerHTML = '';
+			wordGame.style.setProperty('--phase-pressure', '0');
+		}
+
+		// Spegne il bordo rosso della scena rabbia.
+		const rageBorder = document.getElementById('rage-border');
+		if (rageBorder) {
+			rageBorder.style.opacity = '0';
+		}
+
+		// Spegne l'overlay rosso/nero del game over del glitch.
+		const gameOver = document.getElementById('glitch-game-over');
+		if (gameOver) {
+			gameOver.classList.remove('visible');
+			gameOver.style.opacity = '0';
+			gameOver.style.background = 'transparent';
+		}
+
+		// Riapre eventuali palpebre chiuse e rimuove il nero di transizione scena.
+		document.getElementById('blink-overlay')?.classList.remove('closed');
+		document.getElementById('sceneFadeOverlay')?.classList.remove('covering');
+	},
+
+	resetStorageFlags(targetLabel = null) {
+		const store = monogatari.storage();
+		if (!store) return;
+
+		// Stato del minigioco rabbia: riparte sempre dalla fase 1.
+		store.glitchGameCompleted = false;
+		store.glitchGamePhase = 1;
+
+		// Stato della torcia: nessun dettaglio oggetto rimane selezionato.
+		store.lastClickedObject = null;
+
+		// Se facciamo reset generico o saltiamo all'inizio/torcia, gli oggetti vanno ricliccati.
+		if (targetLabel === null || targetLabel === 'Torcia' || targetLabel === 'Start') {
+			store.clickedObjects = [];
+			store.allClicked = false;
+		}
+	},
+
+	refreshStatus() {
+		if (!this.status) return;
+
+		let currentLabel = '-';
+
+		try {
+			// Monogatari salva il label corrente nello state interno.
+			if (typeof monogatari.state === 'function') {
+				currentLabel = monogatari.state('label') || '-';
+			}
+		} catch (error) {
+			currentLabel = '-';
+		}
+
+		this.status.textContent = `Label corrente: ${currentLabel}`;
+	},
+
+	setStatus(text) {
+		// Metodo piccolo per aggiornare la status bar da piu' punti del menu.
+		if (this.status) {
+			this.status.textContent = text;
+		}
+	},
+
+	handleJumpError(error, label) {
+		// Log tecnico per console + feedback leggibile nel pannello.
+		console.error(`Debug jump failed for ${label}`, error);
+		this.setStatus(`Errore salto: ${label}`);
+	}
+};
+
 /*UTILITY*/
 function lerp (a, b, t){
 	return a + (b - a) * t;
@@ -1903,8 +2342,10 @@ $_ready (() => {
 
 	monogatari.init ('#monogatari').then (() => {
 		// 3. Inside the init function:
+		// Il toggle globale evita di creare il menu quando DEBUG_MENU_ENABLED e' false.
+		if (DEBUG_MENU_ENABLED) {
+			DebugMenu.init();
+		}
 
 	});
 });
-
-

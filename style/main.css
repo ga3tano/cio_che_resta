@@ -760,6 +760,184 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	background-color: transparent;
 }
 
+/* --- DEBUG MENU --- */
+/* Contenitore principale del menu debug: resta sopra a gioco, fade e overlay custom. */
+.debug-menu {
+	position: fixed;
+	top: 12px;
+	left: 12px;
+	z-index: 1000002;
+	color: #f5f5f7;
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	font-size: 13px;
+	pointer-events: none;
+}
+
+/* Include padding e border nei calcoli, cosi' il pannello non cresce in modo inatteso. */
+.debug-menu,
+.debug-menu * {
+	box-sizing: border-box;
+}
+
+/* I bottoni del menu usano lo stesso font del contenitore per rimanere coerenti. */
+.debug-menu-toggle,
+.debug-menu button {
+	font: inherit;
+}
+
+/* Bottone compatto sempre visibile: apre e chiude il pannello debug. */
+.debug-menu-toggle {
+	pointer-events: auto;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	border-radius: 8px;
+	background: rgba(10, 10, 12, 0.88);
+	color: #fff;
+	padding: 8px 10px;
+	cursor: pointer;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+	backdrop-filter: blur(12px);
+}
+
+/* Feedback hover condiviso tra bottone principale e bottoni interni. */
+.debug-menu-toggle:hover,
+.debug-menu button:hover {
+	background: rgba(255, 255, 255, 0.14);
+}
+
+/* Pannello apribile: e' scrollabile per funzionare anche su viewport piccoli. */
+.debug-menu-panel {
+	display: none;
+	pointer-events: auto;
+	width: min(380px, calc(100vw - 24px));
+	max-height: min(72vh, 620px);
+	margin-top: 8px;
+	padding: 12px;
+	overflow: auto;
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	border-radius: 8px;
+	background: rgba(8, 8, 10, 0.94);
+	box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+	backdrop-filter: blur(16px);
+}
+
+/* Stato aperto: il JS aggiunge/rimuove la classe open al root. */
+.debug-menu.open .debug-menu-panel {
+	display: block;
+}
+
+/* Header del pannello: titolo a sinistra, chiusura a destra. */
+.debug-menu-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+/* Titolo breve del pannello. */
+.debug-menu-header strong {
+	font-size: 0.95rem;
+	line-height: 1.2;
+}
+
+/* Bottone "x" per chiudere il pannello senza usare la scorciatoia. */
+.debug-menu-close {
+	min-width: 30px;
+	height: 30px;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.08);
+	color: #fff;
+	cursor: pointer;
+}
+
+/* Riga informativa: label corrente, messaggi di salto o errore. */
+.debug-menu-status {
+	margin-bottom: 10px;
+	padding: 7px 8px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.74);
+	font-size: 0.78rem;
+	line-height: 1.25;
+	overflow-wrap: anywhere;
+}
+
+/* Griglia dei bottoni: due colonne su desktop, una su mobile. */
+.debug-menu-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+}
+
+/* Intestazione dell'unico gruppo che contiene tutte le scene. */
+.debug-menu-group {
+	grid-column: 1 / -1;
+	margin-top: 4px;
+	color: rgba(255, 255, 255, 0.55);
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+/* Stile base comune ai bottoni di salto e al reset runtime. */
+.debug-menu-jump,
+.debug-menu-reset {
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.07);
+	color: #fff;
+	cursor: pointer;
+	text-align: left;
+}
+
+/* Bottone singolo per una scena: altezza stabile per evitare salti layout. */
+.debug-menu-jump {
+	min-height: 44px;
+	padding: 9px;
+}
+
+/* Il label resta su una riga con ellipsis se e' troppo lungo. */
+.debug-menu-jump span {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+/* Sezione finale del pannello, separata dalla griglia dei salti. */
+.debug-menu-footer {
+	margin-top: 10px;
+}
+
+/* Bottone che pulisce overlay/audio/stati senza cambiare scena. */
+.debug-menu-reset {
+	width: 100%;
+	padding: 9px;
+	text-align: center;
+	color: rgba(255, 255, 255, 0.86);
+}
+
+/* Layout mobile: pannello quasi full-width e bottoni su una colonna. */
+@media (max-width: 480px) {
+	.debug-menu {
+		top: 8px;
+		left: 8px;
+	}
+
+	.debug-menu-panel {
+		width: calc(100vw - 16px);
+		max-height: 78vh;
+	}
+
+	.debug-menu-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
 /* --- BATTITO DI PALPEBRE --- */
 .blink-overlay {
 	--speed: 300ms;
@@ -815,5 +993,3 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 /* game-screen[data-component="game-screen"].bg-transparent {
     background-color: rgba(0,0,0,0);
 } */
-
-

@@ -99,7 +99,7 @@ monogatari.script ({
 		'show scene #000000 with fadeIn',
 
 		//Test negazione
-		'jump Rabbia',
+		//'jump Rabbia',
 
 		{
 			TypeCentered: `Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?`
