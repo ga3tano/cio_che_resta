@@ -99,7 +99,7 @@ monogatari.script ({
 		'show scene #000000 with fadeIn',
 
 		//Test negazione
-		'jump Negazione_Cellulare',
+		'jump Rabbia',
 
 		{
 			TypeCentered: `Cosa tiene in vita una luce che non riesce più a farsi strada perchè soffocata da una nebbia densa e nera come pece?`
@@ -145,70 +145,29 @@ monogatari.script ({
 				}
 			}
 		},
-
-		
-
-		/*'show scene #f7f6f6 with fadeIn',
-		'show notification Welcome',
-		{
-			'Input': {
-				'Text': 'What is your name?',
-				'Validation': function (input) {
-					return input.trim ().length > 0;
-				},
-				'Save': function (input) {
-					this.storage ({
-						player: {
-							name: input
-						}
-					});
-					return true;
-				},
-				'Revert': function () {
-					this.storage ({
-						player: {
-							name: ''
-						}
-					});
-				},
-				'Warning': 'You must enter a name!'
-			}
-		},
-		'y Hi {{player.name}} Welcome to Monogatari!',
-		{
-			'Choice': {
-				'Dialog': 'y Have you already read some documentation?',
-				'Yes': {
-					'Text': 'Yes',
-					'Do': 'jump Yes'
-				},
-				'No': {
-					'Text': 'No',
-					'Do': 'jump No'
-				}
-			}
-		}*/
 	],
 
 	'Intermezzo_Respira': [
 		//Avvio rilascio del respiro
-		() => {PanicBreath.release();},
+		() => PanicBreath.release(),
 		'wait 8000',
 
 		'jump Negazione_Cellulare'
 	],
 
-	'Test':[
-		() => {SceneWithSky.loadSky("giorno_2");},
-		'show scene room_day_dark',
-		() => {SceneWithSky.revealPreparedScene();},
-	],
+	// 'Test':[
+	// 	() => SceneWithSky.loadSky("giorno_2"),
+	// 	'show scene room_day_dark',
+	// 	() => SceneWithSky.revealPreparedScene(),
+	// ],
 
 	'Negazione_Cellulare': [
-        'show scene room_night with fadeIn',
+        () => SceneWithSky.loadSky("notte"),
+		'show scene room_night',
+		() => SceneWithSky.revealPreparedScene(),
         'play sound phone_vibration',
 		'play sound phone_notification',
-        'vibrate 200 100 200',
+        'vibrate 20000',
 
         {'Function': {
             'Apply': function () {
@@ -251,7 +210,7 @@ monogatari.script ({
 
         'play sound crash with volume 100',
         'show scene #300000 with fadeIn',
-        'jump Esercizio_Respirazione'
+        // 'jump Esercizio_Respirazione'	DA IMPLEMENTARE
     ],
 
     'Negazione_Ignora': [
@@ -272,6 +231,7 @@ monogatari.script ({
 
     'Secondo_Messaggio': [
         'play sound phone_vibration',
+		'play sound phone_notification',
         'vibrate 200 100 200',
 
         {'Function': {
@@ -291,7 +251,7 @@ monogatari.script ({
         {'Choice': {
             'Esci': {
                 'Text': 'ESCI',
-                // 'Do': 'jump Esci_Casa'
+                'Do': 'jump Esci_Casa'
             },
             'Rimani': {
                 'Text': 'RIMANI A CASA',
@@ -301,9 +261,13 @@ monogatari.script ({
     ],
 
 	'Rimani_A_Casa':[
-		() => {PhoneUI.hide();},
 		'show scene #000000 with fadeIn',
+		() => {PhoneUI.hide();},
+		// 'show scene #000000 with fadeIn',
 		'wait 5000',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+        'vibrate 200 100 200',
 		() => {
 			PhoneUI.reset();
 			PhoneUI.show('Giulia');
@@ -322,23 +286,24 @@ monogatari.script ({
 	],
 
 	'Esci_Casa':[
-		() => {PhoneUI.hide();},
+		() => PhoneUI.hide(),
 		'show scene outside with fadeIn',
-		() => {SceneWithSky.enableBackground();},
-		'wait 3000',
-		() => 
-		{
-			BlinkOverlay.setSpeed(2000);
-			BlinkOverlay.doubleBlink();
-		},
+		() => SceneWithSky.enableBackground(),
 		
-		'show scene piedi',
-		() => 
-		{
-			BlinkOverlay.setSpeed(500);
-			BlinkOverlay.blink();
-		}
+		'wait 3000',
+		
+		() => BlinkOverlay.doubleBlink(400),
+		
+		'show scene feet with fadeIn',
 
+		'wait 4000',
+
+		{'Choice':{
+			'Torna a casa':{
+				'Text': 'TORNA A CASA',
+				'Do': 'jump Rabbia with fadeOut'
+			}
+		}}
 	],
 	
 	'loop_torcia': [
@@ -360,28 +325,21 @@ monogatari.script ({
 
 	'Torcia': [
         'show scene room_night with fadeIn',
-		() => {
-			NightOverlay.showNight();
-		},
+		() => NightOverlay.showNight(),
 
 		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">Non si vede nulla... forse meglio accendere la torcia.</div>',
 
-		{'Function': {
-			'Apply': function() {
-				showClickableObjects();
-				NightOverlay.showTorch();
-				return true;
-			}
-		}},
+		() => {
+			showClickableObjects();
+			NightOverlay.showTorch();
+		},
 
 		'jump loop_torcia',
 	],
 
 	'Continua': [
 		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">Si è fatta una certa ora...provo a riaddormentarmi.</div>',
-		() => {
-			NightOverlay.hideTorch();
-		},
+		() => NightOverlay.hideTorch(),
 
 		'show scene #000000 with fadeIn',
 
@@ -396,6 +354,44 @@ monogatari.script ({
 		}
 	],
 
+//RABBIA
+
+	'Rabbia': [
+		() => SceneWithSky.loadSky("nuvolo"),
+		'show scene room_rage',
+		() => 	SceneWithSky.revealPreparedScene(),
+
+		'wait 2000',
+
+		() => { 	
+			PhoneUI.reset();
+			PhoneUI.show('Giulia');
+			PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
+			PhoneUI.vibrate();
+		},
+
+		{'Choice':{
+			'Lasciami': {
+				'Text': 'Lasciami in pace!',
+				'Do': 'jump GlitchRabbia'
+			}
+		}}
+	],
+
+
+	'GlitchRabbia': [
+		() => {
+			PhoneUI.hide();
+			const store = monogatari.storage();
+			store.glitchGameCompleted = false;
+			store.glitchGamePhase = 1;
+			Glitch.start();
+		},
+
+		'jump loop_glitch'
+	],
+
+	
 	'loop_glitch': [
 		{'Conditional': {
 			'Condition': function () {
@@ -410,26 +406,6 @@ monogatari.script ({
 
 	'wait_glitch': [
 		'wait 250',
-		'jump loop_glitch'
-	],
-
-	'GlitchRabbia': [
-		'show scene room_rage with fadeIn',
-
-		() => {
-			const store = monogatari.storage();
-			store.glitchGameCompleted = false;
-			store.glitchGamePhase = 1;
-			loadSky("nuvolo");
-		},
-
-		{'Function': {
-			'Apply': function () {
-				Glitch.start();
-				return true;
-			}
-		}},
-
 		'jump loop_glitch'
 	],
 
