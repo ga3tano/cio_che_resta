@@ -455,6 +455,8 @@ input[type=range]::-ms-fill-upper {
     transform: scale(1.05);
 }
 
+/* --- SCENA RABBIA --- */
+/* Shake schermo  */
 .rage-border {
     position: fixed;
     inset: 0;
@@ -464,14 +466,38 @@ input[type=range]::-ms-fill-upper {
     background: radial-gradient(
         circle,
         rgba(255, 0, 0, 0) 0%,
-        rgba(255, 0, 0, 0.15) 55%,
-        rgba(255, 0, 0, 0.45) 100%
+        rgba(255, 0, 0, 0.45) 55%,
+        rgba(255, 0, 0, 0.85) 100%
     ); 
 
     opacity: 0;
     transition: opacity 0.15s linear;
 }
 
+#glitch-shake-viewport {
+	position: fixed;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+	z-index: 0;
+}
+
+#glitch-shake-wrapper {
+	position: absolute;
+	inset: -64px;
+	transform: translate3d(0, 0, 0);
+	transform-origin: center center;
+	will-change: transform;
+}
+
+#glitch-shake-wrapper > * {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/* Minigioco frasi  */
 .word-game {
 	position: fixed;
 	inset: 0;
@@ -683,6 +709,7 @@ input[type=range]::-ms-fill-upper {
 	}
 }
 
+/* Fallimenti del minigioco */
 .glitch-game-over {
 	position: fixed;
 	inset: 0;
@@ -697,6 +724,7 @@ input[type=range]::-ms-fill-upper {
 	opacity: 1;
 }
 
+/* --- GESTIONE CIELO NELLE VARIE SCENE CON FINESTRA --- */
 .sky{
 	position: fixed;
 	z-index: -1000;
@@ -732,47 +760,58 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	background-color: transparent;
 }
 
+/* --- BATTITO DI PALPEBRE --- */
 .blink-overlay {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 999999;
-    overflow: hidden;
+	--speed: 300ms;
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 999999;
+	overflow: hidden;
 }
 
-.eyelid {
-    position: absolute;
-    width: 100%;
-    height: 50%;
-    background: black;
-    transition: transform var(--speed, 300ms) ease-in-out;
+.blink-overlay .eyelid {
+	position: absolute;
+	left: -8%;
+	width: 116%;
+	height: 58%;
+	background:
+		radial-gradient(ellipse at center, rgba(28, 24, 24, 0.98) 0%, #030303 70%),
+		#000;
+	box-shadow: 0 0 42px rgba(0, 0, 0, 0.85);
+	will-change: transform;
+	transition: transform var(--speed) cubic-bezier(0.45, 0, 0.15, 1);
 }
 
-/* Palpebra superiore */
-.eyelid.top {
-    top: 0;
-    border-bottom-left-radius: 50%;
-    border-bottom-right-radius: 50%;
-    transform: translateY(-100%);
+.blink-overlay .eyelid.top {
+	top: 0;
+	border-bottom-left-radius: 50% 16%;
+	border-bottom-right-radius: 50% 16%;
+	transform: translateY(-103%) scaleY(0.92);
 }
 
-/* Palpebra inferiore */
-.eyelid.bottom {
-    bottom: 0;
-    border-top-left-radius: 50%;
-    border-top-right-radius: 50%;
-    transform: translateY(100%);
+.blink-overlay .eyelid.bottom {
+	bottom: 0;
+	border-top-left-radius: 50% 16%;
+	border-top-right-radius: 50% 16%;
+	transform: translateY(103%) scaleY(0.92);
 }
 
-/* Stato chiuso */
 .blink-overlay.closed .eyelid.top {
-    transform: translateY(0);
+	transform: translateY(-4%) scaleY(1.04);
+	transition-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
 }
 
 .blink-overlay.closed .eyelid.bottom {
-    transform: translateY(0);
+	transform: translateY(4%) scaleY(1.04);
+	transition-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
 }
 
+@media (prefers-reduced-motion: reduce) {
+	.blink-overlay .eyelid {
+		transition-duration: 1ms;
+	}
+}
 /* game-screen[data-component="game-screen"].bg-transparent {
     background-color: rgba(0,0,0,0);
 } */

@@ -400,11 +400,22 @@ const Glitch={
 	active: false,
 	timer: null,
 	startTime: 0,
-	intensity: 0,	//range 0 = calma, 1 = furia
+	intensity: 0,
 	currentPhaseIndex: 0,
 	phaseResolved: false,
-	zoom: 1,	//partenza zoom, aumenta gradualmente
+	zoom: 1,
 	gameOverOverlay: null,
+
+	//L'ordine è importante, è dal z-index inferiore al superiore.
+	sceneLayerSelectors: [
+		"#sky",
+		"#background",
+	],
+
+	shakeViewport: null,
+	shakeWrapper: null,
+	originalLayerPositions: new Map(),
+	originalWrapperTransform: "",
 
 	config: {
 		// Quanto velocemente cresce la rabbia.
@@ -486,11 +497,118 @@ const Glitch={
 		}
 	],
 
+//Implemento un wrapper che contiene i vari elementi del DOM in questa scena, così da applicare le trasformazioni al wrapper e non ad ogni elemento singolarmente
+//GESTIONE WRAPPER
+	prepareShakeWrapper() {
+		if (this.shakeWrapper?.isConnected) {
+			return true;
+		}
+
+		const layers = this.sceneLayerSelectors
+			.map(selector => document.querySelector(selector))
+			.filter(layer => layer);
+
+		if (!layers.length) {
+			return false;
+		}
+
+		let viewport = document.getElementById("glitch-shake-viewport");
+		let wrapper = document.getElementById("glitch-shake-wrapper");
+
+		if (!viewport) {
+			viewport = document.createElement("div");
+			viewport.id = "glitch-shake-viewport";
+		}
+
+		if (!wrapper) {
+			wrapper = document.createElement("div");
+			wrapper.id = "glitch-shake-wrapper";
+		}
+
+		const firstLayer = layers[0];
+		firstLayer.parentNode.insertBefore(viewport, firstLayer);
+
+		if (!viewport.contains(wrapper)) {
+			viewport.appendChild(wrapper);
+		}
+
+		this.originalLayerPositions.clear();
+
+		layers.forEach(layer => {
+			const placeholder = document.createComment(`glitch-placeholder:${layer.id || layer.className || "layer"}`);
+
+			layer.parentNode.insertBefore(placeholder, layer);
+
+			this.originalLayerPositions.set(layer, {
+				placeholder,
+				inlinePosition: layer.style.position,
+				inlineInset: layer.style.inset,
+				inlineWidth: layer.style.width,
+				inlineHeight: layer.style.height
+			});
+
+			wrapper.appendChild(layer);
+		});
+
+		this.shakeViewport = viewport;
+		this.shakeWrapper = wrapper;
+		this.originalWrapperTransform = wrapper.style.transform || "";
+
+		wrapper.style.willChange = "transform";
+
+		return true;
+	},
+
+	applySceneTransform(glitchTransform) {
+		if (!this.shakeWrapper?.isConnected) {
+			if (!this.prepareShakeWrapper()) {
+				return;
+			}
+		}
+
+		this.shakeWrapper.style.transform =
+			`${this.originalWrapperTransform} ${glitchTransform}`.trim();
+	},
+
+	restoreSceneTransforms() {
+		if (!this.shakeWrapper) {
+			return;
+		}
+
+		this.shakeWrapper.style.transform = this.originalWrapperTransform;
+		this.shakeWrapper.style.willChange = "";
+
+		this.originalLayerPositions.forEach((position, layer) => {
+			if (!position.placeholder?.parentNode) {
+				return;
+			}
+
+			position.placeholder.parentNode.insertBefore(layer, position.placeholder);
+			position.placeholder.remove();
+
+			layer.style.position = position.inlinePosition;
+			layer.style.inset = position.inlineInset;
+			layer.style.width = position.inlineWidth;
+			layer.style.height = position.inlineHeight;
+		});
+
+		if (this.shakeViewport) {
+			this.shakeViewport.remove();
+		}
+
+		this.shakeViewport = null;
+		this.shakeWrapper = null;
+		this.originalWrapperTransform = "";
+		this.originalLayerPositions.clear();
+	},
+
+//INIZIO GLITCH
 	async start(){
 		if (this.active) return;
 
-		const bg = document.getElementById('background');
-		if(!bg) return;
+		if (!this.prepareShakeWrapper()) {
+			return;
+		}	
 
 		const store = monogatari.storage();
 		store.glitchGameCompleted = false;
@@ -501,9 +619,6 @@ const Glitch={
 		this.currentPhaseIndex = 0;
 		
 		this.ensureGameOverOverlay();
-		// Lo zoom deve avvenire dal centro reale dell'immagine
-		bg.style.transformOrigin= "center center";
-		bg.style.willChange = "transform";
 
 		try {
 			//Gestione delle fasi fino al loro completamento
@@ -559,10 +674,10 @@ const Glitch={
 			if (!this.active) return false;
 
 			store.glitchGameCompleted = true;
-			this.stop(true);
+			await this.stop(true);
 			return true;
 		} catch (error) {
-			this.stop(false);
+			await this.stop(false);
 			throw error;
 		}
 	},
@@ -576,8 +691,11 @@ const Glitch={
 	},
 
 	runLoop(phase) {
-		const bg = document.getElementById("background");
-		if (!bg) return;
+		if (!this.shakeWrapper?.isConnected) {
+			if (!this.prepareShakeWrapper()) {
+				return;
+			}
+		}
 
 		//Core animazione
 		const loop = () => {
@@ -643,10 +761,12 @@ const Glitch={
 				border.style.opacity = borderIntensity;
 			}
 
-			bg.style.transform =
+			const glitchTransform =
 				`translate(${shakeX}px, ${shakeY}px) ` +
 				`rotate(${rotate}deg) ` +
 				`scale(${totalScale * stretchX}, ${totalScale * stretchY})`;
+
+			this.applySceneTransform(glitchTransform);
 
 			const nextDelay = phase.baseDelay - this.intensity * phase.delayRamp;
 			this.timer = setTimeout(loop, Math.max(phase.minDelay, nextDelay));
@@ -704,10 +824,25 @@ const Glitch={
 		WordsGame.reset();
 	},
 
+	//Metodo utility utile al cooldown, calcola le effettive dimensioni iniziali della scena 
+	getWrapperNeutralScale(){
+		const overscan = 64;	//valore in px della proprietà "inset" del wrapper nel css
+		const scaleX = window.innerWidth / (window.innerWidth + overscan * 2);
+		const scaleY = window.innerHeight / (window.innerHeight + overscan * 2);
+
+		return {
+			x: scaleX,
+			y: scaleY
+		};
+	},
+
 	//Stessa animazione, ma a specchio e molto più brusca. Evito l'effetto "taglio netto".
-	cooldown(duration = 700, targetIntensity = 0) {
-		const bg = document.getElementById("background");
-		if (!bg) return Promise.resolve();
+	cooldown(duration = 700, targetIntensity = 0, restoreAtEnd = false) {
+		if (!this.shakeWrapper?.isConnected) {
+			if (!this.prepareShakeWrapper()) {
+				return Promise.resolve();
+			}
+		}
 
 		const border = document.getElementById("rage-border");
 
@@ -728,12 +863,18 @@ const Glitch={
 			const finalStretchX = 1 + this.config.stretchMax * 0.35 * targetIntensity;
 			const finalStretchY = 1 + this.config.squeezeMax * 0.35 * targetIntensity;
 
-			bg.style.transform =
+			const finalTransform =
 				`translate(0px, 0px) rotate(0deg) ` +
 				`scale(${finalScale * finalStretchX}, ${finalScale * finalStretchY})`;
 
+			this.applySceneTransform(finalTransform);
+
 			if (border) {
 				border.style.opacity = `${targetIntensity * 0.45}`;
+			}
+
+			if (restoreAtEnd) {
+				this.restoreSceneTransforms();
 			}
 
 			return Promise.resolve();
@@ -776,24 +917,64 @@ const Glitch={
 					this.config.baseZoomExtra * currentIntensity +
 					this.config.rageZoomExtra * Math.pow(currentIntensity, 2);
 
-				const totalScale = 1 + emotionalZoom;
+				let totalScaleX = 1 + emotionalZoom;
+				let totalScaleY = 1 + emotionalZoom;
+
+				if (restoreAtEnd) {
+					const neutralScale = this.getWrapperNeutralScale();
+					const neutralProgress = eased;
+
+					totalScaleX += (neutralScale.x - 1) * neutralProgress;
+					totalScaleY += (neutralScale.y - 1) * neutralProgress;
+				}
 
 				if (border) {
 					border.style.opacity = `${currentIntensity * 0.45}`;
 				}
 
-				bg.style.transform =
+				const glitchTransform =
 					`translate(${shakeX}px, ${shakeY}px) ` +
 					`rotate(${rotate}deg) ` +
-					`scale(${totalScale * stretchX}, ${totalScale * stretchY})`;
+					`scale(${totalScaleX * stretchX}, ${totalScaleY * stretchY})`;
+
+				this.applySceneTransform(glitchTransform);
 
 				if (t < 1) {
 					requestAnimationFrame(loop);
 				} else {
-					// Chiusura esplicita sul valore finale,
-					// così non resta nessun micro-offset.
-					bg.style.transform = "translate(0, 0) rotate(0deg) scale(1, 1)";
-					if (border) border.style.opacity = "0";
+					const finalZoom =
+						this.config.baseZoomExtra * targetIntensity +
+						this.config.rageZoomExtra * Math.pow(targetIntensity, 2);
+
+					const finalScale = 1 + finalZoom;
+					const finalStretchX = 1 + this.config.stretchMax * 0.35 * targetIntensity;
+					const finalStretchY = 1 + this.config.squeezeMax * 0.35 * targetIntensity;
+
+					let finalScaleX = finalScale * finalStretchX;
+					let finalScaleY = finalScale * finalStretchY;
+
+					if (restoreAtEnd) {
+						const neutralScale = this.getWrapperNeutralScale();
+						finalScaleX *= neutralScale.x;
+						finalScaleY *= neutralScale.y;
+					}
+
+					const finalTransform =
+						`translate(0px, 0px) rotate(0deg) ` +
+						`scale(${finalScaleX}, ${finalScaleY})`;
+					
+					this.intensity = targetIntensity;
+
+					if (restoreAtEnd) {
+						this.restoreSceneTransforms();
+					} else {
+						this.applySceneTransform(finalTransform);
+					}
+
+					if (border && targetIntensity === 0) {
+						border.style.opacity = "0";
+					}
+
 					resolve();
 				}
 			};
@@ -900,7 +1081,7 @@ const Glitch={
 			store.glitchGamePhase = 1;
 		}
 
-		await this.cooldown(500,0);
+		await this.cooldown(500, 0, true);
 	}
 };
 
@@ -1499,25 +1680,64 @@ const PanicBreath = {
 
 const BlinkOverlay = {
 	speed: 300,
-	overlay: document.getElementById('blink-overlay'),
+	overlay: null,
+	isBlinkning: false,
+
+	init(){
+		this.overlay = document.getElementById('blink-overlay');
+
+		if(!this.overlay){
+			this.overlay = document.createElement('div');
+			this.overlay.id = 'blink-overlay';
+			this.overlay.className = 'blink-overlay';
+			this.overlay.innerHTML = '<div class="eyelid top"></div><div class="eyelid bottom"></div>';
+			document.body.appendChild(this.overlay);
+		}
+
+		this.overlay.classList.add('blink-overlay');
+		this.setSpeed(this.speed);
+
+		return this.overlay;
+	},
+
+	getOverlay(){
+		return this.overlay || this.init();
+	},
 
 	setSpeed(ms){
-		this.speed = ms;
-		this.overlay.style.setProperty('--speed', `${ms}ms`);
+		this.speed = Number(ms) || 300;
+		this.getOverlay().style.setProperty('--speed', `${this.speed}ms`);
 	},
 
-	async blink(){
-		this.overlay.classList.add('closed');
-		await new Promise(r => setTimeout(r, this.speed));
+	wait(ms){return new Promise(resolve => setTimeout(resolve, ms));},
 
-		this.overlay.classList.remove('closed');
-		await new Promise(r => setTimeout(r, this.speed));
+	async blink(speed = this.speed) {
+		if (this.isBlinking) {
+			return;
+		}
+
+		this.isBlinking = true;
+
+		try {
+			this.setSpeed(speed);
+
+			const overlay = this.getOverlay();
+
+			overlay.classList.add('closed');
+			await this.wait(this.speed);
+
+			overlay.classList.remove('closed');
+			await this.wait(this.speed * 1.15);
+		} finally {
+			this.isBlinking = false;
+		}
 	},
 
-	async doubleBlink(){
-		await this.blink();
-		await new Promise(r => setTimeout(r, this.speed * 0.4));
-		await this.blink();
+
+	async doubleBlink(speed = this.speed) {
+		await this.blink(speed);
+		await this.wait(this.speed * 0.35);
+		await this.blink(speed * 0.85);
 	}
 }
 
