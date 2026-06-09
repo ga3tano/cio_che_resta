@@ -353,6 +353,144 @@ input[type=range]::-ms-fill-upper {
     }
 }
 
+/* Lock Screen Styles */
+.phone-lock {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    gap: 20px;
+}
+
+.lock-time {
+    font-size: 4.5rem;
+    font-weight: 200;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.lock-date {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 400;
+    margin-bottom: 30px;
+}
+
+.lock-icon {
+    width: 30px;
+    height: 30px;
+    border: 2px solid white;
+    border-radius: 50%;
+    position: relative;
+    margin-bottom: 15px;
+    opacity: 0.8;
+}
+
+.lock-icon::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 14px;
+    border: 2px solid white;
+    border-radius: 50% 50% 0 0;
+    border-bottom: none;
+}
+
+.lock-status {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.lock-hint {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    position: absolute;
+    bottom: 60px;
+    animation: pulse-hint 2s ease-in-out infinite;
+}
+
+/* Lock Screen Notifications */
+.lock-notifications {
+    width: 100%;
+    padding: 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: auto;
+}
+
+.lock-notification {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lock-notification-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.lock-notification-text {
+    flex: 1;
+}
+
+.lock-notification-title {
+    font-weight: 600;
+    font-size: 0.78rem;
+    margin-bottom: 2px;
+}
+
+.lock-notification-subtitle {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Animations */
+@keyframes pulse-hint {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes lock-unlock {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+.clock-display{
+	display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    font-family: monospace;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 1000;
+}
+
 .night-overlay{
     position: fixed;
     top: 0;
@@ -484,7 +622,7 @@ input[type=range]::-ms-fill-upper {
 
 #glitch-shake-wrapper {
 	position: absolute;
-	inset: -64px;
+	inset: 0;	/*old: -64px */
 	transform: translate3d(0, 0, 0);
 	transform-origin: center center;
 	will-change: transform;
@@ -990,6 +1128,32 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 		transition-duration: 1ms;
 	}
 }
+
+/* --- WRAPPER OGGETTI NELLE VARIE SCENE --- */
+.details-wrapper{
+	position: absolute;
+	inset: 0;
+	top: 0;
+	left: 0;
+	overflow: hidden;
+	pointer-events: none;
+	z-index: 0;
+	background-color: transparent;
+	width: 100vw;
+	height: 100vh;
+}
+
+.wrapper-item{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: 0;
+}
+
+
+
 /* game-screen[data-component="game-screen"].bg-transparent {
     background-color: rgba(0,0,0,0);
 } */

@@ -171,6 +171,7 @@ const PhoneUI = {
     shell: null,
     chat: null,
     contact: null,
+	mode: 'chat',
 
     init() {
         this.layer = document.getElementById('phone-layer');
@@ -236,7 +237,15 @@ const PhoneUI = {
     stopVibration() {
         if (!this.shell) return;
         this.shell.classList.remove('vibrating');
-    }
+    },
+
+	switchMode(){
+		if(mode === 'chat')
+			mode === 'lockscreen';
+
+		if(mode === 'lockscreen');
+			mode === 'chat';
+	}
 };
 
 const NightOverlay = {
@@ -407,9 +416,11 @@ const Glitch={
 	gameOverOverlay: null,
 
 	//L'ordine è importante, è dal z-index inferiore al superiore.
+	//Se ci sono altri elementi nel DOM in questa scena a cui aggiungere l'animazione di shake, aggiungere qui.
 	sceneLayerSelectors: [
 		"#sky",
 		"#background",
+		"#details-wrapper"
 	],
 
 	shakeViewport: null,
@@ -825,16 +836,16 @@ const Glitch={
 	},
 
 	//Metodo utility utile al cooldown, calcola le effettive dimensioni iniziali della scena 
-	getWrapperNeutralScale(){
-		const overscan = 64;	//valore in px della proprietà "inset" del wrapper nel css
-		const scaleX = window.innerWidth / (window.innerWidth + overscan * 2);
-		const scaleY = window.innerHeight / (window.innerHeight + overscan * 2);
+	// getWrapperNeutralScale(){
+	// 	const overscan = 64;	//valore in px della proprietà "inset" del wrapper nel css
+	// 	const scaleX = window.innerWidth / (window.innerWidth + overscan * 2);
+	// 	const scaleY = window.innerHeight / (window.innerHeight + overscan * 2);
 
-		return {
-			x: scaleX,
-			y: scaleY
-		};
-	},
+	// 	return {
+	// 		x: scaleX,
+	// 		y: scaleY
+	// 	};
+	// },
 
 	//Stessa animazione, ma a specchio e molto più brusca. Evito l'effetto "taglio netto".
 	cooldown(duration = 700, targetIntensity = 0, restoreAtEnd = false) {
@@ -920,13 +931,13 @@ const Glitch={
 				let totalScaleX = 1 + emotionalZoom;
 				let totalScaleY = 1 + emotionalZoom;
 
-				if (restoreAtEnd) {
-					const neutralScale = this.getWrapperNeutralScale();
-					const neutralProgress = eased;
+				// if (restoreAtEnd) {
+				// 	const neutralScale = this.getWrapperNeutralScale();
+				// 	const neutralProgress = eased;
 
-					totalScaleX += (neutralScale.x - 1) * neutralProgress;
-					totalScaleY += (neutralScale.y - 1) * neutralProgress;
-				}
+				// 	totalScaleX += (neutralScale.x - 1) * neutralProgress;
+				// 	totalScaleY += (neutralScale.y - 1) * neutralProgress;
+				// }
 
 				if (border) {
 					border.style.opacity = `${currentIntensity * 0.45}`;
@@ -952,12 +963,6 @@ const Glitch={
 
 					let finalScaleX = finalScale * finalStretchX;
 					let finalScaleY = finalScale * finalStretchY;
-
-					if (restoreAtEnd) {
-						const neutralScale = this.getWrapperNeutralScale();
-						finalScaleX *= neutralScale.x;
-						finalScaleY *= neutralScale.y;
-					}
 
 					const finalTransform =
 						`translate(0px, 0px) rotate(0deg) ` +
@@ -1514,7 +1519,31 @@ const WordsGame = {
 /*
 FUNZIONI CUSTOM
 */ 
-const SceneWithSky = {
+const SCENE_IMAGES = {
+	'negazione': [
+		{ id: 'cornice', src: '../assets/images/cornice.png'},
+		{ id: 'pianta_2', src: '../assets/images/pianta_2.png'}
+	],
+	'rabbia': [
+		{ id: 'cornice_rotta', src: '../assets/images/cornice_rotta.png'},
+		{ id: 'pianta_1', src: '../assets/images/pianta_1.png'},
+		{ id: 'vestiti', src: '../assets/images/vestiti.png'}
+	],
+	'contrattazione': [
+		{ id: 'cornice_rotta', src: '../assets/images/cornice_rotta.png'},
+		{ id: 'pianta_1', src: '../assets/images/pianta_1.png'},
+		{ id: 'vestiti', src: '../assets/images/vestiti.png'}
+	],
+	'depressione': [
+		{ id: 'cornice', src: '../assets/images/cornice.png'},
+		{ id: 'pianta_2', src: '../assets/images/pianta_2.png'}
+	],
+	'accettazione': [
+		{ id: 'cornice', src: '../assets/images/cornice.png'},
+		{ id: 'pianta_3', src: '../assets/images/pianta_3.png'}
+	]
+}
+const SceneUtility = {
 	async loadSky(typeOfSky){
 		function preloadImage(src){
 			return new Promise((resolve, reject) => {
@@ -1548,6 +1577,63 @@ const SceneWithSky = {
 		document.body.classList.remove("composite-sky-scene");
 	},
 
+	hideSky(){
+		const sky = document.getElementById("sky");
+		sky.style.display = "none";
+	},
+
+	async loadDetails(typeOfItems) {
+		// Carica o crea il wrapper
+		let wrapper = document.getElementById('details-wrapper');
+		
+		if (!wrapper) {
+			wrapper = document.createElement('div');
+			wrapper.id = 'details-wrapper';
+			wrapper.className = 'details-wrapper';
+
+			// Aggiungo il wrapper al gioco 
+			document.body.appendChild(wrapper);
+		}
+		
+		// Pulisci il contenuto precedente
+		wrapper.innerHTML = '';
+		
+		// Prendi le immagini dalla scena
+		const images = SCENE_IMAGES[typeOfItems];
+		
+		if (!images) {
+			console.warn(`Nessuna immagine per la scena: ${typeOfItems}`);
+			return;
+		}
+		
+		function loadImage(imgData, wrapper){
+			return new Promise((resolve) => {
+				const img = document.createElement('img');
+				img.id = imgData.id;
+				img.src = imgData.src;
+				img.className = 'wrapper-item';
+				
+				img.onload = () => {
+					wrapper.appendChild(img);
+					resolve();
+				};
+				
+				img.onerror = () => {
+					console.error(`Failed to load: ${imgData.src}`);
+					resolve(); // Resolve comunque per far caricare le altre immagini
+				};
+			});
+		}
+
+		// Carica le immagini
+		for (const imgData of images) {
+			await loadImage(imgData, wrapper);
+		}
+
+		console.log(`Loaded ${images.length} images for ${typeOfItems}`);
+	},
+
+
 	revealPreparedScene() {
 		const overlay = document.getElementById("sceneFadeOverlay");
 
@@ -1566,9 +1652,25 @@ const SceneWithSky = {
 		})
 	},
 
-	hideSky(){
-		const sky = document.getElementById("sky");
-		sky.style.display = "none";
+	async loadScene(typeOfScene){
+		switch(typeOfScene){
+			case "negazione":
+				await this.loadSky("notte");
+				break;
+			case "rabbia":
+				await this.loadSky("nuvolo");
+				break;
+			case "contrattazione":
+				await this.loadSky("giorno_2")
+				break;
+			case "depressione":
+				await this.loadSky("nuvolo");
+				break;
+			case "accettazione":
+				await this.loadSky("giorno_1");
+				break;
+		}
+		await this.loadDetails(typeOfScene);
 	}
 }
 
@@ -1741,54 +1843,56 @@ const BlinkOverlay = {
 	}
 }
 
-// async function loadSky(typeOfSky){
-// 	function preloadImage(src){
-// 		return new Promise((resolve, reject) => {
-// 			const img = new Image();
-// 			img.onload = resolve;
-// 			img.onerror = reject;
-// 			img.src = src;
-// 		});
-// 	}
-	
-// 	const sky = document.getElementById("sky");
-// 	const overlay = document.getElementById("sceneFadeOverlay");
+const AcceleratingClock = {
+	stopClock: null,
 
-// 	//Imposto l'immagine di background del div
-// 	const imageSrc = `../assets/scenes/cielo_${typeOfSky}.png`;
-	
-// 	overlay.classList.add("covering");
+	startAcceleratingClock(elementId) {
+        const display = document.getElementById(elementId);
+		const now = new Date();
 
-// 	await preloadImage(imageSrc);
+		let hours = now.getHours();
+		let minutes = now.getMinutes();
+		let seconds = now.getSeconds();
+		let delay = 800;
+		let timeoutId;
+		let tickCount = 0;
+		
+		console.log(hours, minutes, seconds);
 
-// 	sky.style.display = "block";
-// 	sky.style.backgroundImage= `url("${imageSrc}")`;
+		function updateClock() {
+			const timeString = [
+				hours.toString().padStart(2, '0'),
+				minutes.toString().padStart(2, '0')
+			].join(':');
+			
+			display.textContent = timeString;
+			
+			tickCount++;
+			
+			//L'aggiunta dei minuti è esponenziale
+			let minutesToAdd = Math.pow(2, tickCount);
 
-// 	document.body.classList.add("composite-sky-scene");
-// }
+			minutes += minutesToAdd;
 
-// function revealPreparedScene() {
-// 	const overlay = document.getElementById("sceneFadeOverlay");
-
-// 	/*
-// 	Aspetto 2 volte il frame:
-// 	Stato iniziale: Opacity 1, quindi tutto nero
-// 	Stato intermedio: rimuovo l'overlay e do il tempo al browser di far partire l'animazione
-// 	Stato finale: Opacity 0, quindi trasparente
-
-// 	Tecnica usata spesso per animazioni di questo tipo
-// 	*/ 
-// 	requestAnimationFrame(() => {
-// 		requestAnimationFrame(() => {
-// 			overlay.classList.remove("covering");
-// 		})
-// 	})
-// }
-
-// function hideSky(){
-// 	const sky = document.getElementById("sky");
-// 	sky.style.display = "none";
-// }
+			while (minutes >= 60) {
+				minutes -= 60;
+				hours++;
+			}
+			while (hours >= 24) {
+				hours -= 24;
+			}
+			
+			delay = Math.max(30, delay * 0.85);
+			timeoutId = setTimeout(updateClock, delay);
+		}
+		
+		updateClock();
+		
+		return function stop() {
+			clearTimeout(timeoutId);
+		};
+	}
+}
 
 /*OGGETTI CLICKABILI*/
 function showClickableObjects(){

@@ -123,12 +123,35 @@
 				<div class="phone-speaker"></div>
 
 				<div class="phone-screen">
-					<div class="phone-header">
-						<span id="phone-contact">Giulia</span>
-						<span class="phone-status">online</span>
+					<!-- Chat view (default visible) -->
+					<div id="phone-chat-view">
+						<div class="phone-header">
+							<span id="phone-contact">Giulia</span>
+							<span class="phone-status">online</span>
+						</div>
+						<div id="phone-chat" class="phone-chat"></div>
 					</div>
-
-					<div id="phone-chat" class="phone-chat"></div>
+					
+					<!-- Lock screen (hidden by default) -->
+					<div id="phone-lock-view" style="display: none;">
+						<div class="phone-lock">
+							<div class="lock-time" id="lock-time">15:30</div>
+							<div class="lock-date">Tuesday, June 9</div>
+							<div class="lock-icon"></div>
+							<div class="lock-status">Locked</div>
+							<div class="lock-notifications">
+								<div class="lock-notification">
+									<div class="lock-notification-icon">💬</div>
+									<div class="lock-notification-text">
+										<div class="lock-notification-title">Giulia</div>
+										<div class="lock-notification-subtitle">3 new messages</div>
+									</div>
+								</div>
+							</div>
+							<div class="lock-hint">Swipe up to unlock</div>
+						</div>
+					</div>
+					
 				</div>
 			</div>
 		</div>
@@ -143,6 +166,8 @@
 			<div class="eyelid top"></div>
     		<div class="eyelid bottom"></div>
 		</div>
+
+		<div id="clock-display" class="clock-display">00:00</div>
 
 	</body>
 

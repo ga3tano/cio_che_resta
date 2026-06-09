@@ -134,7 +134,7 @@ monogatari.script ({
 		},
 
 		'show scene #666666 with fadeIn',
-		() => {PanicBreath.start();},
+		() => PanicBreath.start(),
 
 		{
 			'Choice': {
@@ -162,9 +162,9 @@ monogatari.script ({
 	// ],
 
 	'Negazione_Cellulare': [
-        () => SceneWithSky.loadSky("notte"),
+        () => SceneUtility.loadSky("notte"),
 		'show scene room_night',
-		() => SceneWithSky.revealPreparedScene(),
+		() => SceneUtility.revealPreparedScene(),
         'play sound phone_vibration',
 		'play sound phone_notification',
         'vibrate 20000',
@@ -262,7 +262,7 @@ monogatari.script ({
 
 	'Rimani_A_Casa':[
 		'show scene #000000 with fadeIn',
-		() => {PhoneUI.hide();},
+		() => PhoneUI.hide(),
 		// 'show scene #000000 with fadeIn',
 		'wait 5000',
 		'play sound phone_vibration',
@@ -274,7 +274,7 @@ monogatari.script ({
 			PhoneUI.addIncoming('Non lasciarmi aspettare.');
 			PhoneUI.vibrate();
 
-			SceneWithSky.toggleBackground();
+			SceneUtility.toggleBackground();
 		},
 
 		{'Choice':{
@@ -288,7 +288,7 @@ monogatari.script ({
 	'Esci_Casa':[
 		() => PhoneUI.hide(),
 		'show scene outside with fadeIn',
-		() => SceneWithSky.enableBackground(),
+		() => SceneUtility.enableBackground(),
 		
 		'wait 3000',
 		
@@ -355,11 +355,10 @@ monogatari.script ({
 	],
 
 //RABBIA
-
 	'Rabbia': [
-		() => SceneWithSky.loadSky("nuvolo"),
+		() => SceneUtility.loadScene("rabbia"),
 		'show scene room_rage',
-		() => 	SceneWithSky.revealPreparedScene(),
+		() => SceneUtility.revealPreparedScene(),
 
 		'wait 2000',
 
@@ -410,7 +409,18 @@ monogatari.script ({
 	],
 
 	'ContinuaGlitch': [
-		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">...</div>'
+		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">...</div>',
+		async () => {
+			document.getElementById('clock-display').style.display = 'block';
+			AcceleratingClock.stopClock = AcceleratingClock.startAcceleratingClock('clock-display');
+		},
+
+		'wait 10000',
+
+		async () => {
+			if(AcceleratingClock.stopClock) AcceleratingClock.stopClock();
+			document.getElementById('clock-display').style.display = 'none';
+		}
 	]
 
 	/*
