@@ -160,7 +160,150 @@ class TypeCentered extends Monogatari.Action {
 	}
 }
 
+// Custom action per mostrare le scelte direttamente dentro la chat del telefono.
+class PhoneChoice extends Monogatari.Action {
+	static id = 'PhoneChoice';
+
+	static matchObject (statement) {
+		return typeof statement.PhoneChoice !== 'undefined';
+	}
+
+	constructor (statement) {
+		super ();
+
+		// Salviamo la configurazione ricevuta dallo script Monogatari.
+		this.statement = statement.PhoneChoice;
+		this.container = null;
+		this.hasChosen = false;
+	}
+
+	apply () {
+		if (!PhoneUI.layer) PhoneUI.init ();
+
+		// La custom action vive dentro il telefono, quindi lo apre se non e' gia' visibile.
+		PhoneUI.show (this.statement.Contact ?? 'Giulia');
+		this.removeExistingChoices ();
+
+		// Come la Choice standard di Monogatari, blocchiamo l'avanzamento automatico.
+		monogatari.global ('block', true);
+
+		const container = document.createElement ('div');
+		container.className = 'phone-choice-container';
+		container.dataset.phoneChoiceContainer = 'true';
+
+		this.getChoices ().forEach ((choice) => {
+			const button = document.createElement ('button');
+			button.type = 'button';
+			button.className = 'phone-choice-button';
+			button.textContent = choice.text;
+			button.addEventListener ('click', (event) => this.choose (choice, event));
+
+			container.appendChild (button);
+		});
+
+		PhoneUI.chat.appendChild (container);
+		PhoneUI.chat.scrollTop = PhoneUI.chat.scrollHeight;
+		PhoneUI.layer.classList.add ('choice-active');
+		this.container = container;
+
+		return Promise.resolve ();
+	}
+
+	getChoices () {
+		// Convertiamo l'oggetto scritto in script.js in una lista semplice di pulsanti.
+		return Object.entries (this.statement)
+			// Contact e Class sono opzioni della custom action, non pulsanti da mostrare.
+			.filter (([key]) => !['Contact', 'Class'].includes (key))
+			.map (([key, value]) => {
+				if (typeof value === 'string') {
+					return {
+						text: key,
+						doAction: value
+					};
+				}
+
+				return {
+					text: value.Text ?? key,
+					doAction: value.Do,
+					onChosen: value.onChosen
+				};
+			});
+	}
+
+	async choose (choice, event) {
+		// Impediamo al click di passare alla schermata di gioco dietro al telefono.
+		event.preventDefault ();
+		event.stopPropagation ();
+
+		if (this.hasChosen) return;
+		this.hasChosen = true;
+
+		this.disableButtons ();
+		this.removeExistingChoices ();
+
+		try {
+			if (typeof choice.onChosen === 'function') {
+				await choice.onChosen ();
+			}
+
+			// Sblocchiamo Monogatari e facciamo eseguire l'azione collegata al pulsante.
+			monogatari.global ('block', false);
+
+			if (choice.doAction) {
+				await monogatari.run (choice.doAction);
+			}
+		} catch (error) {
+			monogatari.global ('block', false);
+			console.error ('Errore durante PhoneChoice:', error);
+		}
+	}
+
+	disableButtons () {
+		// Dopo il click disabilitiamo tutto per evitare doppie esecuzioni.
+		if (!this.container) return;
+
+		this.container.querySelectorAll ('button').forEach ((button) => {
+			button.disabled = true;
+		});
+	}
+
+	removeExistingChoices () {
+		// Pulizia difensiva: puo' esserci una sola scelta telefonica alla volta.
+		if (!PhoneUI.chat) return;
+
+		PhoneUI.chat.querySelectorAll ('[data-phone-choice-container]').forEach ((element) => {
+			element.remove ();
+		});
+
+		if (PhoneUI.layer) {
+			PhoneUI.layer.classList.remove ('choice-active');
+		}
+	}
+
+	didApply () {
+		return Promise.resolve ({
+			advance: false,
+			step: false
+		});
+	}
+
+	revert () {
+		this.removeExistingChoices ();
+		monogatari.global ('block', false);
+
+		return Promise.resolve ();
+	}
+
+	didRevert () {
+		return Promise.resolve ({
+			advance: true,
+			step: true
+		});
+	}
+}
+
 monogatari.registerAction (TypeCentered);
+monogatari.registerAction (PhoneChoice);
 
 /*
 OGGETTI CUSTOM
@@ -191,7 +334,8 @@ const PhoneUI = {
     hide() {
         if (!this.layer) this.init();
 
-        this.layer.classList.remove('visible');
+        // Chiudendo il telefono disattiviamo anche i click delle scelte telefoniche.
+        this.layer.classList.remove('visible', 'choice-active');
         this.layer.setAttribute('aria-hidden', 'true');
         this.stopVibration();
     },
@@ -199,6 +343,9 @@ const PhoneUI = {
     reset() {
         if (!this.layer) this.init();
         this.chat.innerHTML = '';
+
+        // Resettare la chat rimuove i pulsanti, quindi togliamo anche lo stato interattivo.
+        this.layer.classList.remove('choice-active');
     },
 
     addIncoming(text) {

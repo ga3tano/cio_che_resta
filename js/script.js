@@ -184,7 +184,8 @@ monogatari.script ({
             }
         }},
 
-        {'Choice': {
+        // PhoneChoice mostra questi pulsanti direttamente nella chat del telefono.
+        {'PhoneChoice': {
             'Rispondi': {
                 'Text': 'RISPONDI',
                 'Do': 'jump Negazione_Rispondi'
@@ -371,7 +372,8 @@ monogatari.script ({
 			PhoneUI.vibrate();
 		},
 
-		{'Choice':{
+		// Qui la risposta e' parte della conversazione, quindi resta dentro il telefono.
+		{'PhoneChoice':{
 			'Lasciami': {
 				'Text': 'Lasciami in pace!',
 				'Do': 'jump GlitchRabbia'
@@ -424,13 +426,17 @@ monogatari.script ({
 		// 	document.getElementById('clock-display').style.display = 'none';
 		// },
 
-		{'Choice':{
+		() => {
+			PhoneUI.reset();
+			PhoneUI.show();
+		},
+
+		// Mostriamo il comando come azione del telefono e poi scriviamo il messaggio scelto.
+		{'PhoneChoice':{
 			'Scrivi un nuovo messaggio': {
 				'Text': 'SCRIVI UN NUOVO MESSAGGIO',
 				'Do': 'wait 2000',
 				'onChosen': function() {
-					PhoneUI.reset();
-					PhoneUI.show();
 					PhoneUI.addOutgoing('Ehi');
 				}
 			}
