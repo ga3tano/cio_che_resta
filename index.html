@@ -123,6 +123,23 @@
 				<div class="phone-speaker"></div>
 
 				<div class="phone-screen">
+					<!-- Status bar comune a tutte le viste del telefono. -->
+					<div class="phone-status-bar" aria-label="Stato del telefono">
+						<span id="phone-status-time" class="phone-status-time">00:00</span>
+						<div class="phone-status-icons" aria-label="Segnale, rete e batteria">
+							<span class="phone-signal-icon" aria-hidden="true">
+								<span></span>
+								<span></span>
+								<span></span>
+								<span></span>
+							</span>
+							<span class="phone-network-label">5G</span>
+							<span class="phone-battery-icon" aria-hidden="true">
+								<span></span>
+							</span>
+						</div>
+					</div>
+
 					<!-- Chat view (default visible) -->
 					<div id="phone-chat-view">
 						<div class="phone-header">
@@ -136,7 +153,7 @@
 					<div id="phone-lock-view" style="display: none;">
 						<div class="phone-lock">
 							<div class="lock-time" id="lock-time">15:30</div>
-							<div class="lock-date">Tuesday, June 9</div>
+							<div id="phone-lock-date" class="lock-date">Tuesday, June 9</div>
 							<div class="lock-icon"></div>
 							<div class="lock-status">Locked</div>
 							<div class="lock-notifications">

@@ -290,7 +290,105 @@ input[type=range]::-ms-fill-upper {
         radial-gradient(circle at top, rgba(178, 209, 240, 0.16), transparent 35%),
         linear-gradient(180deg, #111827, #05070b);
     color: white;
+    display: flex;
+    flex-direction: column;
     font-family: system-ui, sans-serif;
+}
+
+.phone-status-bar {
+    align-items: center;
+    background: rgba(5, 7, 11, 0.22);
+    display: flex;
+    flex: 0 0 28px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    justify-content: space-between;
+    padding: 0 18px;
+}
+
+.phone-status-time {
+    font-variant-numeric: tabular-nums;
+    min-width: 42px;
+}
+
+.phone-status-icons {
+    align-items: center;
+    display: flex;
+    gap: 7px;
+}
+
+.phone-signal-icon {
+    align-items: flex-end;
+    display: flex;
+    gap: 2px;
+    height: 10px;
+    width: 18px;
+}
+
+.phone-signal-icon span {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 2px;
+    width: 3px;
+}
+
+.phone-signal-icon span:nth-child(1) {
+    height: 4px;
+}
+
+.phone-signal-icon span:nth-child(2) {
+    height: 6px;
+}
+
+.phone-signal-icon span:nth-child(3) {
+    height: 8px;
+}
+
+.phone-signal-icon span:nth-child(4) {
+    height: 10px;
+}
+
+.phone-network-label {
+    font-size: 0.62rem;
+    line-height: 1;
+}
+
+.phone-battery-icon {
+    border: 1.5px solid rgba(255, 255, 255, 0.86);
+    border-radius: 3px;
+    height: 9px;
+    padding: 1px;
+    position: relative;
+    width: 19px;
+}
+
+.phone-battery-icon::after {
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: 0 2px 2px 0;
+    content: '';
+    height: 5px;
+    position: absolute;
+    right: -4px;
+    top: 2px;
+    width: 2px;
+}
+
+.phone-battery-icon span {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 2px;
+    display: block;
+    height: 100%;
+    width: 72%;
+}
+
+#phone-chat-view,
+#phone-lock-view {
+    flex: 1;
+    min-height: 0;
+}
+
+#phone-chat-view {
+    display: flex;
+    flex-direction: column;
 }
 
 .phone-header {
@@ -314,8 +412,11 @@ input[type=range]::-ms-fill-upper {
 .phone-chat {
     padding: 16px;
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 10px;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .phone-bubble {

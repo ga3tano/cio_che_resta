@@ -314,6 +314,10 @@ const PhoneUI = {
     shell: null,
     chat: null,
     contact: null,
+    statusTime: null,
+    lockTime: null,
+    lockDate: null,
+    statusClockTimer: null,
 	mode: 'chat',
 
     init() {
@@ -321,12 +325,17 @@ const PhoneUI = {
         this.shell = document.getElementById('phone-shell');
         this.chat = document.getElementById('phone-chat');
         this.contact = document.getElementById('phone-contact');
+        this.statusTime = document.getElementById('phone-status-time');
+        this.lockTime = document.getElementById('lock-time');
+        this.lockDate = document.getElementById('phone-lock-date');
+        this.updateClock();
     },
 
     show(contactName = 'Giulia') {
         if (!this.layer) this.init();
 
         this.contact.textContent = contactName;
+        this.startClock();
         this.layer.classList.add('visible');
         this.layer.setAttribute('aria-hidden', 'false');
     },
@@ -338,6 +347,7 @@ const PhoneUI = {
         this.layer.classList.remove('visible', 'choice-active');
         this.layer.setAttribute('aria-hidden', 'true');
         this.stopVibration();
+        this.stopClock();
     },
 
     reset() {
@@ -384,6 +394,47 @@ const PhoneUI = {
     stopVibration() {
         if (!this.shell) return;
         this.shell.classList.remove('vibrating');
+    },
+
+    startClock() {
+        this.updateClock();
+
+        if (this.statusClockTimer) return;
+
+        // Aggiorniamo ogni secondo: l'orario resta preciso anche se il telefono resta aperto.
+        this.statusClockTimer = setInterval(() => {
+            this.updateClock();
+        }, 1000);
+    },
+
+    stopClock() {
+        if (!this.statusClockTimer) return;
+
+        clearInterval(this.statusClockTimer);
+        this.statusClockTimer = null;
+    },
+
+    updateClock() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const currentTime = `${hours}:${minutes}`;
+
+        if (this.statusTime) {
+            this.statusTime.textContent = currentTime;
+        }
+
+        if (this.lockTime) {
+            this.lockTime.textContent = currentTime;
+        }
+
+        if (this.lockDate) {
+            this.lockDate.textContent = now.toLocaleDateString('it-IT', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long'
+            });
+        }
     },
 
 	switchMode(){
