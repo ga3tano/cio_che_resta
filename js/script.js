@@ -486,6 +486,40 @@ monogatari.script ({
 		() => SceneUtility.revealPreparedScene(),
 
 
+	],
+
+	// Scena isolata: non viene richiamata dal flow narrativo, solo dal menu di debug.
+	'Test_telefono': [
+		'show scene #000000 with fadeIn',
+
+		() => {
+			PhoneUI.reset();
+			PhoneUI.show('Debug telefono');
+			PhoneUI.addIncoming('Ciao sono Tony sono quello di ieri');
+			PhoneUI.addIncoming('Non ti ho piu richiamata perche ti puzzano i piedi');		
+			PhoneUI.vibrate(600);
+		},
+
+		{'PhoneChoice': {
+			'Test 1': {
+				'Text': 'Chi ti conosce?',
+				'Do': 'wait 300',
+				'onChosen': function() {
+					PhoneUI.addOutgoing('Ma chi cazzo sei chi ti conosceeeeeh!');
+				}
+			},
+			'Test 2': {
+				'Text': 'Ignora',
+				'Do': 'wait 300',
+				'onChosen': function() {
+					PhoneUI.addOutgoing('...');
+				}
+			}
+		}},
+
+		() => {
+			PhoneUI.addIncoming('Va be skibidiboppi');
+		}
 	]
 	/*
 	'Yes': [

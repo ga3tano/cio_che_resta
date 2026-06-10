@@ -2334,7 +2334,8 @@ const DebugMenu = {
 		'Rabbia',
 		'GlitchRabbia',
 		'ContinuaGlitch',
-		'Contrattazione'
+		'Contrattazione',
+		'Test_telefono'
 	],
 
 	init() {
