@@ -1530,13 +1530,14 @@ const SCENE_IMAGES = {
 		{ id: 'vestiti', src: '../assets/images/vestiti.png'}
 	],
 	'contrattazione': [
-		{ id: 'cornice_rotta', src: '../assets/images/cornice_rotta.png'},
-		{ id: 'pianta_1', src: '../assets/images/pianta_1.png'},
-		{ id: 'vestiti', src: '../assets/images/vestiti.png'}
+		{ id: 'cornice_rotta', src: '../assets/images/cornice_rotta.png', onClick: '../assets/images/cornice.png'},
+		{ id: 'pianta_1', src: '../assets/images/pianta_1.png', onClick: '../assets/images/pianta_2.png'},
+		{ id: 'vestiti', src: '../assets/images/vestiti.png', onClick: 'palle'}
 	],
 	'depressione': [
 		{ id: 'cornice', src: '../assets/images/cornice.png'},
-		{ id: 'pianta_2', src: '../assets/images/pianta_2.png'}
+		{ id: 'pianta_2', src: '../assets/images/pianta_2.png'},
+		{ id: 'uomo', src: '../assets/images/uomo.png'}
 	],
 	'accettazione': [
 		{ id: 'cornice', src: '../assets/images/cornice.png'},
@@ -1544,6 +1545,7 @@ const SCENE_IMAGES = {
 	]
 }
 const SceneUtility = {
+	clickedItems: false,
 	async loadSky(typeOfSky){
 		function preloadImage(src){
 			return new Promise((resolve, reject) => {
@@ -1606,15 +1608,64 @@ const SceneUtility = {
 			return;
 		}
 		
+		if(typeOfItems === "contrattazione"){
+			// Aggiungiamo un eventListenr unico che gestisce i vari layer di immagini
+			wrapper.addEventListener('click', (e) => {
+				e.stopPropagation();
+
+				// Prendiamo tutte le immagini clickabili
+				const clickableImages = wrapper.querySelectorAll('.clickable-object');
+				console.log(clickableImages);
+				
+				// Controlla le immaggin dalla superiore all'inferiore nel DOM
+				const imagesArray = Array.from(clickableImages).reverse();
+				
+				for (const img of imagesArray) {
+					if (isClickOnVisiblePixel(img, e)) {
+						const imgId = img.id;
+						const imgData = images.find(i => i.id === imgId);
+						
+						if (imgData && imgData.onClick) {
+							img.src = imgData.onClick;
+							img.classList.remove('clickable-object', 'highlight');
+							img.style.pointerEvents = 'none';
+						}
+
+						if(!clickableImages) this.clickedItems = true;
+						break; // Stop dopo il primo match
+					}
+				}
+			});
+
+		}
+		
 		function loadImage(imgData, wrapper){
 			return new Promise((resolve) => {
 				const img = document.createElement('img');
 				img.id = imgData.id;
 				img.src = imgData.src;
 				img.className = 'wrapper-item';
+
+				if(imgData.onClick){
+					img.classList.add('clickable-object', 'highlight');
+					// img.style.pointerEvents = 'auto'; //Override pointerEvents: none; del wrapper
+				
+					// img.addEventListener('click', (e) => {
+					// 	e.stopPropagation();
+					// 	// Si trigghera solamente se il click è fatto su pixel senza trasparenza
+					// 	if (isClickOnVisiblePixel(img, e)) {						
+					// 		img.src = imgData.onClick;
+							
+					// 		img.classList.remove('clickable-object', 'highlight');
+					// 		img.style.pointerEvents = 'none';
+					// 	}					
+					// })
+				}
+					
 				
 				img.onload = () => {
 					wrapper.appendChild(img);
+					console.log(img);
 					resolve();
 				};
 				
@@ -1623,6 +1674,36 @@ const SceneUtility = {
 					resolve(); // Resolve comunque per far caricare le altre immagini
 				};
 			});
+		}
+
+		function isClickOnVisiblePixel(imgElement, event) {
+			const canvas = document.createElement('canvas');
+			const ctx = canvas.getContext('2d');
+			
+			// Use natural dimensions for accurate pixel sampling
+			canvas.width = imgElement.naturalWidth;
+			canvas.height = imgElement.naturalHeight;
+			
+			ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+			
+			const rect = imgElement.getBoundingClientRect();
+			const x = event.clientX - rect.left;
+			const y = event.clientY - rect.top;
+			
+			// Calculate position relative to natural image size
+			const scaleX = imgElement.naturalWidth / rect.width;
+			const scaleY = imgElement.naturalHeight / rect.height;
+			const pixelX = Math.floor(x * scaleX);
+			const pixelY = Math.floor(y * scaleY);
+
+			try {
+				const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
+				console.log('Alpha value:', pixelData[3]);
+				return pixelData[3] > 0;
+			} catch (error) {
+				console.error('Error getting pixel data:', error);
+				return false;
+			}
 		}
 
 		// Carica le immagini
@@ -1655,7 +1736,7 @@ const SceneUtility = {
 	async loadScene(typeOfScene){
 		switch(typeOfScene){
 			case "negazione":
-				await this.loadSky("notte");
+				await this.loadSky("giorno_2");
 				break;
 			case "rabbia":
 				await this.loadSky("nuvolo");
@@ -1671,8 +1752,34 @@ const SceneUtility = {
 				break;
 		}
 		await this.loadDetails(typeOfScene);
+	},
+
+	async endClickedItems() {
+    	return new Promise((resolve) => {
+			const checkCondition = () => {
+				const wrapper = document.getElementById('details-wrapper');
+				if (!wrapper) {
+					resolve();
+					return;
+				}
+				
+				// Check if there are any remaining clickable objects
+				const clickableObjects = wrapper.querySelectorAll('.clickable-object');
+				
+				if (clickableObjects.length === 0) {
+					// All objects have been clicked and removed
+					resolve();
+				} else {
+					// Still objects remaining, check again in a bit
+					setTimeout(checkCondition, 100);
+				}
+			};
+			
+			checkCondition();
+		});
 	}
-}
+}	
+
 
 const PanicBreath = {
 	state: "idle",	//idle | buildup | plateau | release
@@ -2028,7 +2135,8 @@ const DebugMenu = {
 		'Continua',
 		'Rabbia',
 		'GlitchRabbia',
-		'ContinuaGlitch'
+		'ContinuaGlitch',
+		'Contrattazione'
 	],
 
 	init() {

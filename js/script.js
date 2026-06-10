@@ -162,8 +162,9 @@ monogatari.script ({
 	// ],
 
 	'Negazione_Cellulare': [
-        () => SceneUtility.loadSky("notte"),
-		'show scene room_night',
+        () => SceneUtility.loadScene("negazione"),
+		'show scene room_day_dark',
+		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
         'play sound phone_vibration',
 		'play sound phone_notification',
@@ -358,6 +359,7 @@ monogatari.script ({
 	'Rabbia': [
 		() => SceneUtility.loadScene("rabbia"),
 		'show scene room_rage',
+		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
 
 		'wait 2000',
@@ -409,20 +411,76 @@ monogatari.script ({
 	],
 
 	'ContinuaGlitch': [
-		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">...</div>',
-		async () => {
-			document.getElementById('clock-display').style.display = 'block';
-			AcceleratingClock.stopClock = AcceleratingClock.startAcceleratingClock('clock-display');
+		// 'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">...</div>',
+		// async () => {
+		// 	document.getElementById('clock-display').style.display = 'block';
+		// 	AcceleratingClock.stopClock = AcceleratingClock.startAcceleratingClock('clock-display');
+		// },
+
+		// 'wait 10000',
+
+		// async () => {
+		// 	if(AcceleratingClock.stopClock) AcceleratingClock.stopClock();
+		// 	document.getElementById('clock-display').style.display = 'none';
+		// },
+
+		{'Choice':{
+			'Scrivi un nuovo messaggio': {
+				'Text': 'SCRIVI UN NUOVO MESSAGGIO',
+				'Do': 'wait 2000',
+				'onChosen': function() {
+					PhoneUI.reset();
+					PhoneUI.show();
+					PhoneUI.addOutgoing('Ehi');
+				}
+			}
+		}},
+
+		() => {
+			PhoneUI.reset();
+			PhoneUI.hide();
 		},
 
-		'wait 10000',
+		'show scene #000000 with fadeIn',
+		'jump Contrattazione'
+	],
 
+	'Contrattazione': [
+		() => SceneUtility.loadScene("contrattazione"),
+		'show scene room_day_dark',
+		'wait 1500',
+		() => SceneUtility.revealPreparedScene(),
+
+		async () => await SceneUtility.endClickedItems(),
+		
+		'play sound phone_vibration',
+		'play sound phone_notification',
+		
 		async () => {
-			if(AcceleratingClock.stopClock) AcceleratingClock.stopClock();
-			document.getElementById('clock-display').style.display = 'none';
-		}
-	]
+			PhoneUI.reset();
+			PhoneUI.show();
+			PhoneUI.addOutgoing("Ehi, ti va se ci prendiamo un caffè?");
+			PhoneUI.addIncoming("Volentieri! Ci troviamo al solito posto tra 15 min");
+			await sleep(6000);
+			PhoneUI.reset();
+			PhoneUI.hide();
+		},
 
+		//Monologo
+		'show scene #000000 with fadeIn',
+		'wait 1500',
+
+		'jump Depressione'
+	],
+
+	'Depressione': [
+		() => SceneUtility.loadScene("depressione"),
+		'show scene room_night',
+		'wait 1500',
+		() => SceneUtility.revealPreparedScene(),
+
+
+	]
 	/*
 	'Yes': [
 		'y Thats awesome!',

@@ -587,10 +587,13 @@ input[type=range]::-ms-fill-upper {
 }
 
 .clickable-object.highlight{
-    filter: drop-shadow(0 0 8px rgba(255,255,255,0.7))
-            brightness(1.2)
-            contrast(1.1);
-    transform: scale(1.05);
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.8))
+            drop-shadow(0 0 3px rgba(0,0,0,0.6)) 
+            drop-shadow(0 0 5px rgba(255, 255, 255, 0.6))
+            /* drop-shadow(2px 2px 4px rgba(0,0,0,0.7)) */
+            brightness(1.1)
+            contrast(1.05);
+    /* transform: scale(1.05); */
 }
 
 /* --- SCENA RABBIA --- */
@@ -1136,7 +1139,6 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	top: 0;
 	left: 0;
 	overflow: hidden;
-	pointer-events: none;
 	z-index: 0;
 	background-color: transparent;
 	width: 100vw;
