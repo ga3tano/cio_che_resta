@@ -321,6 +321,7 @@ const PhoneUI = {
     statusTime: null,
     lockTime: null,
     lockDate: null,
+    lockNotificationTitle: null,
     statusClockTimer: null,
 	mode: 'chat',
 
@@ -334,6 +335,7 @@ const PhoneUI = {
         this.statusTime = document.getElementById('phone-status-time');
         this.lockTime = document.getElementById('lock-time');
         this.lockDate = document.getElementById('phone-lock-date');
+        this.lockNotificationTitle = document.getElementById('phone-lock-notification-title');
         this.applyMode();
         this.updateClock();
     },
@@ -342,6 +344,11 @@ const PhoneUI = {
         if (!this.layer) this.init();
 
         this.contact.textContent = contactName;
+
+        if (this.lockNotificationTitle) {
+            this.lockNotificationTitle.textContent = contactName;
+        }
+
         this.startClock();
         this.layer.classList.add('visible');
         this.layer.setAttribute('aria-hidden', 'false');

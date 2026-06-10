@@ -311,6 +311,11 @@ input[type=range]::-ms-fill-upper {
     min-width: 42px;
 }
 
+/* In lockscreen resta visibile l'orologio grande, quindi nascondiamo quello della status bar. */
+.phone-layer[data-phone-mode="lockscreen"] .phone-status-time {
+    visibility: hidden;
+}
+
 .phone-status-icons {
     align-items: center;
     display: flex;

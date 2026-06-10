@@ -509,17 +509,14 @@ monogatari.script ({
 				}
 			},
 			'Test 2': {
-				'Text': 'Ignora',
+				'Text': 'Blocca Schermo',
 				'Do': 'wait 300',
 				'onChosen': function() {
 					PhoneUI.addOutgoing('...');
+					PhoneUI.switchMode();
 				}
 			}
 		}},
-
-		() => {
-			PhoneUI.addIncoming('Va be skibidiboppi');
-		}
 	]
 	/*
 	'Yes': [
