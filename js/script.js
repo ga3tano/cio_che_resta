@@ -494,7 +494,7 @@ monogatari.script ({
 
 		() => {
 			PhoneUI.reset();
-			PhoneUI.show('Debug telefono');
+			PhoneUI.show('Tony Pitony');
 			PhoneUI.addIncoming('Ciao sono Tony sono quello di ieri');
 			PhoneUI.addIncoming('Non ti ho piu richiamata perche ti puzzano i piedi');		
 			PhoneUI.vibrate(600);

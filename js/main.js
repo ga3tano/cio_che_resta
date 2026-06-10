@@ -181,7 +181,9 @@ class PhoneChoice extends Monogatari.Action {
 		if (!PhoneUI.layer) PhoneUI.init ();
 
 		// La custom action vive dentro il telefono, quindi lo apre se non e' gia' visibile.
-		PhoneUI.show (this.statement.Contact ?? 'Giulia');
+		// Se non riceve Contact, mantiene il nome gia' mostrato nel telefono.
+		PhoneUI.show (this.statement.Contact ?? PhoneUI.getContactName ());
+		PhoneUI.showChatView ();
 		this.removeExistingChoices ();
 
 		// Come la Choice standard di Monogatari, blocchiamo l'avanzamento automatico.
@@ -312,6 +314,8 @@ OGGETTI CUSTOM
 const PhoneUI = {
     layer: null,
     shell: null,
+    chatView: null,
+    lockView: null,
     chat: null,
     contact: null,
     statusTime: null,
@@ -323,11 +327,14 @@ const PhoneUI = {
     init() {
         this.layer = document.getElementById('phone-layer');
         this.shell = document.getElementById('phone-shell');
+        this.chatView = document.getElementById('phone-chat-view');
+        this.lockView = document.getElementById('phone-lock-view');
         this.chat = document.getElementById('phone-chat');
         this.contact = document.getElementById('phone-contact');
         this.statusTime = document.getElementById('phone-status-time');
         this.lockTime = document.getElementById('lock-time');
         this.lockDate = document.getElementById('phone-lock-date');
+        this.applyMode();
         this.updateClock();
     },
 
@@ -338,6 +345,12 @@ const PhoneUI = {
         this.startClock();
         this.layer.classList.add('visible');
         this.layer.setAttribute('aria-hidden', 'false');
+    },
+
+    getContactName() {
+        if (!this.contact) this.init();
+
+        return this.contact.textContent || 'Giulia';
     },
 
     hide() {
@@ -437,13 +450,53 @@ const PhoneUI = {
         }
     },
 
-	switchMode(){
-		if(mode === 'chat')
-			mode === 'lockscreen';
+    setMode(mode = 'chat') {
+        if (!this.layer) this.init();
 
-		if(mode === 'lockscreen');
-			mode === 'chat';
-	}
+        // Accettiamo anche "lock" come alias breve, ma salviamo sempre "lockscreen".
+        const normalizedMode = mode === 'lock' ? 'lockscreen' : mode;
+
+        if (!['chat', 'lockscreen'].includes(normalizedMode)) {
+            console.warn(`Modalita telefono non valida: ${mode}`);
+            return this.mode;
+        }
+
+        this.mode = normalizedMode;
+        this.applyMode();
+
+        return this.mode;
+    },
+
+    showChatView() {
+        return this.setMode('chat');
+    },
+
+    showLockScreen() {
+        return this.setMode('lockscreen');
+    },
+
+    switchMode() {
+        if (!this.layer) this.init();
+
+        const nextMode = this.mode === 'chat' ? 'lockscreen' : 'chat';
+        return this.setMode(nextMode);
+    },
+
+    applyMode() {
+        if (!this.chatView || !this.lockView) return;
+
+        const isLockscreen = this.mode === 'lockscreen';
+
+        // La chat deve restare flex per mantenere header e messaggi nello stesso layout.
+        this.chatView.style.display = isLockscreen ? 'none' : 'flex';
+
+        // La lockscreen e' un blocco unico: il figlio .phone-lock gestisce il layout interno.
+        this.lockView.style.display = isLockscreen ? 'block' : 'none';
+
+        if (this.layer) {
+            this.layer.dataset.phoneMode = this.mode;
+        }
+    }
 };
 
 const NightOverlay = {
