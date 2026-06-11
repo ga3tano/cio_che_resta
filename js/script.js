@@ -45,6 +45,7 @@ monogatari.assets ('gallery', {
 // Define the music used in the game.
 monogatari.assets ('music', {
 	rage_scene: 'mus_rabbia_loop.mp3',
+	rain: 'rain.mp3'
 
 });
 
@@ -358,6 +359,7 @@ monogatari.script ({
 
 //RABBIA
 	'Rabbia': [
+		'play music rage_scene with loop fade 3 volume 75',
 		() => SceneUtility.loadScene("rabbia"),
 		'show scene room_rage',
 		'wait 1500',
@@ -481,7 +483,8 @@ monogatari.script ({
 
 	'Depressione': [
 		() => SceneUtility.loadScene("depressione"),
-		'show scene room_night',
+		'show scene room_night with fadeIn',
+		'play music rain with loop',
 		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
 

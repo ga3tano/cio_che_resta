@@ -1819,8 +1819,19 @@ const SceneUtility = {
 
 		//Imposto l'immagine di background del div
 		const imageSrc = `../assets/scenes/cielo_${typeOfSky}.png`;
-		
-		overlay.classList.add("covering");
+
+		if(typeOfSky === 'nuvolo'){
+			const rain = document.createElement('img');
+
+			rain.src = `../assets/images/rain.gif`;
+			rain.classList.add('rain');
+
+			sky.appendChild(rain);
+
+			console.log(sky);
+		}
+
+		//overlay.classList.add("covering");
 
 		await preloadImage(imageSrc);
 
@@ -2395,6 +2406,7 @@ const DebugMenu = {
 		'GlitchRabbia',
 		'ContinuaGlitch',
 		'Contrattazione',
+		'Depressione',
 		'Test_telefono'
 	],
 

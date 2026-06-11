@@ -1038,6 +1038,14 @@ input[type=range]::-ms-fill-upper {
 	display: none;
 }
 
+.rain{
+	position: fixed;
+	top: 15vh;
+	left: 50vw;
+	height: 50vh;
+	width: 50vw;
+}
+
 .scene-fade-overlay {
 	position: fixed;
 	inset: 0;
