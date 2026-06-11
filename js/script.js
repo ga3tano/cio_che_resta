@@ -87,10 +87,10 @@ monogatari.assets ('scenes', {
 
 // Define the Characters
 monogatari.characters ({
-	/*'y': {
-		name: 'Yui',
-		color: '#5bcaff'
-	}*/
+	'shadow': {
+		name: '???',
+		color: '#c9c9ff'
+	}
 });
 
 monogatari.script ({
@@ -487,6 +487,13 @@ monogatari.script ({
 		'play music rain with loop',
 		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
+
+		'shadow ...sai chi sono, vero?',
+		'shadow Sono giorni che ti osservo, non puoi continuare così...',
+		'shadow So che lo pensi, e che cerchi di convincerti del contrario inutilmente...',
+		'shadow ...non è stata colpa tua. \nNon avresti potuto far nulla. \nNon potevi saperlo.',
+		'shadow Mi dispiace vederti così. Sto bene, davvero, non preoccuparti per me.',
+		'shadow Non mi hai fatto mancare mai nulla, sei stato un genitore impeccabile.'
 
 
 	],

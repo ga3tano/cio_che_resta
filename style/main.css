@@ -97,12 +97,12 @@ button:hover {
 
 /* Text Box styling */
 [data-component="text-box"] {
-    display: none !important;
+
 }
 
 /* Character Name Style */
 [data-ui="who"] {
-
+	
 }
 
 /* Style for Centered Text */
