@@ -1024,18 +1024,14 @@ input[type=range]::-ms-fill-upper {
 /* --- GESTIONE CIELO NELLE VARIE SCENE CON FINESTRA --- */
 .sky{
 	position: fixed;
-	z-index: -1000;
 	width: 100vw;
 	height: 100vh;
 	top: 0;
 	left: 0;
 	touch-action: none;
-
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;
-
-	display: none;
 }
 
 .rain{
@@ -1046,24 +1042,6 @@ input[type=range]::-ms-fill-upper {
 	width: 50vw;
 }
 
-.scene-fade-overlay {
-	position: fixed;
-	inset: 0;
-	z-index: 999999;
-	background: #000;
-	opacity: 0;
-	pointer-events: none;
-	transition: opacity 0.5s ease;
-}
-
-.scene-fade-overlay.covering{
-	opacity: 1;
-	transition:none;
-}
-
-body.composite-sky-scene game-screen[data-component="game-screen"] {
-	background-color: transparent;
-}
 
 /* --- DEBUG MENU --- */
 /* Contenitore principale del menu debug: resta sopra a gioco, fade e overlay custom. */
