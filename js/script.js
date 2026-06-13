@@ -89,7 +89,7 @@ monogatari.assets ('scenes', {
 monogatari.characters ({
 	'shadow': {
 		name: '???',
-		color: '#c9c9ff',
+		color: '#c9c9ff'
 	}
 });
 
@@ -483,12 +483,10 @@ monogatari.script ({
 
 	'Depressione': [
 		() => SceneUtility.loadScene("depressione"),
-		'show scene room_night',
+		'show scene room_night with fadeIn',
 		'play music rain with loop',
 		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
-
-
 
 		'shadow ...sai chi sono, vero?',
 		'shadow Sono giorni che ti osservo, non puoi continuare così...',

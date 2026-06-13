@@ -1831,7 +1831,7 @@ const SceneUtility = {
 			console.log(sky);
 		}
 
-		overlay.classList.add("covering");
+		//overlay.classList.add("covering");
 
 		await preloadImage(imageSrc);
 
@@ -1878,8 +1878,6 @@ const SceneUtility = {
 		}
 		
 		if(typeOfItems === "contrattazione"){
-			//Abilito i click sul wrapper
-			wrapper.style.pointerEvents = 'auto';
 			// Aggiungiamo un eventListenr unico che gestisce i vari layer di immagini
 			wrapper.addEventListener('click', (e) => {
 				e.stopPropagation();

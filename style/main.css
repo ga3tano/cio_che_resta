@@ -1307,7 +1307,6 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	background-color: transparent;
 	width: 100vw;
 	height: 100vh;
-	pointer-events: none;
 }
 
 .wrapper-item{
