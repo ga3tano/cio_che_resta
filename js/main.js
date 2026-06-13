@@ -1779,513 +1779,278 @@ FUNZIONI CUSTOM
 */ 
 const SCENE_IMAGES = {
 	'negazione': [
-		{ id: 'cornice', src: 'assets/images/cornice.png'},
-		{ id: 'pianta_2', src: 'assets/images/pianta_2.png'}
+		{ id: 'cornice', src: '../assets/images/cornice.png'},
+		{ id: 'pianta_2', src: '../assets/images/pianta_2.png'}
 	],
 	'rabbia': [
-		{ id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png'},
-		{ id: 'pianta_1', src: 'assets/images/pianta_1.png'},
-		{ id: 'vestiti', src: 'assets/images/vestiti.png'}
+		{ id: 'cornice_rotta', src: '../assets/images/cornice_rotta.png'},
+		{ id: 'pianta_1', src: '../assets/images/pianta_1.png'},
+		{ id: 'vestiti', src: '../assets/images/vestiti.png'}
 	],
 	'contrattazione': [
-		{ id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png', onClick: '../assets/images/cornice.png'},
-		{ id: 'pianta_1', src: 'assets/images/pianta_1.png', onClick: '../assets/images/pianta_2.png'},
-		{ id: 'vestiti', src: 'assets/images/vestiti.png', onClick: 'palle'}
+		{ id: 'cornice_rotta', src: '../assets/images/cornice_rotta.png', onClick: '../assets/images/cornice.png'},
+		{ id: 'pianta_1', src: '../assets/images/pianta_1.png', onClick: '../assets/images/pianta_2.png'},
+		{ id: 'vestiti', src: '../assets/images/vestiti.png', onClick: 'palle'}
 	],
 	'depressione': [
-		{ id: 'cornice', src: 'assets/images/cornice.png'},
-		{ id: 'pianta_2', src: 'assets/images/pianta_2.png'},
-		{ id: 'uomo', src: 'assets/images/uomo.png'}
+		{ id: 'cornice', src: '../assets/images/cornice.png'},
+		{ id: 'pianta_2', src: '../assets/images/pianta_2.png'},
+		{ id: 'uomo', src: '../assets/images/uomo.png'}
 	],
 	'accettazione': [
-		{ id: 'cornice', src: 'assets/images/cornice.png'},
-		{ id: 'pianta_3', src: 'assets/images/pianta_3.png'}
+		{ id: 'cornice', src: '../assets/images/cornice.png'},
+		{ id: 'pianta_3', src: '../assets/images/pianta_3.png'}
 	]
 }
-// const SceneUtility = {
-// 	clickedItems: false,
-// 	async loadSky(typeOfSky){
-// 		function preloadImage(src){
-// 			return new Promise((resolve, reject) => {
-// 				const img = new Image();
-// 				img.onload = resolve;
-// 				img.onerror = reject;
-// 				img.src = src;
-// 			});
-// 		}
+const SceneUtility = {
+	clickedItems: false,
+	async loadSky(typeOfSky){
+		function preloadImage(src){
+			return new Promise((resolve, reject) => {
+				const img = new Image();
+				img.onload = resolve;
+				img.onerror = reject;
+				img.src = src;
+			});
+		}
 		
-// 		const sky = document.getElementById("sky");
-// 		const overlay = document.getElementById("sceneFadeOverlay");
+		const sky = document.getElementById("sky");
+		const overlay = document.getElementById("sceneFadeOverlay");
 
-// 		//Imposto l'immagine di background del div
-// 		const imageSrc = `../assets/scenes/cielo_${typeOfSky}.png`;
+		//Imposto l'immagine di background del div
+		const imageSrc = `../assets/scenes/cielo_${typeOfSky}.png`;
 
-// 		if(typeOfSky === 'nuvolo'){
-// 			const rain = document.createElement('img');
+		if(typeOfSky === 'nuvolo'){
+			const rain = document.createElement('img');
 
-// 			rain.src = `../assets/images/rain.gif`;
-// 			rain.classList.add('rain');
+			rain.src = `../assets/images/rain.gif`;
+			rain.classList.add('rain');
 
-// 			sky.appendChild(rain);
+			sky.appendChild(rain);
 
-// 			console.log(sky);
-// 		}
+			console.log(sky);
+		}
 
-// 		overlay.classList.add("covering");
+		overlay.classList.add("covering");
 
-// 		await preloadImage(imageSrc);
+		await preloadImage(imageSrc);
 
-// 		sky.style.display = "block";
-// 		sky.style.backgroundImage= `url("${imageSrc}")`;
+		sky.style.display = "block";
+		sky.style.backgroundImage= `url("${imageSrc}")`;
 
-// 		this.toggleBackground();
-// 	},
+		this.toggleBackground();
+	},
 
-// 	toggleBackground(){
-// 		document.body.classList.add("composite-sky-scene");
-// 	},
-// 	enableBackground(){
-// 		document.body.classList.remove("composite-sky-scene");
-// 	},
+	toggleBackground(){
+		document.body.classList.add("composite-sky-scene");
+	},
+	enableBackground(){
+		document.body.classList.remove("composite-sky-scene");
+	},
 
-// 	hideSky(){
-// 		const sky = document.getElementById("sky");
-// 		sky.style.display = "none";
-// 	},
+	hideSky(){
+		const sky = document.getElementById("sky");
+		sky.style.display = "none";
+	},
 
-// 	async loadDetails(typeOfItems) {
-// 		// Carica o crea il wrapper
-// 		let wrapper = document.getElementById('details-wrapper');
+	async loadDetails(typeOfItems) {
+		// Carica o crea il wrapper
+		let wrapper = document.getElementById('details-wrapper');
 		
-// 		if (!wrapper) {
-// 			wrapper = document.createElement('div');
-// 			wrapper.id = 'details-wrapper';
-// 			wrapper.className = 'details-wrapper';
+		if (!wrapper) {
+			wrapper = document.createElement('div');
+			wrapper.id = 'details-wrapper';
+			wrapper.className = 'details-wrapper';
 
-// 			// Aggiungo il wrapper al gioco 
-// 			document.body.appendChild(wrapper);
-// 		}
+			// Aggiungo il wrapper al gioco 
+			document.body.appendChild(wrapper);
+		}
 		
-// 		// Pulisci il contenuto precedente
-// 		wrapper.innerHTML = '';
+		// Pulisci il contenuto precedente
+		wrapper.innerHTML = '';
 		
-// 		// Prendi le immagini dalla scena
-// 		const images = SCENE_IMAGES[typeOfItems];
+		// Prendi le immagini dalla scena
+		const images = SCENE_IMAGES[typeOfItems];
 		
-// 		if (!images) {
-// 			console.warn(`Nessuna immagine per la scena: ${typeOfItems}`);
-// 			return;
-// 		}
+		if (!images) {
+			console.warn(`Nessuna immagine per la scena: ${typeOfItems}`);
+			return;
+		}
 		
-// 		if(typeOfItems === "contrattazione"){
-// 			//Abilito i click sul wrapper
-// 			wrapper.style.pointerEvents = 'auto';
-// 			// Aggiungiamo un eventListenr unico che gestisce i vari layer di immagini
-// 			wrapper.addEventListener('click', (e) => {
-// 				e.stopPropagation();
+		if(typeOfItems === "contrattazione"){
+			//Abilito i click sul wrapper
+			wrapper.style.pointerEvents = 'auto';
+			// Aggiungiamo un eventListenr unico che gestisce i vari layer di immagini
+			wrapper.addEventListener('click', (e) => {
+				e.stopPropagation();
 
-// 				// Prendiamo tutte le immagini clickabili
-// 				const clickableImages = wrapper.querySelectorAll('.clickable-object');
-// 				console.log(clickableImages);
+				// Prendiamo tutte le immagini clickabili
+				const clickableImages = wrapper.querySelectorAll('.clickable-object');
+				console.log(clickableImages);
 				
-// 				// Controlla le immaggin dalla superiore all'inferiore nel DOM
-// 				const imagesArray = Array.from(clickableImages).reverse();
+				// Controlla le immaggin dalla superiore all'inferiore nel DOM
+				const imagesArray = Array.from(clickableImages).reverse();
 				
-// 				for (const img of imagesArray) {
-// 					if (isClickOnVisiblePixel(img, e)) {
-// 						const imgId = img.id;
-// 						const imgData = images.find(i => i.id === imgId);
+				for (const img of imagesArray) {
+					if (isClickOnVisiblePixel(img, e)) {
+						const imgId = img.id;
+						const imgData = images.find(i => i.id === imgId);
 						
-// 						if (imgData && imgData.onClick) {
-// 							img.src = imgData.onClick;
-// 							img.classList.remove('clickable-object', 'highlight');
-// 							img.style.pointerEvents = 'none';
-// 						}
+						if (imgData && imgData.onClick) {
+							img.src = imgData.onClick;
+							img.classList.remove('clickable-object', 'highlight');
+							img.style.pointerEvents = 'none';
+						}
 
-// 						if(!clickableImages) this.clickedItems = true;
-// 						break; // Stop dopo il primo match
-// 					}
-// 				}
-// 			});
+						if(!clickableImages) this.clickedItems = true;
+						break; // Stop dopo il primo match
+					}
+				}
+			});
 
-// 		}
+		}
 		
-// 		function loadImage(imgData, wrapper){
-// 			return new Promise((resolve) => {
-// 				const img = document.createElement('img');
-// 				img.id = imgData.id;
-// 				img.src = imgData.src;
-// 				img.className = 'wrapper-item';
+		function loadImage(imgData, wrapper){
+			return new Promise((resolve) => {
+				const img = document.createElement('img');
+				img.id = imgData.id;
+				img.src = imgData.src;
+				img.className = 'wrapper-item';
 
-// 				if(imgData.onClick){
-// 					img.classList.add('clickable-object', 'highlight');
-// 					// img.style.pointerEvents = 'auto'; //Override pointerEvents: none; del wrapper
+				if(imgData.onClick){
+					img.classList.add('clickable-object', 'highlight');
+					// img.style.pointerEvents = 'auto'; //Override pointerEvents: none; del wrapper
 				
-// 					// img.addEventListener('click', (e) => {
-// 					// 	e.stopPropagation();
-// 					// 	// Si trigghera solamente se il click è fatto su pixel senza trasparenza
-// 					// 	if (isClickOnVisiblePixel(img, e)) {						
-// 					// 		img.src = imgData.onClick;
+					// img.addEventListener('click', (e) => {
+					// 	e.stopPropagation();
+					// 	// Si trigghera solamente se il click è fatto su pixel senza trasparenza
+					// 	if (isClickOnVisiblePixel(img, e)) {						
+					// 		img.src = imgData.onClick;
 							
-// 					// 		img.classList.remove('clickable-object', 'highlight');
-// 					// 		img.style.pointerEvents = 'none';
-// 					// 	}					
-// 					// })
-// 				}
+					// 		img.classList.remove('clickable-object', 'highlight');
+					// 		img.style.pointerEvents = 'none';
+					// 	}					
+					// })
+				}
 					
 				
-// 				img.onload = () => {
-// 					wrapper.appendChild(img);
-// 					console.log(img);
-// 					resolve();
-// 				};
+				img.onload = () => {
+					wrapper.appendChild(img);
+					console.log(img);
+					resolve();
+				};
 				
-// 				img.onerror = () => {
-// 					console.error(`Failed to load: ${imgData.src}`);
-// 					resolve(); // Resolve comunque per far caricare le altre immagini
-// 				};
-// 			});
-// 		}
-
-// 		function isClickOnVisiblePixel(imgElement, event) {
-// 			const canvas = document.createElement('canvas');
-// 			const ctx = canvas.getContext('2d');
-			
-// 			// Use natural dimensions for accurate pixel sampling
-// 			canvas.width = imgElement.naturalWidth;
-// 			canvas.height = imgElement.naturalHeight;
-			
-// 			ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-			
-// 			const rect = imgElement.getBoundingClientRect();
-// 			const x = event.clientX - rect.left;
-// 			const y = event.clientY - rect.top;
-			
-// 			// Calculate position relative to natural image size
-// 			const scaleX = imgElement.naturalWidth / rect.width;
-// 			const scaleY = imgElement.naturalHeight / rect.height;
-// 			const pixelX = Math.floor(x * scaleX);
-// 			const pixelY = Math.floor(y * scaleY);
-
-// 			try {
-// 				const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
-// 				console.log('Alpha value:', pixelData[3]);
-// 				return pixelData[3] > 0;
-// 			} catch (error) {
-// 				console.error('Error getting pixel data:', error);
-// 				return false;
-// 			}
-// 		}
-
-// 		// Carica le immagini
-// 		for (const imgData of images) {
-// 			await loadImage(imgData, wrapper);
-// 		}
-
-// 		console.log(`Loaded ${images.length} images for ${typeOfItems}`);
-// 	},
-
-
-// 	revealPreparedScene() {
-// 		const overlay = document.getElementById("sceneFadeOverlay");
-
-// 		/*
-// 		Aspetto 2 volte il frame:
-// 		Stato iniziale: Opacity 1, quindi tutto nero
-// 		Stato intermedio: rimuovo l'overlay e do il tempo al browser di far partire l'animazione
-// 		Stato finale: Opacity 0, quindi trasparente
-
-// 		Tecnica usata spesso per animazioni di questo tipo
-// 		*/ 
-// 		requestAnimationFrame(() => {
-// 			requestAnimationFrame(() => {
-// 				overlay.classList.remove("covering");
-// 			})
-// 		})
-// 	},
-
-// 	async loadScene(typeOfScene){
-// 		switch(typeOfScene){
-// 			case "negazione":
-// 				await this.loadSky("giorno_2");
-// 				break;
-// 			case "rabbia":
-// 				await this.loadSky("nuvolo");
-// 				break;
-// 			case "contrattazione":
-// 				await this.loadSky("giorno_2")
-// 				break;
-// 			case "depressione":
-// 				await this.loadSky("nuvolo");
-// 				break;
-// 			case "accettazione":
-// 				await this.loadSky("giorno_1");
-// 				break;
-// 		}
-// 		await this.loadDetails(typeOfScene);
-// 	},
-
-// 	async endClickedItems() {
-//     	return new Promise((resolve) => {
-// 			const checkCondition = () => {
-// 				const wrapper = document.getElementById('details-wrapper');
-// 				if (!wrapper) {
-// 					resolve();
-// 					return;
-// 				}
-				
-// 				// Check if there are any remaining clickable objects
-// 				const clickableObjects = wrapper.querySelectorAll('.clickable-object');
-				
-// 				if (clickableObjects.length === 0) {
-// 					// All objects have been clicked and removed
-// 					resolve();
-// 				} else {
-// 					// Still objects remaining, check again in a bit
-// 					setTimeout(checkCondition, 100);
-// 				}
-// 			};
-			
-// 			checkCondition();
-// 		});
-// 	}
-// }	
-
-const SceneManager = {
-    // Riferimenti DOM
-    skyLayer: null,
-    objectsLayer: null,
-
-    // Stato corrente
-    currentSky: null,
-    currentObjects: null,
-
-    // Mappa dei cieli disponibili (nome → percorso)
-    skyMap: {
-        'giorno_1':   'assets/scenes/cielo_giorno_1.png',
-        'giorno_2':   'assets/scenes/cielo_giorno_2.png',
-        'notte':      'assets/scenes/cielo_notte.png',
-        'nuvolo':     'assets/scenes/cielo_nuvolo.png',
-    },
-
-    // Mappa degli oggetti per scena (identica alla vecchia SCENE_IMAGES)
-    objectsMap: {
-        'negazione': [
-            { id: 'cornice', src: 'assets/images/cornice.png' },
-            { id: 'pianta_2', src: 'assets/images/pianta_2.png' }
-        ],
-        'rabbia': [
-            { id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png' },
-            { id: 'pianta_1', src: 'assets/images/pianta_1.png' },
-            { id: 'vestiti', src: 'assets/images/vestiti.png' }
-        ],
-        'contrattazione': [
-            { id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png', onClick: 'assets/images/cornice.png' },
-            { id: 'pianta_1', src: 'assets/images/pianta_1.png', onClick: 'assets/images/pianta_2.png' },
-            { id: 'vestiti', src: 'assets/images/vestiti.png', onClick: 'palle' }
-        ],
-        'depressione': [
-            { id: 'cornice', src: 'assets/images/cornice.png' },
-            { id: 'pianta_2', src: 'assets/images/pianta_2.png' },
-            { id: 'uomo', src: 'assets/images/uomo.png' }
-        ],
-        'accettazione': [
-            { id: 'cornice', src: 'assets/images/cornice.png' },
-            { id: 'pianta_3', src: 'assets/images/pianta_3.png' }
-        ]
-    },
-
-    // Inizializza i layer DOM
-    init() {
-        if (this.skyLayer) return;
-
-        const gameScreen = document.querySelector('game-screen');
-
-        // --- Layer Cielo ---
-        this.skyLayer = document.getElementById('sky');
-        if (!this.skyLayer) {
-            this.skyLayer = document.createElement('div');
-            this.skyLayer.id = 'sky';
-			this.skyLayer.className = 'sky';
-		}
-        
-
-        if (gameScreen) {
-            // Inserisce il cielo PRIMA del background della scena,
-            // così la stanza con finestra trasparente gli sta sopra.
-            const sceneBackground = gameScreen.querySelector('[data-image="background"]');
-            if (sceneBackground) {
-                gameScreen.insertBefore(this.skyLayer, sceneBackground);
-            } else {
-                gameScreen.insertBefore(this.skyLayer, gameScreen.firstChild);
-            }
-        }
-
-        // --- Layer Oggetti (sopra la stanza) ---
-        this.objectsLayer = document.getElementById('objects-layer');
-        if (!this.objectsLayer) {
-            this.objectsLayer = document.createElement('div');
-            this.objectsLayer.id = 'objects-layer';
-			this.objectsLayer.className = 'details-wrapper';
+				img.onerror = () => {
+					console.error(`Failed to load: ${imgData.src}`);
+					resolve(); // Resolve comunque per far caricare le altre immagini
+				};
+			});
 		}
 
-        if (gameScreen) {
-            const sceneBg = gameScreen.querySelector('[data-image="background"]');
-            if (sceneBg && sceneBg.nextSibling) {
-                gameScreen.insertBefore(this.objectsLayer, sceneBg.nextSibling);
-            } else {
-                gameScreen.appendChild(this.objectsLayer);
-            }
-        }
+		function isClickOnVisiblePixel(imgElement, event) {
+			const canvas = document.createElement('canvas');
+			const ctx = canvas.getContext('2d');
+			
+			// Use natural dimensions for accurate pixel sampling
+			canvas.width = imgElement.naturalWidth;
+			canvas.height = imgElement.naturalHeight;
+			
+			ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+			
+			const rect = imgElement.getBoundingClientRect();
+			const x = event.clientX - rect.left;
+			const y = event.clientY - rect.top;
+			
+			// Calculate position relative to natural image size
+			const scaleX = imgElement.naturalWidth / rect.width;
+			const scaleY = imgElement.naturalHeight / rect.height;
+			const pixelX = Math.floor(x * scaleX);
+			const pixelY = Math.floor(y * scaleY);
 
-    },
+			try {
+				const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
+				console.log('Alpha value:', pixelData[3]);
+				return pixelData[3] > 0;
+			} catch (error) {
+				console.error('Error getting pixel data:', error);
+				return false;
+			}
+		}
 
-    loadSky(skyName) {
-        this.init();
-        
-        const skyPath = this.skyMap[skyName];
-        if (!skyPath) {
-            console.warn(`Cielo non trovato: ${skyName}`);
-            return false;
-        }
+		// Carica le immagini
+		for (const imgData of images) {
+			await loadImage(imgData, wrapper);
+		}
 
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                this.skyLayer.style.backgroundImage = `url("${skyPath}")`;
-                this.skyLayer.style.display = 'block';
-                this.currentSky = skyName;
+		console.log(`Loaded ${images.length} images for ${typeOfItems}`);
+	},
 
-				if(skyName === 'nuvolo')
-					this.addRainEffect();
-				else
-					this.removeRainEffect();
+
+	revealPreparedScene() {
+		const overlay = document.getElementById("sceneFadeOverlay");
+
+		/*
+		Aspetto 2 volte il frame:
+		Stato iniziale: Opacity 1, quindi tutto nero
+		Stato intermedio: rimuovo l'overlay e do il tempo al browser di far partire l'animazione
+		Stato finale: Opacity 0, quindi trasparente
+
+		Tecnica usata spesso per animazioni di questo tipo
+		*/ 
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				overlay.classList.remove("covering");
+			})
+		})
+	},
+
+	async loadScene(typeOfScene){
+		switch(typeOfScene){
+			case "negazione":
+				await this.loadSky("giorno_2");
+				break;
+			case "rabbia":
+				await this.loadSky("nuvolo");
+				break;
+			case "contrattazione":
+				await this.loadSky("giorno_2")
+				break;
+			case "depressione":
+				await this.loadSky("nuvolo");
+				break;
+			case "accettazione":
+				await this.loadSky("giorno_1");
+				break;
+		}
+		await this.loadDetails(typeOfScene);
+	},
+
+	async endClickedItems() {
+    	return new Promise((resolve) => {
+			const checkCondition = () => {
+				const wrapper = document.getElementById('details-wrapper');
+				if (!wrapper) {
+					resolve();
+					return;
+				}
 				
-                resolve(true);
-            };
-            img.onerror = () => {
-                console.error(`Errore caricamento cielo: ${skyPath}`);
-                resolve(false);
-            };
-            img.src = skyPath;
-        });
-    },
+				// Check if there are any remaining clickable objects
+				const clickableObjects = wrapper.querySelectorAll('.clickable-object');
+				
+				if (clickableObjects.length === 0) {
+					// All objects have been clicked and removed
+					resolve();
+				} else {
+					// Still objects remaining, check again in a bit
+					setTimeout(checkCondition, 100);
+				}
+			};
+			
+			checkCondition();
+		});
+	}
+}	
 
-    hideSky() {
-        if (this.skyLayer) {
-			this.removeRainEffect();
-            this.skyLayer.style.display = 'none';
-            this.skyLayer.style.backgroundImage = '';
-            this.currentSky = null;
-        }
-    },
-
-	addRainEffect() {
-		if (this.skyLayer.querySelector('.rain')) return;
-
-		const rain = document.createElement('img');
-		rain.src = 'assets/images/rain.gif';
-		rain.className = 'rain'; 
-		this.skyLayer.appendChild(rain);
-	},
-
-	removeRainEffect() {
-		const rain = this.skyLayer?.querySelector('.rain');
-		if (rain) rain.remove();
-	},
-
-    loadObjects(sceneName) {
-        this.init();
-        this.clearObjects();
-
-        const objects = this.objectsMap[sceneName];
-        if (!objects || objects.length === 0) return;
-
-        this.currentObjects = sceneName;
-
-        objects.forEach(objData => {
-            const img = document.createElement('img');
-            img.id = objData.id;
-            img.src = objData.src;
-            img.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                pointer-events: none;
-            `;
-
-            if (objData.onClick) {
-                img.classList.add('clickable-object', 'highlight');
-                img.style.pointerEvents = 'auto';
-                img.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (this.isClickOnVisiblePixel(img, e)) {
-                        img.src = objData.onClick;
-                        img.classList.remove('clickable-object', 'highlight');
-                        img.style.pointerEvents = 'none';
-                        this.checkAllObjectsClicked();
-                    }
-                });
-            }
-
-            img.onload = () => {
-                this.objectsLayer.appendChild(img);
-            };
-            img.onerror = () => {
-                console.error(`Errore caricamento oggetto: ${objData.src}`);
-            };
-        });
-    },
-
-    clearObjects() {
-        if (this.objectsLayer) {
-            this.objectsLayer.innerHTML = '';
-            this.currentObjects = null;
-        }
-    },
-
-    checkAllObjectsClicked() {
-        const clickable = this.objectsLayer.querySelectorAll('.clickable-object');
-        if (clickable.length === 0) {
-            const event = new CustomEvent('allObjectsClicked');
-            document.dispatchEvent(event);
-        }
-    },
-
-    isClickOnVisiblePixel(imgElement, event) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = imgElement.naturalWidth;
-        canvas.height = imgElement.naturalHeight;
-        
-        ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-        
-        const rect = imgElement.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        
-        const scaleX = imgElement.naturalWidth / rect.width;
-        const scaleY = imgElement.naturalHeight / rect.height;
-        const pixelX = Math.floor(x * scaleX);
-        const pixelY = Math.floor(y * scaleY);
-
-        try {
-            const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
-            return pixelData[3] > 0;
-        } catch (error) {
-            return false;
-        }
-    },
-
-    cleanup() {
-        this.hideSky();
-        this.clearObjects();
-    }
-};
 
 const PanicBreath = {
 	state: "idle",	//idle | buildup | plateau | release
@@ -2299,8 +2064,8 @@ const PanicBreath = {
 
 	init(){
 		if(!this.inAudio){
-			this.inAudio = new Audio("assets/sounds/breath_in.mp3");
-			this.outAudio = new Audio("assets/sounds/breath_out.mp3");
+			this.inAudio = new Audio("../assets/sounds/breath_in.mp3");
+			this.outAudio = new Audio("../assets/sounds/breath_out.mp3");
 		}
 	},
 
@@ -2989,6 +2754,7 @@ const DebugMenu = {
 
 		// Riapre eventuali palpebre chiuse e rimuove il nero di transizione scena.
 		document.getElementById('blink-overlay')?.classList.remove('closed');
+		document.getElementById('sceneFadeOverlay')?.classList.remove('covering');
 	},
 
 	resetStorageFlags(targetLabel = null) {
@@ -3049,67 +2815,15 @@ function sleep(ms){
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// FUNZIONE PER ASPETTARE EVENTO ALL OBJECTS CLICKED
-
-// Questa sostituisce SceneUtility.endClickedItems()
-function waitForAllObjectsClicked() {
-    return new Promise((resolve) => {
-        const clickable = document.querySelectorAll('#objects-layer .clickable-object');
-        if (clickable.length === 0) {
-            resolve();
-            return;
-        }
-        
-        const handler = () => {
-            const remaining = document.querySelectorAll('#objects-layer .clickable-object');
-            if (remaining.length === 0) {
-                document.removeEventListener('allObjectsClicked', handler);
-                resolve();
-            }
-        };
-        
-        document.addEventListener('allObjectsClicked', handler);
-    });
-}
-
 $_ready (() => {
 	// 2. Inside the $_ready function:
 
-	// INTERCETTAZIONE DEL CAMBIO SCENA MONOGATARI
-
-	// Estendiamo l'azione 'show' per supportare 'with sky'
-	// Nota: Monogatari 2.12.0 usa una sintassi specifica per le azioni.
-	// Usiamo un hook sul evento di cambio label per pulire/aggiornare le scene.
-
-	monogatari.on('state:label', (data) => {
-		// Quando cambia il label, puliamo la scena precedente
-		// Questo è il momento giusto perché Monogatari ha già processato il jump
-		
-		// La pulizia effettiva la facciamo solo se il nuovo label non ha oggetti
-		// Per farlo, controlliamo lo script del nuovo label
-		const newLabel = data.value;
-		const script = monogatari.script();
-		const labelScript = script[newLabel];
-		
-		if (!labelScript) return;
-		
-		// Controlla se il label contiene 'show objects'
-		const hasObjects = labelScript.some(statement => 
-			typeof statement === 'string' && statement.includes('show objects')
-		);
-		
-		// Controlla se il label contiene 'show scene ... with sky'
-		const hasSky = labelScript.some(statement => 
-			typeof statement === 'string' && statement.includes('with sky')
-		);
-		
-		if (!hasSky) {
-			SceneManager.hideSky();
-		}
-		if (!hasObjects) {
-			SceneManager.clearObjects();
-		}
-	});
+	monogatari.on('start', () => {
+		const screens = document.querySelectorAll('game-screen[data-component="game-screen"]');
+		console.log("Sono entrato, screens:" + screens);
+		if(screens)
+			screens.forEach(s => {s.style.backgroundColor = "transparent";});
+	})
 
 	monogatari.init ('#monogatari').then (() => {
 		// 3. Inside the init function:

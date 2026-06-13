@@ -78,10 +78,6 @@ monogatari.assets ('scenes', {
 	room_rage: 'stanza_sfondo_2.png',
 	room_day_normal: 'stanza_sfondo_1.png',
 	room_day_dark: 'stanza_sfondo_3.png',
-	sky_day_normal: 'cielo_giorno_1.png',
-	sky_day_dark: 'cielo_giorno_2.png',
-	sky_night: 'cielo_notte.png',
-	sky_cloudy: 'cielo_nuvolo.png',
 	auto: 'Auto.png',
 	feet: 'Piedi.png',
 	teddybear: 'Orsacchiotto.png',
@@ -167,10 +163,10 @@ monogatari.script ({
 	// ],
 
 	'Negazione_Cellulare': [
-        () => SceneManager.loadScene("negazione"),
+        () => SceneUtility.loadScene("negazione"),
 		'show scene room_day_dark',
 		'wait 1500',
-		() => SceneManager.revealPreparedScene(),
+		() => SceneUtility.revealPreparedScene(),
         'play sound phone_vibration',
 		'play sound phone_notification',
         'vibrate 20000',
@@ -281,7 +277,7 @@ monogatari.script ({
 			PhoneUI.addIncoming('Non lasciarmi aspettare.');
 			PhoneUI.vibrate();
 
-			SceneManager.toggleBackground();
+			SceneUtility.toggleBackground();
 		},
 
 		{'Choice':{
@@ -295,7 +291,7 @@ monogatari.script ({
 	'Esci_Casa':[
 		() => PhoneUI.hide(),
 		'show scene outside with fadeIn',
-		() => SceneManager.enableBackground(),
+		() => SceneUtility.enableBackground(),
 		
 		'wait 3000',
 		
@@ -364,10 +360,10 @@ monogatari.script ({
 //RABBIA
 	'Rabbia': [
 		'play music rage_scene with loop fade 3 volume 75',
-		() => SceneManager.loadScene("rabbia"),
+		() => SceneUtility.loadScene("rabbia"),
 		'show scene room_rage',
 		'wait 1500',
-		() => SceneManager.revealPreparedScene(),
+		() => SceneUtility.revealPreparedScene(),
 
 		'wait 2000',
 
@@ -458,12 +454,12 @@ monogatari.script ({
 	],
 
 	'Contrattazione': [
-		() => SceneManager.loadScene("contrattazione"),
+		() => SceneUtility.loadScene("contrattazione"),
 		'show scene room_day_dark',
 		'wait 1500',
-		() => SceneManager.revealPreparedScene(),
+		() => SceneUtility.revealPreparedScene(),
 
-		async () => await SceneManager.endClickedItems(),
+		async () => await SceneUtility.endClickedItems(),
 		
 		'play sound phone_vibration',
 		'play sound phone_notification',
@@ -486,11 +482,13 @@ monogatari.script ({
 	],
 
 	'Depressione': [
-		() => SceneManager.loadSky('nuvolo'),
-		'show scene sky_cloudy',
-		() => SceneManager.revealPreparedScene(),
-		
+		() => SceneUtility.loadScene("depressione"),
+		'show scene room_night',
 		'play music rain with loop',
+		'wait 1500',
+		() => SceneUtility.revealPreparedScene(),
+
+
 
 		'shadow ...sai chi sono, vero?',
 		'shadow Sono giorni che ti osservo, non puoi continuare così...',
@@ -498,6 +496,8 @@ monogatari.script ({
 		'shadow ...non è stata colpa tua. \nNon avresti potuto far nulla. \nNon potevi saperlo.',
 		'shadow Mi dispiace vederti così. Sto bene, davvero, non preoccuparti per me.',
 		'shadow Non mi hai fatto mancare mai nulla, sei stato un genitore impeccabile.'
+
+
 	],
 
 	// Scena isolata: non viene richiamata dal flow narrativo, solo dal menu di debug.
