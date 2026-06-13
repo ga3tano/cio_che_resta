@@ -1779,27 +1779,27 @@ FUNZIONI CUSTOM
 */ 
 const SCENE_IMAGES = {
 	'negazione': [
-		{ id: 'cornice', src: '../assets/images/cornice.png'},
-		{ id: 'pianta_2', src: '../assets/images/pianta_2.png'}
+		{ id: 'cornice', src: 'assets/images/cornice.png'},
+		{ id: 'pianta_2', src: 'assets/images/pianta_2.png'}
 	],
 	'rabbia': [
-		{ id: 'cornice_rotta', src: '../assets/images/cornice_rotta.png'},
-		{ id: 'pianta_1', src: '../assets/images/pianta_1.png'},
-		{ id: 'vestiti', src: '../assets/images/vestiti.png'}
+		{ id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png'},
+		{ id: 'pianta_1', src: 'assets/images/pianta_1.png'},
+		{ id: 'vestiti', src: 'assets/images/vestiti.png'}
 	],
 	'contrattazione': [
-		{ id: 'cornice_rotta', src: '../assets/images/cornice_rotta.png', onClick: '../assets/images/cornice.png'},
-		{ id: 'pianta_1', src: '../assets/images/pianta_1.png', onClick: '../assets/images/pianta_2.png'},
-		{ id: 'vestiti', src: '../assets/images/vestiti.png', onClick: 'palle'}
+		{ id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png', onClick: 'assets/images/cornice.png'},
+		{ id: 'pianta_1', src: 'assets/images/pianta_1.png', onClick: 'assets/images/pianta_2.png'},
+		{ id: 'vestiti', src: 'assets/images/vestiti.png', onClick: 'palle'}
 	],
 	'depressione': [
-		{ id: 'cornice', src: '../assets/images/cornice.png'},
-		{ id: 'pianta_2', src: '../assets/images/pianta_2.png'},
-		{ id: 'uomo', src: '../assets/images/uomo.png'}
+		{ id: 'cornice', src: 'assets/images/cornice.png'},
+		{ id: 'pianta_2', src: 'assets/images/pianta_2.png'},
+		{ id: 'uomo', src: 'assets/images/uomo.png'}
 	],
 	'accettazione': [
-		{ id: 'cornice', src: '../assets/images/cornice.png'},
-		{ id: 'pianta_3', src: '../assets/images/pianta_3.png'}
+		{ id: 'cornice', src: 'assets/images/cornice.png'},
+		{ id: 'pianta_3', src: 'assets/images/pianta_3.png'}
 	]
 }
 const SceneUtility = {
@@ -1818,12 +1818,12 @@ const SceneUtility = {
 		const overlay = document.getElementById("sceneFadeOverlay");
 
 		//Imposto l'immagine di background del div
-		const imageSrc = `../assets/scenes/cielo_${typeOfSky}.png`;
+		const imageSrc = `assets/scenes/cielo_${typeOfSky}.png`;
 
 		if(typeOfSky === 'nuvolo'){
 			const rain = document.createElement('img');
 
-			rain.src = `../assets/images/rain.gif`;
+			rain.src = `assets/images/rain.gif`;
 			rain.classList.add('rain');
 
 			sky.appendChild(rain);
@@ -2062,8 +2062,8 @@ const PanicBreath = {
 
 	init(){
 		if(!this.inAudio){
-			this.inAudio = new Audio("../assets/sounds/breath_in.mp3");
-			this.outAudio = new Audio("../assets/sounds/breath_out.mp3");
+			this.inAudio = new Audio("assets/sounds/breath_in.mp3");
+			this.outAudio = new Audio("assets/sounds/breath_out.mp3");
 		}
 	},
 

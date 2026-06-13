@@ -9,7 +9,7 @@ const version = '0.1.0';
 
 const files = [
 
-	'/',
+	'./',
 
 	// General Files
 	'manifest.json',
