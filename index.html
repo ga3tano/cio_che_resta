@@ -118,6 +118,31 @@
 		</div>
 
 		
+		<!--
+			Pulsante globale del telefono.
+			- Parte nascosto: PhoneToggle in js/main.js lo mostra solo durante le scene di gioco.
+			- Il badge resta vuoto/nascosto finche PhoneUI non registra notifiche non lette.
+			- aria-live="polite" permette ai lettori di schermo di annunciare il cambio numero senza interrompere.
+		-->
+		<div id="phone-toggle" class="phone-toggle" aria-hidden="true">
+			<button
+				id="phone-toggle-button"
+				class="phone-toggle-button"
+				type="button"
+				aria-label="Apri telefono"
+				aria-pressed="false"
+			>
+				<span class="phone-toggle-icon" aria-hidden="true"></span>
+				<span id="phone-toggle-badge" class="phone-toggle-badge" aria-live="polite"></span>
+			</button>
+		</div>
+
+		<!--
+			Telefono in-game.
+			Il telefono ha due viste:
+			- chat: conversazione vera e propria;
+			- lockscreen: vista iniziale quando il giocatore lo apre dal pulsante globale.
+		-->
 		<div id="phone-layer" class="phone-layer" aria-hidden="true">
 			<div id="phone-shell" class="phone-shell">
 				<div class="phone-speaker"></div>
@@ -149,23 +174,22 @@
 						<div id="phone-chat" class="phone-chat"></div>
 					</div>
 					
-					<!-- Lock screen (hidden by default) -->
-					<div id="phone-lock-view" style="display: none;">
+					<!--
+						Lockscreen.
+						tabindex="0" la rende focalizzabile: cosi' si puo sbloccare anche con tastiera.
+					-->
+					<div id="phone-lock-view" tabindex="0" style="display: none;">
 						<div class="phone-lock">
 							<div class="lock-time" id="lock-time">15:30</div>
 							<div id="phone-lock-date" class="lock-date">Tuesday, June 9</div>
 							<div class="lock-icon"></div>
 							<div class="lock-status">Locked</div>
-							<div class="lock-notifications">
-								<div class="lock-notification">
-									<div class="lock-notification-icon">💬</div>
-									<div class="lock-notification-text">
-										<div id="phone-lock-notification-title" class="lock-notification-title">Giulia</div>
-										<div class="lock-notification-subtitle">3 new messages</div>
-									</div>
-								</div>
-							</div>
-							<div class="lock-hint">Swipe up to unlock</div>
+							<!--
+								Contenitore dinamico delle notifiche.
+								Se PhoneUI non trova messaggi non letti, resta vuoto e la lockscreen rimane pulita.
+							-->
+							<div id="phone-lock-notifications" class="lock-notifications" aria-live="polite"></div>
+							<div class="lock-hint">Tocca per sbloccare</div>
 						</div>
 					</div>
 					

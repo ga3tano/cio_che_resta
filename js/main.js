@@ -180,10 +180,17 @@ class PhoneChoice extends Monogatari.Action {
 	apply () {
 		if (!PhoneUI.layer) PhoneUI.init ();
 
-		// La custom action vive dentro il telefono, quindi lo apre se non e' gia' visibile.
-		// Se non riceve Contact, mantiene il nome gia' mostrato nel telefono.
-		PhoneUI.show (this.statement.Contact ?? PhoneUI.getContactName ());
-		PhoneUI.showChatView ();
+		/*
+			PhoneChoice prepara i pulsanti dentro la chat, ma NON apre piu' il telefono da sola.
+			Cosi' un messaggio in arrivo puo restare una semplice notifica: badge + lockscreen.
+			Se il telefono era gia' aperto per scelta della scena/utente, allora portiamo alla chat.
+		*/
+		PhoneUI.setContactName (this.statement.Contact ?? PhoneUI.getContactName ());
+
+		if (PhoneUI.isVisible ()) {
+			PhoneUI.showChatView ();
+		}
+
 		this.removeExistingChoices ();
 
 		// Come la Choice standard di Monogatari, blocchiamo l'avanzamento automatico.
@@ -312,6 +319,11 @@ OGGETTI CUSTOM
 */
 
 const PhoneUI = {
+	/*
+		Riferimenti DOM principali.
+		Restano null finche init() non viene chiamato: cosi' il codice puo essere caricato
+		prima che il browser abbia finito di costruire tutta la pagina.
+	*/
     layer: null,
     shell: null,
     chatView: null,
@@ -321,9 +333,19 @@ const PhoneUI = {
     statusTime: null,
     lockTime: null,
     lockDate: null,
-    lockNotificationTitle: null,
+    lockNotifications: null,
     statusClockTimer: null,
-	mode: 'chat',
+	unlockEventsBound: false,
+
+	/*
+		Stato interno del telefono.
+		- mode: vista attuale del telefono ("lockscreen" o "chat").
+		- unreadNotifications: unica fonte di verita' per badge e notifiche in lockscreen.
+		- notificationId: contatore semplice per assegnare un id stabile a ogni notifica.
+	*/
+	mode: 'lockscreen',
+	unreadNotifications: [],
+	notificationId: 0,
 
     init() {
         this.layer = document.getElementById('phone-layer');
@@ -335,30 +357,67 @@ const PhoneUI = {
         this.statusTime = document.getElementById('phone-status-time');
         this.lockTime = document.getElementById('lock-time');
         this.lockDate = document.getElementById('phone-lock-date');
-        this.lockNotificationTitle = document.getElementById('phone-lock-notification-title');
+        this.lockNotifications = document.getElementById('phone-lock-notifications');
+
+		// La lockscreen si puo cliccare/toccare per passare alla chat e segnare i messaggi come letti.
+		this.bindLockscreenEvents();
+
+		// Disegno iniziale: se non ci sono notifiche, il contenitore resta vuoto.
+		this.renderNotifications();
         this.applyMode();
         this.updateClock();
     },
 
-    show(contactName = 'Giulia') {
+    show(contactName = 'Giulia', options = {}) {
         if (!this.layer) this.init();
 
-        this.contact.textContent = contactName;
+		/*
+			Di default il telefono si apre sempre in lockscreen, come richiesto.
+			Se una scena deve forzare la chat, puo usare:
+			PhoneUI.show('Giulia', { mode: 'chat' })
+			oppure PhoneUI.showChatView().
+		*/
+		const requestedMode = options.mode ?? 'lockscreen';
 
-        if (this.lockNotificationTitle) {
-            this.lockNotificationTitle.textContent = contactName;
-        }
+        this.setContactName(contactName);
+		this.setMode(requestedMode);
 
         this.startClock();
         this.layer.classList.add('visible');
         this.layer.setAttribute('aria-hidden', 'false');
+
+		// Mantiene sincronizzato lo stato premuto del pulsante globale.
+		if (typeof PhoneToggle !== 'undefined') {
+			PhoneToggle.setExpanded(true);
+		}
     },
+
+	showLockScreen(contactName = null) {
+		if (!this.layer) this.init();
+
+		// Se non viene passato un contatto, manteniamo l'ultimo mostrato nella chat.
+		const nextContactName = contactName ?? this.getContactName();
+		this.show(nextContactName, { mode: 'lockscreen' });
+	},
 
     getContactName() {
         if (!this.contact) this.init();
 
         return this.contact.textContent || 'Giulia';
     },
+
+	setContactName(contactName = 'Giulia') {
+		if (!this.contact) this.init();
+
+		// Un solo punto per cambiare il nome del contatto: utile se in futuro avrai piu chat.
+		this.contact.textContent = contactName || 'Giulia';
+	},
+
+	isVisible() {
+		if (!this.layer) this.init();
+
+		return this.layer.classList.contains('visible');
+	},
 
     hide() {
         if (!this.layer) this.init();
@@ -368,19 +427,84 @@ const PhoneUI = {
         this.layer.setAttribute('aria-hidden', 'true');
         this.stopVibration();
         this.stopClock();
+
+		if (typeof PhoneToggle !== 'undefined') {
+			PhoneToggle.setExpanded(false);
+		}
     },
 
-    reset() {
+	toggleFromButton() {
+		if (this.isVisible()) {
+			this.hide();
+			return;
+		}
+
+		// Il pulsante globale apre sempre dalla lockscreen, anche se prima eri nella chat.
+		this.showLockScreen();
+	},
+
+    reset(options = {}) {
         if (!this.layer) this.init();
+
+		const clearNotifications = options.clearNotifications ?? true;
+
         this.chat.innerHTML = '';
 
         // Resettare la chat rimuove i pulsanti, quindi togliamo anche lo stato interattivo.
         this.layer.classList.remove('choice-active');
+
+		// Nella maggior parte delle scene reset() prepara una nuova conversazione.
+		// Se vuoi pulire la chat ma tenere il badge, usa PhoneUI.reset({ clearNotifications: false }).
+		if (clearNotifications) {
+			this.clearNotifications();
+		}
     },
 
-    addIncoming(text) {
+    addIncoming(text, options = {}) {
         this.addBubble(text, 'incoming');
+
+		/*
+			Regola principale del sistema notifiche:
+			ogni addIncoming() aggiunge automaticamente notifiche non lette.
+
+			Uso base:
+			PhoneUI.addIncoming('Ciao'); // +1 notifica
+
+			Uso avanzato:
+			PhoneUI.addIncoming('Ciao', { notificationCount: 3 }); // +3 notifiche
+			PhoneUI.addIncoming('Ciao', { notify: false }); // nessuna notifica
+		*/
+		const notificationCount = this.getIncomingNotificationCount(options);
+
+		for (let index = 0; index < notificationCount; index++) {
+			this.addNotification({
+				title: options.title ?? this.getContactName(),
+				body: text
+			});
+		}
     },
+
+	getIncomingNotificationCount(options = {}) {
+		// notify: false e' il modo piu chiaro per dire "mostra il messaggio ma non notificare".
+		if (options.notify === false) {
+			return 0;
+		}
+
+		/*
+			notificationCount controlla quante notifiche aggiungere per questo messaggio.
+			"notifications" e' accettato come alias, nel caso venga piu naturale scriverlo cosi'.
+		*/
+		const rawCount = options.notificationCount ?? options.notifications ?? 1;
+		const count = Number(rawCount);
+
+		// Se arriva un valore non numerico, torniamo al comportamento semplice: +1 notifica.
+		if (!Number.isFinite(count)) {
+			return 1;
+		}
+
+		// Math.floor evita mezze notifiche; Math.max impedisce numeri negativi.
+		return Math.max(0, Math.floor(count));
+	},
 
     addOutgoing(text) {
         this.addBubble(text, 'outgoing');
@@ -396,6 +520,107 @@ const PhoneUI = {
         this.chat.appendChild(bubble);
         this.chat.scrollTop = this.chat.scrollHeight;
     },
+
+	addNotification(notification = {}) {
+		if (!this.layer) this.init();
+
+		const title = notification.title ?? this.getContactName();
+		const body = notification.body ?? '';
+
+		this.notificationId += 1;
+
+		this.unreadNotifications.push({
+			id: this.notificationId,
+			title,
+			body
+		});
+
+		this.renderNotifications();
+	},
+
+	clearNotifications() {
+		this.unreadNotifications = [];
+		this.renderNotifications();
+	},
+
+	markNotificationsAsRead() {
+		// Alias piu leggibile quando la causa e' l'apertura della chat.
+		this.clearNotifications();
+	},
+
+	getUnreadCount() {
+		return this.unreadNotifications.length;
+	},
+
+	renderNotifications() {
+		if (!this.lockNotifications) return;
+
+		this.lockNotifications.innerHTML = '';
+		this.lockNotifications.classList.toggle('is-empty', this.unreadNotifications.length === 0);
+
+		/*
+			Ogni notifica mostrata qui corrisponde a 1 numero nel badge.
+			Se vuoi raggruppare piu messaggi in una sola card, questo e' il punto da modificare.
+		*/
+		this.unreadNotifications.forEach((notification) => {
+			const item = document.createElement('div');
+			item.className = 'lock-notification';
+
+			const icon = document.createElement('div');
+			icon.className = 'lock-notification-icon';
+			icon.setAttribute('aria-hidden', 'true');
+
+			const text = document.createElement('div');
+			text.className = 'lock-notification-text';
+
+			const title = document.createElement('div');
+			title.className = 'lock-notification-title';
+			title.textContent = notification.title;
+
+			const subtitle = document.createElement('div');
+			subtitle.className = 'lock-notification-subtitle';
+			subtitle.textContent = notification.body;
+
+			text.appendChild(title);
+			text.appendChild(subtitle);
+			item.appendChild(icon);
+			item.appendChild(text);
+			this.lockNotifications.appendChild(item);
+		});
+
+		if (typeof PhoneToggle !== 'undefined') {
+			PhoneToggle.updateBadge(this.getUnreadCount());
+		}
+	},
+
+	bindLockscreenEvents() {
+		if (!this.lockView || this.unlockEventsBound) return;
+
+		const unlock = (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			this.unlockFromLockscreen();
+		};
+
+		this.lockView.addEventListener('click', unlock);
+
+		this.lockView.addEventListener('keydown', (event) => {
+			const key = event.key || '';
+
+			if (key === 'Enter' || key === ' ') {
+				unlock(event);
+			}
+		});
+
+		this.unlockEventsBound = true;
+	},
+
+	unlockFromLockscreen() {
+		// Se la chat e' gia aperta, non facciamo nulla.
+		if (this.mode !== 'lockscreen') return;
+
+		this.showChatView({ markNotificationsAsRead: true });
+	},
 
     vibrate(duration = 900) {
         if (!this.layer) this.init();
@@ -474,18 +699,26 @@ const PhoneUI = {
         return this.mode;
     },
 
-    showChatView() {
-        return this.setMode('chat');
-    },
+    showChatView(options = {}) {
+		const markNotificationsAsRead = options.markNotificationsAsRead ?? true;
+        const mode = this.setMode('chat');
 
-    showLockScreen() {
-        return this.setMode('lockscreen');
+		if (markNotificationsAsRead) {
+			this.markNotificationsAsRead();
+		}
+
+		return mode;
     },
 
     switchMode() {
         if (!this.layer) this.init();
 
         const nextMode = this.mode === 'chat' ? 'lockscreen' : 'chat';
+
+		if (nextMode === 'chat') {
+			return this.showChatView();
+		}
+
         return this.setMode(nextMode);
     },
 
@@ -504,6 +737,167 @@ const PhoneUI = {
             this.layer.dataset.phoneMode = this.mode;
         }
     }
+};
+
+const PhoneToggle = {
+	/*
+		Controller del pulsante globale.
+		Questo oggetto non gestisce i messaggi: mostra/nasconde solo il bottone,
+		inoltra il click a PhoneUI e aggiorna il badge numerico.
+	*/
+	root: null,
+	button: null,
+	badge: null,
+	eventsBound: false,
+	visibilityObserver: null,
+	refreshQueued: false,
+
+	init() {
+		this.root = document.getElementById('phone-toggle');
+		this.button = document.getElementById('phone-toggle-button');
+		this.badge = document.getElementById('phone-toggle-badge');
+
+		if (!this.root || !this.button || !this.badge) return;
+
+		this.bindEvents();
+		this.observeScreenChanges();
+		this.updateBadge(PhoneUI.getUnreadCount());
+		this.refreshVisibility();
+	},
+
+	bindEvents() {
+		if (this.eventsBound || !this.button) return;
+
+		this.button.addEventListener('click', (event) => {
+			// Il pulsante e' sopra il gioco: blocchiamo il click per non avanzare dialoghi dietro.
+			event.preventDefault();
+			event.stopPropagation();
+			PhoneUI.toggleFromButton();
+		});
+
+		this.eventsBound = true;
+	},
+
+	observeScreenChanges() {
+		if (this.visibilityObserver || !document.body) return;
+
+		/*
+			Monogatari cambia visibilita/classi/attributi sugli screen invece di ricaricare pagina.
+			MutationObserver ci permette di nascondere il pulsante quando torna il menu principale.
+		*/
+		this.visibilityObserver = new MutationObserver(() => {
+			this.queueRefreshVisibility();
+		});
+
+		this.visibilityObserver.observe(document.body, {
+			attributes: true,
+			subtree: true,
+			attributeFilter: ['class', 'style', 'data-screen', 'aria-hidden']
+		});
+	},
+
+	queueRefreshVisibility() {
+		if (this.refreshQueued) return;
+
+		this.refreshQueued = true;
+
+		requestAnimationFrame(() => {
+			this.refreshQueued = false;
+			this.refreshVisibility();
+		});
+	},
+
+	refreshVisibility() {
+		if (!this.root || !this.button) return;
+
+		const shouldShow = this.shouldShowInCurrentScreen();
+
+		this.root.classList.toggle('visible', shouldShow);
+		this.root.setAttribute('aria-hidden', String(!shouldShow));
+		this.button.disabled = !shouldShow;
+
+		// Nel menu principale il telefono non deve restare aperto nemmeno se era visibile prima.
+		if (!shouldShow && PhoneUI.layer && PhoneUI.isVisible()) {
+			PhoneUI.hide();
+		}
+	},
+
+	shouldShowInCurrentScreen() {
+		/*
+			Regola principale: Monogatari mette .active sullo screen corrente.
+			Il pulsante deve comparire solo quando lo screen attivo e' quello di gioco.
+		*/
+		const activeScreen = document.querySelector('[data-screen].active');
+
+		if (activeScreen) {
+			return activeScreen.dataset.screen === 'game';
+		}
+
+		const mainScreen = document.querySelector('[data-screen="main"], main-screen');
+		const gameScreen = document.querySelector('[data-screen="game"], game-screen');
+		const mainIsVisible = this.isElementVisible(mainScreen);
+		const gameIsVisible = this.isElementVisible(gameScreen);
+
+		if (mainIsVisible && !gameIsVisible) {
+			return false;
+		}
+
+		if (gameIsVisible) {
+			return true;
+		}
+
+		/*
+			Fallback difensivo: se Monogatari cambia markup in futuro, il label corrente
+			ci dice comunque che una scena e' partita.
+		*/
+		try {
+			const currentLabel = typeof monogatari.state === 'function'
+				? monogatari.state('label')
+				: null;
+
+			return Boolean(currentLabel) && !mainIsVisible;
+		} catch (error) {
+			return false;
+		}
+	},
+
+	isElementVisible(element) {
+		if (!element) return false;
+
+		const style = window.getComputedStyle(element);
+		const rect = element.getBoundingClientRect();
+
+		return style.display !== 'none' &&
+			style.visibility !== 'hidden' &&
+			style.opacity !== '0' &&
+			rect.width > 0 &&
+			rect.height > 0;
+	},
+
+	updateBadge(count = 0) {
+		if (!this.root || !this.badge) return;
+
+		const safeCount = Math.max(0, Number(count) || 0);
+		const hasNotifications = safeCount > 0;
+
+		this.root.classList.toggle('has-notifications', hasNotifications);
+		this.badge.textContent = hasNotifications ? String(Math.min(safeCount, 99)) : '';
+		this.badge.setAttribute('aria-hidden', String(!hasNotifications));
+
+		if (this.button) {
+			const label = hasNotifications
+				? `Apri telefono, ${safeCount} notifiche non lette`
+				: 'Apri telefono';
+
+			this.button.setAttribute('aria-label', label);
+		}
+	},
+
+	setExpanded(isExpanded) {
+		if (!this.button) return;
+
+		this.button.setAttribute('aria-pressed', String(isExpanded));
+	}
 };
 
 const NightOverlay = {
@@ -2821,10 +3215,21 @@ $_ready (() => {
 		console.log("Sono entrato, screens:" + screens);
 		if(screens)
 			screens.forEach(s => {s.style.backgroundColor = "transparent";});
+
+		// Quando il giocatore lascia il menu principale e parte una scena, il pulsante telefono puo apparire.
+		if (PhoneToggle.root) {
+			PhoneToggle.queueRefreshVisibility();
+		}
 	})
 
 	monogatari.init ('#monogatari').then (() => {
 		// 3. Inside the init function:
+		// Il telefono viene inizializzato subito, ma resta nascosto finche una scena lo apre.
+		PhoneUI.init();
+
+		// Il toggle e' indipendente dal telefono: decide solo quando mostrare il pulsante e il badge.
+		PhoneToggle.init();
+
 		// Il toggle globale evita di creare il menu quando DEBUG_MENU_ENABLED e' false.
 		if (DEBUG_MENU_ENABLED) {
 			DebugMenu.init();

@@ -174,7 +174,8 @@ monogatari.script ({
         {'Function': {
             'Apply': function () {
                 PhoneUI.reset();
-                PhoneUI.show('Giulia');
+                // Imposta il mittente senza aprire il telefono: vedrai solo badge e lockscreen.
+                PhoneUI.setContactName('Giulia');
                 PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
                 PhoneUI.vibrate();
                 return true;
@@ -223,7 +224,8 @@ monogatari.script ({
                 return true;
             },
             'Revert': function () {
-                PhoneUI.show('Giulia');
+                // Anche tornando indietro non apriamo il telefono in automatico.
+                PhoneUI.setContactName('Giulia');
                 return true;
             }
         }},
@@ -240,7 +242,8 @@ monogatari.script ({
         {'Function': {
             'Apply': function () {
                 PhoneUI.reset();
-                PhoneUI.show('Giulia');
+                // Nuovo messaggio: telefono chiuso, solo notifica/badge.
+                PhoneUI.setContactName('Giulia');
                 PhoneUI.addIncoming('Sai che può solo farti bene, hai bisogno di aria. Ti aspetto.');
                 PhoneUI.vibrate();
                 return true;
@@ -251,7 +254,7 @@ monogatari.script ({
             }
         }},
 
-        {'Choice': {
+        {'PhoneChoice': {
             'Esci': {
                 'Text': 'ESCI',
                 'Do': 'jump Esci_Casa'
@@ -273,14 +276,15 @@ monogatari.script ({
         'vibrate 200 100 200',
 		() => {
 			PhoneUI.reset();
-			PhoneUI.show('Giulia');
+			// Messaggio in arrivo: aggiorna il badge, ma lascia il telefono chiuso.
+			PhoneUI.setContactName('Giulia');
 			PhoneUI.addIncoming('Non lasciarmi aspettare.');
 			PhoneUI.vibrate();
 
 			SceneUtility.toggleBackground();
 		},
 
-		{'Choice':{
+		{'PhoneChoice':{
 			'Apri la porta': {
 				'Text': 'APRI LA PORTA',
 				'Do': 'jump Esci_Casa with fadeOut'
@@ -369,7 +373,8 @@ monogatari.script ({
 
 		() => { 	
 			PhoneUI.reset();
-			PhoneUI.show('Giulia');
+			// Prepariamo mittente e notifica; il giocatore aprira' il telefono dal pulsante.
+			PhoneUI.setContactName('Giulia');
 			PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
 			PhoneUI.vibrate();
 		},
@@ -466,9 +471,15 @@ monogatari.script ({
 		
 		async () => {
 			PhoneUI.reset();
-			PhoneUI.show();
+			// Qui il telefono si apre perche' il giocatore sta gia scrivendo una chat attiva.
+			// Non e' una notifica passiva: vogliamo mostrare la conversazione sul momento.
+			PhoneUI.show('Giulia', { mode: 'chat' });
 			PhoneUI.addOutgoing("Ehi, ti va se ci prendiamo un caffè?");
-			PhoneUI.addIncoming("Volentieri! Ci troviamo al solito posto tra 15 min");
+
+			// notify:false evita badge/lockscreen per una risposta gia visibile in chat.
+			PhoneUI.addIncoming("Volentieri! Ci troviamo al solito posto tra 15 min", {
+				notify: false
+			});
 			await sleep(6000);
 			PhoneUI.reset();
 			PhoneUI.hide();
@@ -503,10 +514,18 @@ monogatari.script ({
 		'show scene #000000 with fadeIn',
 
 		() => {
+			// Pulizia iniziale: chiude il telefono, svuota chat e svuota notifiche/badge.
+			PhoneUI.hide();
 			PhoneUI.reset();
-			PhoneUI.show('Tony Pitony');
+
+			PhoneUI.setContactName('Tony Pitony');
 			PhoneUI.addIncoming('Ciao sono Tony sono quello di ieri');
-			PhoneUI.addIncoming('Non ti ho piu richiamata perche ti puzzano i piedi');		
+			PhoneUI.addIncoming('Non ti ho piu richiamata perche ti puzzano i piedi');
+
+			// clearNotifications() cancella solo notifiche e badge.
+			// La chat resta visibile e i messaggi gia aggiunti non vengono rimossi.
+			PhoneUI.clearNotifications();
+
 			PhoneUI.vibrate(600);
 		},
 
@@ -522,15 +541,39 @@ monogatari.script ({
 				'Text': 'Blocca Schermo',
 				'Do': 'wait 300',
 				'onChosen': function() {
-					PhoneUI.addOutgoing('...');
 					PhoneUI.switchMode();
+				}
+			},
+			'Test 3': {
+				'Text': 'Messaggio silenzioso',
+				'Do': 'wait 300',
+				'onChosen': function() {
+					PhoneUI.switchMode();
+					// notify: false aggiunge il messaggio alla chat senza incrementare badge/lockscreen.
+					// Usalo per messaggi che vuoi mostrare nello storico, ma che non devono sembrare nuovi.
+					PhoneUI.addIncoming('Questo messaggio e silenzioso: entra in chat, ma non aumenta il badge.', {
+						notify: false
+					});
+				}
+			},
+			'Test 4': {
+				'Text': 'Messaggio n notifiche',
+				'Do': 'wait 300',
+				'onChosen': function() {
+					PhoneUI.switchMode();
+					/// notificationCount permette di aggiungere piu notifiche con una sola chiamata.
+					// Questo e' utile quando vuoi simulare piu messaggi arrivati insieme.
+					PhoneUI.addIncoming('Questo messaggio vale tre notifiche.', {
+						notificationCount: 3
+					});
 				}
 			}
 		}},
 	]
-	/*
-	'Yes': [
-		'y Thats awesome!',
+
+		/*
+		'Yes': [
+			'y Thats awesome!',
 		'y Then you are ready to go ahead and create an amazing Game!',
 		'y I can’t wait to see what story you’ll tell!',
 		'end'

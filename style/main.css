@@ -238,10 +238,131 @@ input[type=range]::-ms-fill-upper {
 
 }
 
+/* --- PULSANTE GLOBALE TELEFONO --- */
+/* Wrapper fisso: resta fuori dal layout Monogatari e viene mostrato/nascosto da PhoneToggle. */
+.phone-toggle {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 1000001;
+    display: none;
+    pointer-events: none;
+}
+
+/* Stato visibile: PhoneToggle lo applica solo durante le scene, mai nel menu principale. */
+.phone-toggle.visible {
+    display: block;
+}
+
+/* Bottone icona: dimensione stabile per evitare salti quando appare/scompare il badge. */
+.phone-toggle-button {
+    position: relative;
+    width: 54px;
+    height: 54px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+    background: rgba(8, 10, 14, 0.9);
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.42),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease;
+}
+
+/* Feedback hover/focus: stesso trattamento per mouse e tastiera. */
+.phone-toggle-button:hover,
+.phone-toggle-button:focus-visible {
+    background: rgba(20, 24, 32, 0.96);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.34);
+    outline: none;
+    transform: translateY(-1px);
+}
+
+/* Monogatari applica un bordo globale ai button:focus; qui lo teniamo stabile. */
+.phone-toggle-button:focus {
+    border-width: 1px;
+}
+
+/* Stato premuto: quando il telefono e' aperto il pulsante resta leggermente evidenziato. */
+.phone-toggle-button[aria-pressed="true"] {
+    background: rgba(27, 36, 48, 0.98);
+    border-color: rgba(126, 188, 255, 0.55);
+}
+
+/* Icona telefono disegnata in CSS per non introdurre dipendenze o asset extra. */
+.phone-toggle-icon {
+    position: relative;
+    width: 22px;
+    height: 32px;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 7px;
+}
+
+/* Piccola barra speaker dell'icona. */
+.phone-toggle-icon::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    width: 8px;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.68);
+    transform: translateX(-50%);
+}
+
+/* Punto home dell'icona. */
+.phone-toggle-icon::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.72);
+    transform: translateX(-50%);
+}
+
+/* Badge numerico: resta nascosto finche PhoneUI non segnala notifiche non lette. */
+.phone-toggle-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border: 2px solid #080a0e;
+    border-radius: 999px;
+    background: #d92d20;
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Classe applicata dal JS quando getUnreadCount() e' maggiore di zero. */
+.phone-toggle.has-notifications .phone-toggle-badge {
+    display: inline-flex;
+}
+
 .phone-layer {
     position: fixed;
     inset: 0;
-    z-index: 1;
+    z-index: 1000000;
     display: none;
     align-items: center;
     justify-content: center;
@@ -268,6 +389,7 @@ input[type=range]::-ms-fill-upper {
         0 0 70px rgba(160, 200, 255, 0.14);
     padding: 14px;
     transform: translateY(-4vh);
+    pointer-events: auto;
 }
 
 .phone-shell.vibrating {
@@ -511,6 +633,7 @@ input[type=range]::-ms-fill-upper {
 
 /* Lock Screen Styles */
 .phone-lock {
+    position: relative;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -582,6 +705,11 @@ input[type=range]::-ms-fill-upper {
     margin-bottom: auto;
 }
 
+/* Stato senza notifiche: niente card, cosi' la lockscreen rimane pulita. */
+.lock-notifications.is-empty {
+    display: none;
+}
+
 .lock-notification {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 14px;
@@ -602,11 +730,34 @@ input[type=range]::-ms-fill-upper {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    flex: 0 0 auto;
+    position: relative;
+}
+
+/* Icona messaggio disegnata in CSS: resta coerente anche se cambia font o piattaforma. */
+.lock-notification-icon::before {
+    content: '';
+    width: 15px;
+    height: 11px;
+    border: 2px solid rgba(255, 255, 255, 0.88);
+    border-radius: 5px;
+}
+
+.lock-notification-icon::after {
+    content: '';
+    position: absolute;
+    left: 9px;
+    bottom: 6px;
+    width: 6px;
+    height: 6px;
+    border-left: 2px solid rgba(255, 255, 255, 0.88);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.88);
+    transform: rotate(-35deg);
 }
 
 .lock-notification-text {
     flex: 1;
+    min-width: 0;
 }
 
 .lock-notification-title {
@@ -618,6 +769,9 @@ input[type=range]::-ms-fill-upper {
 .lock-notification-subtitle {
     font-size: 0.7rem;
     color: rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Animations */
