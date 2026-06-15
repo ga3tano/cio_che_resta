@@ -8,7 +8,7 @@
 
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1">
-		<meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; script-src 'self' 'unsafe-eval'">
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self' 'unsafe-eval'">
 		<meta name="description" content=""> <!--Page description. No longer than 155 characters.-->
 		<meta name="keywords" content="">
 		<meta name="author" content=""> <!--Name of the author.-->
@@ -69,6 +69,11 @@
 
 		<link rel="manifest" href="manifest.json">
 
+		<!-- Google Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+
 		<!-- Third Party CSS Libraries -->
 
 		<!-- Monogatari CSS Libraries -->
@@ -101,6 +106,7 @@
 				<language-selection-screen></language-selection-screen>
 				<loading-screen></loading-screen>
 				<main-screen>
+					<div class="main-title">cio che resta</div>
 					<main-menu></main-menu>
 				</main-screen>
 				<game-screen>

@@ -45,12 +45,70 @@ button:hover {
 
 /* Main Menu Styling */
 [data-screen="main"] {
-    background: #000000;
+    background-image:
+        url('../assets/scenes/stanza_sfondo_4.png'),
+        url('../assets/scenes/cielo_notte.png');
+    background-size: cover, cover;
+    background-position: center, center;
+    background-repeat: no-repeat, no-repeat;
+    background-color: #090c18;
+}
+
+/* Titolo principale del menu */
+.main-title {
+    position: absolute;
+    top: 36%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 700;
+    font-style: italic;
+    color: rgba(220, 212, 198, 0.92);
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: 0.22em;
+    text-shadow:
+        0 2px 12px rgba(0, 0, 0, 0.75),
+        0 0 50px rgba(10, 20, 50, 0.5);
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Nascondi il pulsante Load */
+[data-screen="main"] button[data-open="load"] {
+    display: none !important;
 }
 
 /* Main Menu Buttons Styling */
 [data-screen="main"] button {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.16em;
+    color: rgba(200, 192, 178, 0.78);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(200, 192, 178, 0.15);
+    border-radius: 0;
+    width: auto;
+    height: auto;
+    padding: 0.55em 0.6em 0.45em;
+    text-transform: lowercase;
+    cursor: pointer;
+    transition:
+        color 0.4s ease,
+        border-bottom-color 0.4s ease,
+        letter-spacing 0.35s ease;
+}
 
+[data-screen="main"] button:hover,
+[data-screen="main"] button:focus {
+    color: rgba(235, 225, 208, 1);
+    border-bottom-color: rgba(200, 192, 178, 0.45);
+    letter-spacing: 0.22em;
+    background: transparent;
 }
 
 /**
