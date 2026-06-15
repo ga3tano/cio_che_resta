@@ -703,6 +703,15 @@ input[type=range]::-ms-fill-upper {
 }
 
 /* Lock Screen Styles */
+
+/*
+    cursor: pointer è necessario su iOS Safari: senza di esso i div non-interattivi
+    non ricevono eventi click, rendendo impossibile sbloccare la lockscreen.
+*/
+#phone-lock-view {
+    cursor: pointer;
+}
+
 .phone-lock {
     position: relative;
     height: 100%;

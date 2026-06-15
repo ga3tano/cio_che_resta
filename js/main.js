@@ -651,6 +651,13 @@ const PhoneUI = {
 
 		this.lockView.addEventListener('click', unlock);
 
+		/*
+			Su iOS Safari i div senza cursor:pointer non ricevono click.
+			touchend garantisce l'interazione su tutti i browser mobile;
+			preventDefault() sopprime il click sintetico successivo per evitare doppio unlock.
+		*/
+		this.lockView.addEventListener('touchend', unlock);
+
 		this.lockView.addEventListener('keydown', (event) => {
 			const key = event.key || '';
 

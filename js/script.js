@@ -170,7 +170,6 @@ monogatari.script ({
 		() => SceneUtility.revealPreparedScene(),
         'play sound phone_vibration',
 		'play sound phone_notification',
-        'vibrate 200 100 200',
 
         {'Function': {
             'Apply': function () {
@@ -239,7 +238,6 @@ monogatari.script ({
     'Secondo_Messaggio': [
         'play sound phone_vibration',
 		'play sound phone_notification',
-        'vibrate 200 100 200',
 
         {'Function': {
             'Apply': function () {
@@ -276,7 +274,6 @@ monogatari.script ({
 		'wait 5000',
 		'play sound phone_vibration',
 		'play sound phone_notification',
-        'vibrate 200 100 200',
 		() => {
 			PhoneUI.reset();
 			// Messaggio in arrivo: aggiorna il badge, ma lascia il telefono chiuso.
@@ -380,8 +377,7 @@ monogatari.script ({
 
 		'play sound phone_vibration',
 		'play sound phone_notification',
-        'vibrate 200 100 200',
-		() => { 	
+		() => {
 			PhoneUI.reset();
 			// Prepariamo mittente e notifica; il giocatore aprira' il telefono dal pulsante.
 			PhoneUI.setContactName('Giulia');
