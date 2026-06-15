@@ -546,14 +546,6 @@ const PhoneUI = {
 		});
 
 		this.renderNotifications();
-
-		// Su iOS il MutationObserver può non scattare al momento giusto (race condition
-		// tra reset() e addIncoming() schedula un unico rAF che a volte si esegue prima
-		// che la game-screen sia attiva). Chiamiamo direttamente queueRefreshVisibility()
-		// per garantire che il toggle sia visibile quando arriva la prima notifica.
-		if (typeof PhoneToggle !== 'undefined' && PhoneToggle.root) {
-			PhoneToggle.queueRefreshVisibility();
-		}
 	},
 
 	addPlaceholder(){
@@ -3287,9 +3279,6 @@ $_ready (() => {
 		// Quando il giocatore lascia il menu principale e parte una scena, il pulsante telefono puo apparire.
 		if (PhoneToggle.root) {
 			PhoneToggle.queueRefreshVisibility();
-			// Su iOS la transizione game-screen può non avere ancora .active quando
-			// scatta il primo rAF: un secondo controllo leggermente ritardato lo copre.
-			setTimeout(() => PhoneToggle.queueRefreshVisibility(), 300);
 		}
 	})
 
