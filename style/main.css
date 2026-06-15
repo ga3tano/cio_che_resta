@@ -97,7 +97,20 @@ button:hover {
 
 /* Text Box styling */
 [data-component="text-box"] {
+    display: none !important;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    /* display: none !important; */
+}
 
+body.show-textbox [data-component="text-box"]{
+    display: block !important;
+    opacity: 1;
+}
+
+body.hide-textbox [data-component="text-box"]{
+    opacity: 0;
+    transition: opacity 0.4s ease;
 }
 
 /* Character Name Style */

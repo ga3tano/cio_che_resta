@@ -2530,17 +2530,22 @@ const PanicBreath = {
 				return;
 			
 			case "buildup":
-				const t = Math.min(elapsed / 4, 1);	//normalizzato 0 -> 1
+				const t = Math.min(elapsed / 8, 1);	//normalizzato 0 -> 1
 				
-				this.volume = 0.2 + (1 - Math.pow(2, -10 * t)) *0.8;	//Easing esponenziale volume	
-				this.rate = 1 + t * 2; //rate cresce più velocemente da 1 a 3 
+				// const smooth = t*t*t*(t*(6*t - 15) + 10);	//Quintic smoothstep
+				const smooth = 1 / (1+Math.exp(-6 * (t - 0.5)));
+				// this.volume = 0.2 + (1 - Math.pow(2, -2 * t)) *0.8;	//Easing esponenziale volume	
+				// this.rate = 0.8 + t * 2; //rate cresce più velocemente da 1 a 3 
 				
+				this.volume = 0.2 + smooth * 0.8;
+				this.rate = 0.8 + smooth * 2;
+
 				if(t >= 1)
 					this.state = "plateau";
 				break;
 
 			case "plateau":
-				this.rate = 3;
+				this.rate = 2.5;
 				this.volume = 1;
 				break;
 
@@ -3254,6 +3259,16 @@ function sleep(ms){
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function showTextbox(){
+	document.body.classList.add('show-textbox');
+	document.body.classList.remove('hide-textbox');
+}
+
+function hideTextBox(){
+	document.body.classList.add('hide-textbox')
+	document.body.classList.remove('show-textbox');
+}
+		
 $_ready (() => {
 	// 2. Inside the $_ready function:
 

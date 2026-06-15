@@ -136,6 +136,7 @@ monogatari.script ({
 
 		'show scene #666666 with fadeIn',
 		() => PanicBreath.start(),
+		'wait 8000',
 
 		{
 			'Choice': {
@@ -151,7 +152,7 @@ monogatari.script ({
 	'Intermezzo_Respira': [
 		//Avvio rilascio del respiro
 		() => PanicBreath.release(),
-		'wait 8000',
+		'wait 10000',
 
 		'jump Negazione_Cellulare'
 	],
@@ -169,7 +170,7 @@ monogatari.script ({
 		() => SceneUtility.revealPreparedScene(),
         'play sound phone_vibration',
 		'play sound phone_notification',
-        'vibrate 20000',
+        'vibrate 200 100 200',
 
         {'Function': {
             'Apply': function () {
@@ -268,6 +269,7 @@ monogatari.script ({
     ],
 
 	'Rimani_A_Casa':[
+		() => SceneUtility.emptyScene(),
 		'show scene #000000 with fadeIn',
 		() => PhoneUI.hide(),
 		// 'show scene #000000 with fadeIn',
@@ -368,14 +370,17 @@ monogatari.script ({
 
 //RABBIA
 	'Rabbia': [
-		'play music rage_scene with loop fade 3 volume 75',
 		() => SceneUtility.loadScene("rabbia"),
 		'show scene room_rage',
 		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
+		'play music rage_scene with loop volume 75',
 
 		'wait 2000',
 
+		'play sound phone_vibration',
+		'play sound phone_notification',
+        'vibrate 200 100 200',
 		() => { 	
 			PhoneUI.reset();
 			// Prepariamo mittente e notifica; il giocatore aprira' il telefono dal pulsante.
@@ -438,6 +443,7 @@ monogatari.script ({
 		// 	document.getElementById('clock-display').style.display = 'none';
 		// },
 
+		'wait 3000',
 		() => {
 			PhoneUI.reset();
 			PhoneUI.show();
@@ -468,9 +474,10 @@ monogatari.script ({
 				}, false);		
 								
 			await sleep(3000);
+			PhoneUI.hide();
 		},
 
-
+		'stop music',
 
 		'show scene #000000 with fadeIn',
 		'jump Contrattazione'
@@ -513,18 +520,13 @@ monogatari.script ({
 	'Depressione': [
 		() => SceneUtility.loadScene("depressione"),
 		'show scene room_night with fadeIn',
-		'play music rain with loop fade 3 volume 30',
+		'play music rain with loop volume 30',
 		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
 
-
-
-		'shadow ...sai chi sono, vero?',
-		'shadow Sono giorni che ti osservo, non puoi continuare così...',
-		'shadow So che lo pensi, e che cerchi di convincerti del contrario inutilmente...',
-		'shadow ...non è stata colpa tua. \nNon avresti potuto far nulla. \nNon potevi saperlo.',
-		'shadow Mi dispiace vederti così. Sto bene, davvero, non preoccuparti per me.',
-		'shadow Non mi hai fatto mancare mai nulla, sei stato un genitore impeccabile.'
+		'wait 1500',
+		() => showTextbox(),
+		'shadow spiegazione incidente...'
 
 
 	],
