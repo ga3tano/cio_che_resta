@@ -205,7 +205,14 @@ class PhoneChoice extends Monogatari.Action {
 			button.type = 'button';
 			button.className = 'phone-choice-button';
 			button.textContent = choice.text;
-			button.addEventListener ('click', (event) => this.choose (choice, event));
+
+			if(choice.disabled){
+				button.disabled = true;
+				button.style.opacity = '0.45';
+				button.style.cursor = 'default';
+			}
+			else
+				button.addEventListener ('click', (event) => this.choose (choice, event));
 
 			container.appendChild (button);
 		});
@@ -227,14 +234,16 @@ class PhoneChoice extends Monogatari.Action {
 				if (typeof value === 'string') {
 					return {
 						text: key,
-						doAction: value
+						doAction: value,
+						disabled: false
 					};
 				}
 
 				return {
 					text: value.Text ?? key,
 					doAction: value.Do,
-					onChosen: value.onChosen
+					onChosen: value.onChosen,
+					disabled: value.Disabled ?? false // propaga disabled all'action
 				};
 			});
 	}
@@ -521,7 +530,7 @@ const PhoneUI = {
         this.chat.scrollTop = this.chat.scrollHeight;
     },
 
-	addNotification(notification = {}) {
+	addNotification(notification = {}, clickable = true) {
 		if (!this.layer) this.init();
 
 		const title = notification.title ?? this.getContactName();
@@ -532,10 +541,38 @@ const PhoneUI = {
 		this.unreadNotifications.push({
 			id: this.notificationId,
 			title,
-			body
+			body,
+			clickable
 		});
 
 		this.renderNotifications();
+	},
+
+	addPlaceholder(){
+		const item = document.createElement('div');
+			item.className = 'lock-notification';
+
+			const icon = document.createElement('div');
+			icon.className = 'lock-notification-icon';
+			icon.setAttribute('aria-hidden', 'true');
+
+			const text = document.createElement('div');
+			text.className = 'lock-notification-text';
+
+			const title = document.createElement('div');
+			title.className = 'lock-notification-title';
+			title.textContent = "Nessun nuovo messaggio.";
+
+			const subtitle = document.createElement('div');
+			subtitle.className = 'lock-notification-subtitle';
+			subtitle.textContent = "Messaggi";
+
+			text.appendChild(title);
+			text.appendChild(subtitle);
+			item.appendChild(icon);
+			item.appendChild(text);
+			item.setAttribute('pointer-events', 'none');
+			this.lockNotifications.appendChild(item);
 	},
 
 	clearNotifications() {
@@ -2184,7 +2221,7 @@ const SCENE_IMAGES = {
 	'contrattazione': [
 		{ id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png', onClick: 'assets/images/cornice.png'},
 		{ id: 'pianta_1', src: 'assets/images/pianta_1.png', onClick: 'assets/images/pianta_2.png'},
-		{ id: 'vestiti', src: 'assets/images/vestiti.png', onClick: 'palle'}
+		{ id: 'vestiti', src: 'assets/images/vestiti.png', onClick: 'assets/images/blank.png'}
 	],
 	'depressione': [
 		{ id: 'cornice', src: 'assets/images/cornice.png'},
@@ -2218,6 +2255,7 @@ const SceneUtility = {
 			const rain = document.createElement('img');
 
 			rain.src = `assets/images/rain.gif`;
+			rain.id = 'rain';
 			rain.classList.add('rain');
 
 			sky.appendChild(rain);
@@ -2225,7 +2263,7 @@ const SceneUtility = {
 			console.log(sky);
 		}
 
-		//overlay.classList.add("covering");
+		overlay.classList.add("covering");
 
 		await preloadImage(imageSrc);
 
@@ -2240,11 +2278,6 @@ const SceneUtility = {
 	},
 	enableBackground(){
 		document.body.classList.remove("composite-sky-scene");
-	},
-
-	hideSky(){
-		const sky = document.getElementById("sky");
-		sky.style.display = "none";
 	},
 
 	async loadDetails(typeOfItems) {
@@ -2440,7 +2473,21 @@ const SceneUtility = {
 			
 			checkCondition();
 		});
+	},
+
+	emptyScene(){
+		let wrapper = document.getElementById('details-wrapper');
+		let rain = document.getElementById('rain');
+
+		if(wrapper)
+			document.body.removeChild(wrapper);
+
+		if(rain)
+			document.body.removeChild(rain);		
 	}
+
+
+
 }	
 
 

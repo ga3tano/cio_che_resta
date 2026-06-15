@@ -189,8 +189,9 @@ monogatari.script ({
         // PhoneChoice mostra questi pulsanti direttamente nella chat del telefono.
         {'PhoneChoice': {
             'Rispondi': {
-                'Text': 'RISPONDI',
-                'Do': 'jump Negazione_Rispondi'
+                'Text': 'RISPONDI(WIP)',
+				'Do': '',
+				'Disabled': true          
             },
             'Ignora': {
                 'Text': 'IGNORA',
@@ -293,7 +294,11 @@ monogatari.script ({
 	],
 
 	'Esci_Casa':[
-		() => PhoneUI.hide(),
+		() => {
+			PhoneUI.hide();
+			SceneUtility.emptyScene();
+		},
+
 		'show scene outside with fadeIn',
 		() => SceneUtility.enableBackground(),
 		
@@ -440,8 +445,8 @@ monogatari.script ({
 
 		// Mostriamo il comando come azione del telefono e poi scriviamo il messaggio scelto.
 		{'PhoneChoice':{
-			'Scrivi un nuovo messaggio': {
-				'Text': 'SCRIVI UN NUOVO MESSAGGIO',
+			'Nuovo messaggio': {
+				'Text': 'NUOVO MESSAGGIO',
 				'Do': 'wait 2000',
 				'onChosen': function() {
 					PhoneUI.addOutgoing('Ehi');
@@ -449,10 +454,23 @@ monogatari.script ({
 			}
 		}},
 
-		() => {
+		async () => {
 			PhoneUI.reset();
 			PhoneUI.hide();
+
+			await sleep(1000);
+
+			PhoneUI.show('Messaggi');
+			PhoneUI.addNotification(
+				{
+					title: 'Messaggi',
+					body: 'Nessun nuovo messaggio'
+				}, false);		
+								
+			await sleep(3000);
 		},
+
+
 
 		'show scene #000000 with fadeIn',
 		'jump Contrattazione'
@@ -495,9 +513,11 @@ monogatari.script ({
 	'Depressione': [
 		() => SceneUtility.loadScene("depressione"),
 		'show scene room_night with fadeIn',
-		'play music rain with loop',
+		'play music rain with loop fade 3 volume 30',
 		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
+
+
 
 		'shadow ...sai chi sono, vero?',
 		'shadow Sono giorni che ti osservo, non puoi continuare così...',
