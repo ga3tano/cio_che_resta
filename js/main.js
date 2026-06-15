@@ -2814,7 +2814,7 @@ Toggle globale del menu di debug.
 Mettere a false per disattivarlo completamente: non viene creato il DOM,
 non vengono registrati eventi e non funziona la scorciatoia Ctrl/Cmd + Shift + D.
 */
-const DEBUG_MENU_ENABLED = false;
+const DEBUG_MENU_ENABLED = true;
 
 const DebugMenu = {
 	// Elemento radice che contiene sia il bottone "Debug" sia il pannello.
