@@ -546,6 +546,16 @@ const PhoneUI = {
 		});
 
 		this.renderNotifications();
+
+		// Su iOS la catena MutationObserver → rAF può scattare prima che la game-screen
+		// sia stabile, lasciando il toggle nascosto. Usiamo due meccanismi:
+		// 1) queueRefreshVisibility() per il caso normale (rAF immediato)
+		// 2) setTimeout(500) per coprire le race condition iOS: chiama refreshVisibility()
+		//    direttamente dopo che qualsiasi transizione in corso ha avuto tempo di completarsi.
+		if (typeof PhoneToggle !== 'undefined' && PhoneToggle.root) {
+			PhoneToggle.queueRefreshVisibility();
+			setTimeout(() => PhoneToggle.refreshVisibility(), 500);
+		}
 	},
 
 	addPlaceholder(){
@@ -3279,6 +3289,9 @@ $_ready (() => {
 		// Quando il giocatore lascia il menu principale e parte una scena, il pulsante telefono puo apparire.
 		if (PhoneToggle.root) {
 			PhoneToggle.queueRefreshVisibility();
+			// Su iOS la transizione game-screen può non avere ancora .active quando
+			// scatta il primo rAF: un secondo controllo ritardato lo copre.
+			setTimeout(() => PhoneToggle.queueRefreshVisibility(), 300);
 		}
 	})
 
