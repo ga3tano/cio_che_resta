@@ -2814,7 +2814,7 @@ Toggle globale del menu di debug.
 Mettere a false per disattivarlo completamente: non viene creato il DOM,
 non vengono registrati eventi e non funziona la scorciatoia Ctrl/Cmd + Shift + D.
 */
-const DEBUG_MENU_ENABLED = true;
+const DEBUG_MENU_ENABLED = false;
 
 const DebugMenu = {
 	// Elemento radice che contiene sia il bottone "Debug" sia il pannello.
@@ -2920,9 +2920,7 @@ const DebugMenu = {
 		const group = document.createElement('div');
 		group.className = 'debug-menu-group';
 		group.textContent = this.groupTitle;
-		grid.appendChild(group);
-
-		// Trasforma ogni label in un bottone di salto.
+		grid.appendChild(group);		// Trasforma ogni label in un bottone di salto.
 		this.labels.forEach((label) => {
 			// Bottone che memorizza nel dataset il label Monogatari di destinazione.
 			const button = document.createElement('button');
