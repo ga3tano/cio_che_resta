@@ -149,6 +149,31 @@ monogatari.settings({
 	'ExperimentalFeatures': false
 });
 
+monogatari.strings({
+	'English': {
+		'Start':          'Inizia',
+		'Load':           'Carica',
+		'Save':           'Salva',
+		'Help':           'Aiuto',
+		'Settings':       'Impostazioni',
+		'Gallery':        'Galleria',
+		'Credits':        'Crediti',
+		'Back':           'Indietro',
+		'Auto':           'Auto',
+		'Skip':           'Salta',
+		'Hide':           'Nascondi',
+		'Close':          'Chiudi',
+		'Confirm':        'Conferma',
+		'Language':       'Lingua',
+		'Volume':         'Volume',
+		'Music':          'Musica',
+		'Voice':          'Voce',
+		'Sound':          'Suoni',
+		'Text Speed':     'Velocità testo',
+		'Resolution':     'Risoluzione'
+	}
+});
+
 // Initial Settings
 monogatari.preferences ({
 
