@@ -57,7 +57,7 @@ button:hover {
 /* Titolo principale del menu */
 .main-title {
     position: absolute;
-    top: 36%;
+    top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-family: 'Cormorant Garamond', Georgia, serif;
