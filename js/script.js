@@ -82,6 +82,7 @@ monogatari.assets ('scenes', {
 	feet: 'Piedi.png',
 	teddybear: 'Orsacchiotto.png',
 	outside: 'scena2_mondo.png',
+	end: 'Foto.png'
 });
 
 
@@ -90,6 +91,10 @@ monogatari.characters ({
 	'shadow': {
 		name: '???',
 		color: '#c9c9ff'
+	},
+	'dad': {
+		name: 'Tu',
+		color: '#ffffff'
 	}
 });
 
@@ -478,7 +483,7 @@ monogatari.script ({
 		'show scene #000000 with fadeIn',
 		'jump Contrattazione'
 	],
-
+//CONTRATTAZIONE
 	'Contrattazione': [
 		() => SceneUtility.loadScene("contrattazione"),
 		'show scene room_day_dark',
@@ -486,6 +491,8 @@ monogatari.script ({
 		() => SceneUtility.revealPreparedScene(),
 
 		async () => await SceneUtility.endClickedItems(),
+
+		'wait 3000',
 		
 		'play sound phone_vibration',
 		'play sound phone_notification',
@@ -513,6 +520,7 @@ monogatari.script ({
 		'jump Depressione'
 	],
 
+//DEPRESSIONE
 	'Depressione': [
 		() => SceneUtility.loadScene("depressione"),
 		'show scene room_night with fadeIn',
@@ -520,12 +528,111 @@ monogatari.script ({
 		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
 
-		'wait 1500',
+		'wait 3000',
+		() => SceneUtility.emptyScene(),
+		'show scene teddybear with fadeIn',
+		'play sound crash',
+		'wait 3000',
+		'show scene #000000 with fadeIn duration 2s',
+
+		() => SceneUtility.loadScene("depressione"),
+		'show scene room_night with fadeIn',
+		'play music rain with loop volume 30',
+
+		() => {
+			SceneUtility.revealPreparedScene();
+			SceneUtility.addShadow();
+		},
+		async () => await SceneUtility.endClickedItems(),
+		
 		() => showTextbox(),
-		'shadow spiegazione incidente...'
-
-
+		'wait 1000',
+		'shadow inserire dialogo incidente',
+		
+		{'Choice': {
+			'Let_Go':{
+				'Text': 'LASCIALO ANDARE',
+				'Do': 'jump Lascia_Andare'
+			},
+			'Not_Ready':{
+				'Text': 'NON SONO ANCORA PRONTO',
+				'Do': 'jump Non_Pronto'
+			}
+		}},
 	],
+
+	'Lascia_Andare': [
+		'dad dialogo lascia andare',
+		
+		'show scene #000000 with fadeIn',
+		'wait 3000', 
+		'jump Accettazione'
+	],
+
+	'Non_Pronto': [
+		'dad dialogo non pronto',
+
+		'show scene #000000 with fadeIn',
+		'wait 3000',
+
+		() => SceneUtility.loadScene("rabbia"),
+		'show scene room_rage',
+		'wait 1500',
+		() => SceneUtility.revealPreparedScene(),
+		'play music rage_scene with loop volume 70',
+
+		'jump Glitch_Rabbia'
+	],
+
+	'Accettazione': [
+		() => SceneUtility.loadScene("accettazione"),
+		'show scene room_day_normal',
+		'wait 1500',
+		() => SceneUtility.revealPreparedScene(),
+
+		'wait 5000',
+		
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+        {'Function': {
+            'Apply': function () {
+                PhoneUI.reset();
+                // Imposta il mittente senza aprire il telefono: vedrai solo badge e lockscreen.
+                PhoneUI.setContactName('Giulia');
+                PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
+                PhoneUI.vibrate();
+                return true;
+            },
+            'Revert': function () {
+                PhoneUI.hide();
+                return true;
+            }
+        }},
+
+        // PhoneChoice mostra questi pulsanti direttamente nella chat del telefono.
+        {'PhoneChoice': {
+            'Rispondi': {
+                'Text': 'RISPONDI',
+				'Do': 'jump Finale'          
+            },
+            'Ignora': {
+                'Text': 'IGNORA',
+                'Do': '',
+				'Disabled': true
+            }
+        }}
+	],
+
+	'Finale': [
+		() => {
+			PhoneUI.hide();
+			SceneUtility.emptyScene();
+			SceneUtility.enableBackground();
+		},
+		'show scene end with fadeIn duration 5s',
+	],
+
 
 	// Scena isolata: non viene richiamata dal flow narrativo, solo dal menu di debug.
 	'Test_telefono': [

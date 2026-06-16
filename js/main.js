@@ -2233,7 +2233,8 @@ const SCENE_IMAGES = {
 	'depressione': [
 		{ id: 'cornice', src: 'assets/images/cornice.png'},
 		{ id: 'pianta_2', src: 'assets/images/pianta_2.png'},
-		{ id: 'uomo', src: 'assets/images/uomo.png'}
+		{ id: 'uomo', src: 'assets/images/uomo.png'},
+		{ id: 'ombra', src: 'assets/images/bambino_ombra.png', onClick: 'pipo', isVisible: 'false'}
 	],
 	'accettazione': [
 		{ id: 'cornice', src: 'assets/images/cornice.png'},
@@ -2288,21 +2289,34 @@ const SceneUtility = {
 	},
 
 	async loadDetails(typeOfItems) {
-		// Carica o crea il wrapper
-		let wrapper = document.getElementById('details-wrapper');
+		// // Carica o crea il wrapper
+		// let wrapper = document.getElementById('details-wrapper');
 		
-		if (!wrapper) {
-			wrapper = document.createElement('div');
-			wrapper.id = 'details-wrapper';
-			wrapper.className = 'details-wrapper';
 
-			// Aggiungo il wrapper al gioco 
-			document.body.appendChild(wrapper);
-		}
+		// if (!wrapper) {
+		// 	wrapper = document.createElement('div');
+		// 	wrapper.id = 'details-wrapper';
+		// 	wrapper.className = 'details-wrapper';
+
+		// 	// Aggiungo il wrapper al gioco 
+		// 	document.body.appendChild(wrapper);
+		// }
 		
-		// Pulisci il contenuto precedente
-		wrapper.innerHTML = '';
-		
+		// // Pulisci il contenuto precedente
+		// wrapper.innerHTML = '';
+
+		//Distruggo il wrapper e lo ricreo ogni volta
+		const oldWrapper = document.getElementById('details-wrapper');
+		if(oldWrapper) oldWrapper.remove();
+
+		//Creo il wrapper
+		const wrapper = document.createElement('div');
+		wrapper.id = 'details-wrapper';
+		wrapper.className = 'details-wrapper';
+
+		// Aggiungo il wrapper al gioco 
+		document.body.appendChild(wrapper);
+	
 		// Prendi le immagini dalla scena
 		const images = SCENE_IMAGES[typeOfItems];
 		
@@ -2320,7 +2334,7 @@ const SceneUtility = {
 				const clickableImages = wrapper.querySelectorAll('.clickable-object');
 				console.log(clickableImages);
 				
-				// Controlla le immaggin dalla superiore all'inferiore nel DOM
+				// Controlla le immagini dalla superiore all'inferiore nel DOM
 				const imagesArray = Array.from(clickableImages).reverse();
 				
 				for (const img of imagesArray) {
@@ -2339,7 +2353,6 @@ const SceneUtility = {
 					}
 				}
 			});
-
 		}
 		
 		function loadImage(imgData, wrapper){
@@ -2364,8 +2377,10 @@ const SceneUtility = {
 					// 	}					
 					// })
 				}
-					
-				
+
+				if(imgData.isVisible)
+					img.classList.add('hide');
+								
 				img.onload = () => {
 					wrapper.appendChild(img);
 					console.log(img);
@@ -2377,36 +2392,6 @@ const SceneUtility = {
 					resolve(); // Resolve comunque per far caricare le altre immagini
 				};
 			});
-		}
-
-		function isClickOnVisiblePixel(imgElement, event) {
-			const canvas = document.createElement('canvas');
-			const ctx = canvas.getContext('2d');
-			
-			// Use natural dimensions for accurate pixel sampling
-			canvas.width = imgElement.naturalWidth;
-			canvas.height = imgElement.naturalHeight;
-			
-			ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-			
-			const rect = imgElement.getBoundingClientRect();
-			const x = event.clientX - rect.left;
-			const y = event.clientY - rect.top;
-			
-			// Calculate position relative to natural image size
-			const scaleX = imgElement.naturalWidth / rect.width;
-			const scaleY = imgElement.naturalHeight / rect.height;
-			const pixelX = Math.floor(x * scaleX);
-			const pixelY = Math.floor(y * scaleY);
-
-			try {
-				const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
-				console.log('Alpha value:', pixelData[3]);
-				return pixelData[3] > 0;
-			} catch (error) {
-				console.error('Error getting pixel data:', error);
-				return false;
-			}
 		}
 
 		// Carica le immagini
@@ -2484,17 +2469,39 @@ const SceneUtility = {
 
 	emptyScene(){
 		let wrapper = document.getElementById('details-wrapper');
-		let rain = document.getElementById('rain');
 		let sky = document.getElementById('sky');
 
 		if(wrapper)
 			document.body.removeChild(wrapper);
-
-		if(rain)
-			document.body.removeChild(rain);	
 		
 		if(sky)
-			document.body.removeChild(sky);
+			sky.innerHTML = ``;
+	},
+
+	addShadow(){
+		let wrapper = document.getElementById('details-wrapper');
+		if(!wrapper) return;
+
+		const imges = SCENE_IMAGES["depressione"];
+		const imgWrapper = wrapper.querySelector('.clickable-object');
+		console.log(imgWrapper);
+		imgWrapper.classList.remove('hide');
+
+
+		wrapper.addEventListener('click', (e) => {
+			e.stopPropagation();
+
+			const img = imges.find(i => i.id === imgWrapper.id);
+
+			if (isClickOnVisiblePixel(imgWrapper, e)) {
+				
+				if (img && img.onClick) {
+					imgWrapper.classList.remove('clickable-object', 'highlight');
+					imgWrapper.style.pointerEvents = 'none';
+					wrapper.style.pointerEvents = 'none';
+				}
+			}
+		});
 	}
 }	
 
@@ -2816,6 +2823,36 @@ function hideDetail(objectId) {
 
 }
 
+function isClickOnVisiblePixel(imgElement, event) {
+	const canvas = document.createElement('canvas');
+	const ctx = canvas.getContext('2d');
+	
+	// Use natural dimensions for accurate pixel sampling
+	canvas.width = imgElement.naturalWidth;
+	canvas.height = imgElement.naturalHeight;
+	
+	ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+	
+	const rect = imgElement.getBoundingClientRect();
+	const x = event.clientX - rect.left;
+	const y = event.clientY - rect.top;
+	
+	// Calculate position relative to natural image size
+	const scaleX = imgElement.naturalWidth / rect.width;
+	const scaleY = imgElement.naturalHeight / rect.height;
+	const pixelX = Math.floor(x * scaleX);
+	const pixelY = Math.floor(y * scaleY);
+
+	try {
+		const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
+		console.log('Alpha value:', pixelData[3]);
+		return pixelData[3] > 0;
+	} catch (error) {
+		console.error('Error getting pixel data:', error);
+		return false;
+	}
+}
+
 /*
 DEBUG MENU
 Toggle globale del menu di debug.
@@ -2861,6 +2898,7 @@ const DebugMenu = {
 		'ContinuaGlitch',
 		'Contrattazione',
 		'Depressione',
+		'Accettazione',
 		'Test_telefono'
 	],
 
