@@ -149,28 +149,69 @@ monogatari.settings({
 	'ExperimentalFeatures': false
 });
 
-monogatari.strings({
-	'English': {
-		'Start':          'Inizia',
-		'Load':           'Carica',
-		'Save':           'Salva',
-		'Help':           'Aiuto',
-		'Settings':       'Impostazioni',
-		'Gallery':        'Galleria',
-		'Credits':        'Crediti',
-		'Back':           'Indietro',
-		'Auto':           'Auto',
-		'Skip':           'Salta',
-		'Hide':           'Nascondi',
-		'Close':          'Chiudi',
-		'Confirm':        'Conferma',
-		'Language':       'Lingua',
-		'Volume':         'Volume',
-		'Music':          'Musica',
-		'Voice':          'Voce',
-		'Sound':          'Suoni',
-		'Text Speed':     'Velocità testo',
-		'Resolution':     'Risoluzione'
+monogatari.translations({
+	'Italian': {
+		'AdvanceHelp':        'Per avanzare nel gioco, clicca o tocca lo schermo oppure premi la barra spaziatrice',
+		'AllowPlayback':      'Clicca qui per consentire la riproduzione audio',
+		'Audio':              'Audio',
+		'AutoPlay':           'Auto',
+		'AutoPlayButton':     'Attiva riproduzione automatica',
+		'AutoPlaySpeed':      'Velocità riproduzione automatica',
+		'Back':               'Indietro',
+		'BackButton':         'Torna indietro',
+		'Cancel':             'Annulla',
+		'Close':              'Chiudi',
+		'Confirm':            'Vuoi uscire?',
+		'Credits':            'Crediti',
+		'Delete':             'Elimina',
+		'DialogLogButton':    'Mostra il registro dei dialoghi',
+		'FullScreen':         'Schermo intero',
+		'Gallery':            'Galleria',
+		'Help':               'Aiuto',
+		'Hide':               'Nascondi',
+		'HideButton':         'Nascondi la casella di testo',
+		'iOSAudioWarning':    'Le impostazioni audio non sono supportate su iOS',
+		'KeyboardShortcuts':  'Scorciatoie da tastiera',
+		'Language':           'Lingua',
+		'Load':               'Carica',
+		'LoadAutoSaveSlots':  'Salvataggi automatici',
+		'LoadButton':         'Apri la schermata di caricamento',
+		'Loading':            'Caricamento',
+		'LoadingMessage':     'Attendi mentre le risorse vengono caricate',
+		'LoadSlots':          'Partite salvate',
+		'LocalStorageWarning':'Local Storage non disponibile in questo browser',
+		'Log':                'Registro',
+		'Music':              'Volume musica',
+		'NewContent':         "Sono disponibili nuovi contenuti, ricarica la pagina per ottenere l'ultima versione",
+		'NoSavedGames':       'Nessuna partita salvata',
+		'NoAutoSavedGames':   'Nessun salvataggio automatico',
+		'NoDialogsAvailable': 'Nessun dialogo disponibile. I dialoghi appariranno qui man mano che compaiono',
+		'OK':                 'OK',
+		'OrientationWarning': 'Ruota il dispositivo per giocare',
+		'Overwrite':          'Sovrascrivi',
+		'QuickButtons':       'Tasti del menu rapido',
+		'QuickMenu':          'Menu rapido',
+		'Quit':               'Esci',
+		'QuitButton':         'Esci dal gioco',
+		'Resolution':         'Risoluzione',
+		'Save':               'Salva',
+		'SaveButton':         'Apri la schermata di salvataggio',
+		'SaveInSlot':         'Salva nello slot',
+		'SelectYourLanguage': 'Seleziona la tua lingua',
+		'Settings':           'Impostazioni',
+		'SettingsButton':     'Apri le impostazioni',
+		'Show':               'Mostra',
+		'Skip':               'Salta',
+		'SkipButton':         'Attiva modalità salto',
+		'SlotDeletion':       'Sei sicuro di voler eliminare questo slot?',
+		'SlotOverwrite':      'Sei sicuro di voler sovrascrivere questo slot?',
+		'Sound':              'Volume effetti',
+		'Start':              'Inizia',
+		'Stop':               'Stop',
+		'TextSpeed':          'Velocità testo',
+		'Video':              'Volume video',
+		'Voice':              'Volume voci',
+		'Windowed':           'Finestra'
 	}
 });
 
@@ -178,7 +219,7 @@ monogatari.strings({
 monogatari.preferences ({
 
 	// Initial Language for Multilanguage Games or for the Default GUI Language.
-	'Language': 'English',
+	'Language': 'Italian',
 
 	// Initial Volumes from 0.0 to 1.
 	'Volume': {
