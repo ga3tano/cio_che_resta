@@ -548,32 +548,32 @@ const PhoneUI = {
 		this.renderNotifications();
 	},
 
-	addPlaceholder(){
-		const item = document.createElement('div');
-			item.className = 'lock-notification';
+	// addPlaceholder(){
+	// 	const item = document.createElement('div');
+	// 		item.className = 'lock-notification';
 
-			const icon = document.createElement('div');
-			icon.className = 'lock-notification-icon';
-			icon.setAttribute('aria-hidden', 'true');
+	// 		const icon = document.createElement('div');
+	// 		icon.className = 'lock-notification-icon';
+	// 		icon.setAttribute('aria-hidden', 'true');
 
-			const text = document.createElement('div');
-			text.className = 'lock-notification-text';
+	// 		const text = document.createElement('div');
+	// 		text.className = 'lock-notification-text';
 
-			const title = document.createElement('div');
-			title.className = 'lock-notification-title';
-			title.textContent = "Nessun nuovo messaggio.";
+	// 		const title = document.createElement('div');
+	// 		title.className = 'lock-notification-title';
+	// 		title.textContent = "Nessun nuovo messaggio.";
 
-			const subtitle = document.createElement('div');
-			subtitle.className = 'lock-notification-subtitle';
-			subtitle.textContent = "Messaggi";
+	// 		const subtitle = document.createElement('div');
+	// 		subtitle.className = 'lock-notification-subtitle';
+	// 		subtitle.textContent = "Messaggi";
 
-			text.appendChild(title);
-			text.appendChild(subtitle);
-			item.appendChild(icon);
-			item.appendChild(text);
-			item.setAttribute('pointer-events', 'none');
-			this.lockNotifications.appendChild(item);
-	},
+	// 		text.appendChild(title);
+	// 		text.appendChild(subtitle);
+	// 		item.appendChild(icon);
+	// 		item.appendChild(text);
+	// 		item.setAttribute('pointer-events', 'none');
+	// 		this.lockNotifications.appendChild(item);
+	// },
 
 	clearNotifications() {
 		this.unreadNotifications = [];
@@ -2485,16 +2485,17 @@ const SceneUtility = {
 	emptyScene(){
 		let wrapper = document.getElementById('details-wrapper');
 		let rain = document.getElementById('rain');
+		let sky = document.getElementById('sky');
 
 		if(wrapper)
 			document.body.removeChild(wrapper);
 
 		if(rain)
-			document.body.removeChild(rain);		
+			document.body.removeChild(rain);	
+		
+		if(sky)
+			document.body.removeChild(sky);
 	}
-
-
-
 }	
 
 
