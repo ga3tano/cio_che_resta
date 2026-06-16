@@ -2239,10 +2239,19 @@ const SCENE_IMAGES = {
 	'accettazione': [
 		{ id: 'cornice', src: 'assets/images/cornice.png'},
 		{ id: 'pianta_3', src: 'assets/images/pianta_3.png'}
+	],
+	'torcia': [
+		{ id: 'cornice', src: 'assets/images/cornice.png', lighted: true},
+		{ id: 'pianta_1', src: 'assets/images/pianta_1.png', lighted: true},
+		{ id: 'porta', src: 'assets/images/porta.png', lighted: true },
+		{ id: 'mobile', src: 'assets/images/mobile.png', lighted: true}
 	]
 }
 const SceneUtility = {
 	clickedItems: false,
+	hoverTimer: null,
+	currentHoverId: null,
+
 	async loadSky(typeOfSky){
 		function preloadImage(src){
 			return new Promise((resolve, reject) => {
@@ -2354,6 +2363,8 @@ const SceneUtility = {
 				}
 			});
 		}
+
+		if(images.some(img => img.lighted)) this.bindHoverEvents(wrapper, images);
 		
 		function loadImage(imgData, wrapper){
 			return new Promise((resolve) => {
@@ -2423,7 +2434,7 @@ const SceneUtility = {
 
 	async loadScene(typeOfScene){
 		switch(typeOfScene){
-			case "negazione":
+			case "negazione", "torcia":
 				await this.loadSky("giorno_2");
 				break;
 			case "rabbia":
@@ -2502,7 +2513,67 @@ const SceneUtility = {
 				}
 			}
 		});
-	}
+	},
+
+	bindHoverEvents(wrapper, images){
+		const store = monogatari.storage();
+
+		// Pulisce il timer e resetta l'id quando il cursore esce
+		// da un oggetto o dal wrapper
+		const clearHover = () => {
+			if (this.hoverTimer) {
+				clearTimeout(this.hoverTimer);
+				this.hoverTimer = null;
+			}
+			this.currentHoveredId = null;
+		};
+
+		wrapper.addEventListener('mousemove', (e) => {
+			// Funziona solo se la torcia è attiva
+			if (!NightOverlay.element?.classList.contains('torch')) return;
+
+			// Filtra solo gli oggetti con proprietà lighted
+			const lightedImages = images.filter(img => img.lighted);
+
+			// Prende gli elementi DOM in ordine inverso (ultimo aggiunto = più in alto)
+			const elements = Array.from(wrapper.querySelectorAll('.clickable-object')).reverse();
+
+			// Cerca il primo oggetto il cui pixel sotto il cursore non è trasparente
+			let found = null;
+			for (const el of elements) {
+				const imgData = lightedImages.find(i => i.id === el.id);
+				if (!imgData) continue;
+
+				if (isClickOnVisiblePixel(el, e)) {
+					found = { element: el, data: imgData };
+					break;
+				}
+			}
+
+			// Se non sei su nessun oggetto valido, pulisci e esci
+			if (!found) {
+				clearHover();
+				return;
+			}
+
+			// Se sei su un oggetto diverso da prima, resetta il timer
+			if (this.currentHoveredId !== found.data.id) {
+				clearHover();
+				this.currentHoveredId = found.data.id;
+
+				// Dopo 600ms di permanenza sullo stesso oggetto, apri il dettaglio
+				this.hoverTimer = setTimeout(() => {
+					// Congela la torcia così non si muove mentre il dettaglio è aperto
+					NightOverlay.isFrozen = true;
+					store.lastClickedObject = found.data.id;
+					showDetail(found.data.id, found.element.src);
+				}, 600);
+			}
+		});
+
+		// Se il cursore esce dal wrapper, pulisci tutto
+		wrapper.addEventListener('mouseleave', clearHover);
+	},
 }	
 
 

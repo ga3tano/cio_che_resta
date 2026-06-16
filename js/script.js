@@ -159,9 +159,47 @@ monogatari.script ({
 		() => PanicBreath.release(),
 		'wait 10000',
 
-		'jump Negazione_Cellulare'
+		'jump Torcia'
 	],
 
+	'Torcia': [
+		() => SceneUtility.loadScene("torcia"),
+        'show scene room_night with fadeIn',
+		'wait 1500',
+		() => {
+			SceneUtility.revealPreparedScene();
+			NightOverlay.showNight();
+			showTextbox();
+		},
+
+
+		
+		() => {
+			// showClickableObjects();
+			NightOverlay.showTorch();
+		},
+
+		'jump loop_torcia',
+	],
+
+	'wait_torcia': [
+		'wait 300',
+		'jump loop_torcia'
+	],
+
+	'loop_torcia': [
+		{'Conditional': {
+        	'Condition': function () {
+            	const store = monogatari.storage();
+				return store.clickedObjects.length === store.allObjects.length;
+        	},
+
+        	'True': 'jump Continua with fadeOut',
+        	'False': 'jump wait_torcia'
+    	}},
+	],
+
+	
 	// 'Test':[
 	// 	() => SceneWithSky.loadSky("giorno_2"),
 	// 	'show scene room_day_dark',
@@ -322,36 +360,7 @@ monogatari.script ({
 		}}
 	],
 	
-	'loop_torcia': [
-		{'Conditional': {
-        	'Condition': function () {
-            	const store = monogatari.storage();
-				return store.clickedObjects.length === store.allObjects.length;
-        	},
-
-        	'True': 'jump Continua with fadeOut',
-        	'False': 'jump wait_torcia'
-    	}},
-	],
-
-	'wait_torcia': [
-		'wait 300',
-		'jump loop_torcia'
-	],
-
-	'Torcia': [
-        'show scene room_night with fadeIn',
-		() => NightOverlay.showNight(),
-
-		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">Non si vede nulla... forse meglio accendere la torcia.</div>',
-
-		() => {
-			showClickableObjects();
-			NightOverlay.showTorch();
-		},
-
-		'jump loop_torcia',
-	],
+	
 
 	'Continua': [
 		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">Si è fatta una certa ora...provo a riaddormentarmi.</div>',
