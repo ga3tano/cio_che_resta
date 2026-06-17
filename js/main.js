@@ -2241,10 +2241,10 @@ const SCENE_IMAGES = {
 		{ id: 'pianta_3', src: 'assets/images/pianta_3.png'}
 	],
 	'torcia': [
-		{ id: 'cornice', src: 'assets/images/cornice.png', lighted: true},
-		{ id: 'pianta_1', src: 'assets/images/pianta_1.png', lighted: true},
-		{ id: 'porta', src: 'assets/images/porta.png', lighted: true },
-		{ id: 'mobile', src: 'assets/images/mobile.png', lighted: true}
+		{ id: 'cornice', src: 'assets/images/cornice.png', lighted: true, dialog: 'jump DialogoTorcia_Cornice'},
+		{ id: 'pianta_2', src: 'assets/images/pianta_2.png', lighted: true, dialog: 'jump DialogoTorcia_Pianta'},
+		{ id: 'porta', src: 'assets/images/porta.png', lighted: true, dialog: 'jump DialogoTorcia_Porta' },
+		{ id: 'mobile', src: 'assets/images/mobile.png', lighted: true, dialog: 'jump DialogoTorcia_Mobile'}
 	]
 }
 const SceneUtility = {
@@ -2389,6 +2389,10 @@ const SceneUtility = {
 					// })
 				}
 
+				if(imgData.lighted)
+					//Attributo data per identificarli
+					img.dataset.lighted = 'true';
+
 				if(imgData.isVisible)
 					img.classList.add('hide');
 								
@@ -2516,19 +2520,7 @@ const SceneUtility = {
 	},
 
 	bindHoverEvents(wrapper, images){
-		const store = monogatari.storage();
-
-		// Pulisce il timer e resetta l'id quando il cursore esce
-		// da un oggetto o dal wrapper
-		const clearHover = () => {
-			if (this.hoverTimer) {
-				clearTimeout(this.hoverTimer);
-				this.hoverTimer = null;
-			}
-			this.currentHoveredId = null;
-		};
-
-		wrapper.addEventListener('mousemove', (e) => {
+		wrapper.addEventListener('touchmove', (e) => {
 			// Funziona solo se la torcia è attiva
 			if (!NightOverlay.element?.classList.contains('torch')) return;
 
@@ -2536,7 +2528,7 @@ const SceneUtility = {
 			const lightedImages = images.filter(img => img.lighted);
 
 			// Prende gli elementi DOM in ordine inverso (ultimo aggiunto = più in alto)
-			const elements = Array.from(wrapper.querySelectorAll('.clickable-object')).reverse();
+			const elements = Array.from(wrapper.querySelectorAll('[data-lighted="true"]')).reverse();
 
 			// Cerca il primo oggetto il cui pixel sotto il cursore non è trasparente
 			let found = null;
@@ -2552,28 +2544,82 @@ const SceneUtility = {
 
 			// Se non sei su nessun oggetto valido, pulisci e esci
 			if (!found) {
-				clearHover();
+				this.clearHover();
 				return;
 			}
 
 			// Se sei su un oggetto diverso da prima, resetta il timer
 			if (this.currentHoveredId !== found.data.id) {
-				clearHover();
+				this.clearHover();
 				this.currentHoveredId = found.data.id;
 
 				// Dopo 600ms di permanenza sullo stesso oggetto, apri il dettaglio
 				this.hoverTimer = setTimeout(() => {
-					// Congela la torcia così non si muove mentre il dettaglio è aperto
-					NightOverlay.isFrozen = true;
-					store.lastClickedObject = found.data.id;
-					showDetail(found.data.id, found.element.src);
+					// Muove la torcia e la congela centrando l'oggetto, facendo poi partire il dialogo
+					this.lockTorchOnObject();
 				}, 600);
 			}
 		});
 
-		// Se il cursore esce dal wrapper, pulisci tutto
-		wrapper.addEventListener('mouseleave', clearHover);
+		// // Se il cursore esce dal wrapper, pulisci tutto
+		// wrapper.addEventListener('mouseleave', () => this.clearHover());
 	},
+
+	clearHover() {
+		if (this.hoverTimer) {
+			clearTimeout(this.hoverTimer);
+			this.hoverTimer = null;
+		}
+		this.currentHoveredId = null;
+	},
+
+	lockTorchOnObject(element, imgData){
+		// Pulisce il timer hover
+		if (this.hoverTimer) {
+			clearTimeout(this.hoverTimer);
+			this.hoverTimer = null;
+		}
+
+		// Calcola il centro dell'oggetto
+		const rect = element.getBoundingClientRect();
+		const centerX = rect.left + rect.width / 2;
+		const centerY = rect.top + rect.height / 2;
+
+		// Sposta la torcia al centro e la blocca
+		NightOverlay.targetX = centerX;
+		NightOverlay.targetY = centerY;
+		NightOverlay.torchX = centerX;
+		NightOverlay.torchY = centerY;
+		NightOverlay.updateTorch(centerX, centerY);
+		NightOverlay.isFrozen = true;
+
+		// Salva l'oggetto cliccato
+		const store = monogatari.storage();
+		store.lastClickedObject = imgData.id;
+
+		// Aggiunge l'oggetto alla lista dei cliccati
+		if (!store.clickedObjects.includes(imgData.id)) {
+			store.clickedObjects.push(imgData.id);
+		}
+
+		// Rimuove highlight e interattività dall'oggetto
+		element.classList.remove('clickable-object', 'highlight');
+		element.style.pointerEvents = 'none';
+
+		// Fa partire il dialogo Monogatari
+		// Usa la proprietà 'dialog' dell'oggetto in SCENE_IMAGES
+		const dialogLabel = imgData.dialog || imgData.onClick;
+		if (dialogLabel) {
+			monogatari.global('block', false);
+			monogatari.run(dialogLabel);
+		}
+	},
+
+	unlockTorch(){
+		NightOverlay.isFrozen = false;
+		this.currentHoverId = null;
+	}
+
 }	
 
 
@@ -2895,6 +2941,9 @@ function hideDetail(objectId) {
 }
 
 function isClickOnVisiblePixel(imgElement, event) {
+	if (!imgElement.naturalWidth || !imgElement.naturalHeight) 
+        return false;
+	
 	const canvas = document.createElement('canvas');
 	const ctx = canvas.getContext('2d');
 	
@@ -2902,7 +2951,13 @@ function isClickOnVisiblePixel(imgElement, event) {
 	canvas.width = imgElement.naturalWidth;
 	canvas.height = imgElement.naturalHeight;
 	
-	ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+	try {
+        ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+    } catch (error) {
+        // drawImage fallisce se l'immagine non è completamente decodificata
+        console.warn('drawImage failed, image may not be decoded yet:', imgElement.id);
+        return false;
+    }
 	
 	const rect = imgElement.getBoundingClientRect();
 	const x = event.clientX - rect.left;
@@ -2913,6 +2968,11 @@ function isClickOnVisiblePixel(imgElement, event) {
 	const scaleY = imgElement.naturalHeight / rect.height;
 	const pixelX = Math.floor(x * scaleX);
 	const pixelY = Math.floor(y * scaleY);
+
+	 if (!Number.isFinite(pixelX) || !Number.isFinite(pixelY)) {
+		console.warn(x, " ", scaleX, " ", y, " ", scaleY);
+        return false;
+    }
 
 	try {
 		const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;

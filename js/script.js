@@ -169,10 +169,7 @@ monogatari.script ({
 		() => {
 			SceneUtility.revealPreparedScene();
 			NightOverlay.showNight();
-			showTextbox();
 		},
-
-
 		
 		() => {
 			// showClickableObjects();
@@ -180,6 +177,68 @@ monogatari.script ({
 		},
 
 		'jump loop_torcia',
+	],
+
+	'DialogoTorcia_Pianta': [
+		() => showTextbox(),
+		'wait 1000',
+    	'dad Dovrei annaffiarla, ha bisogno di luce, sta perdendo tutte le foglie.',
+		'dad Oggi lo faccio, devo solo organizzarmi meglio, non voglio che si secchi del tutto.',
+		'dad Si...si...lo farò dopo, dopo che mi sarò alzato.',
+		'wait 1000',
+    	() => {
+			hideTextBox();
+			SceneUtility.unlockTorch();
+		},
+		'jump loop_torcia'
+	],
+
+	'DialogoTorcia_Cornice': [
+		() => showTextbox(),
+		'wait 1000',
+    	'dad Quanta polvere...non si vede neanche più la fotografia.',
+		'dad Sei così felice lì, quel giorno al parco ci siamo divertiti molto, abbiamo preso un gelato, passeggiato e cantato le tue canzoni preferite.',
+		'dad Dovremmo rifarlo!',
+		'dad Anche perché...',
+		'dad ...si, potremmo...',
+		'dad ...dovremmo proprio rifarlo.',
+		'wait 1000',
+		() => {
+			hideTextBox();
+			SceneUtility.unlockTorch();
+		},
+		'jump loop_torcia'
+	],
+
+	'DialogoTorcia_Porta': [
+		() => showTextbox(),
+		'wait 1000',
+    	'dad Mi sento così stanco, non ho voglia di uscire.',
+		'dad Non so neanche che ore sono.',
+		'dad Potrei dormire ancora un po’.',
+		'dad ...',
+		'dad Dovrei far sistemare la maniglia, prima o poi si romperà del tutto.',
+		'wait 1000',
+		() => {
+			hideTextBox();
+			SceneUtility.unlockTorch();
+		},
+		'jump loop_torcia'
+	],
+
+	'DialogoTorcia_Mobile': [
+		() => showTextbox(),
+		'wait 1000',
+    	'dad Ti ho comprato una nuova maglietta, sono sicuro che ti piacerà',
+		'dad È verde, il tuo colore preferito.',
+		'dad ...',
+		'dad Chissà che faccia farai quando la vedrai!',
+		'wait 1000',
+		() => {
+			hideTextBox();
+			SceneUtility.unlockTorch();
+		},
+		'jump loop_torcia'
 	],
 
 	'wait_torcia': [
