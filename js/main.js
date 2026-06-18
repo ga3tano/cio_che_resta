@@ -2339,30 +2339,34 @@ const SceneUtility = {
 		}
 		
 		if(typeOfItems === "contrattazione"){
-			// Aggiungiamo un eventListenr unico che gestisce i vari layer di immagini
-			wrapper.addEventListener('click', (e) => {
+			// Aggiungiamo un eventListener unico che gestisce i vari layer di immagini.
+			// Usiamo 'touchend' (non 'click') perché 'click' non ha e.touches.
+			// Su touchend le touches attive sono già vuote: si usa changedTouches.
+			wrapper.addEventListener('touchend', (e) => {
 				e.stopPropagation();
+				e.preventDefault();
+
+				const touch = e.changedTouches[0];
+				if (!touch) return;
+				const point = { clientX: touch.clientX, clientY: touch.clientY };
 
 				// Prendiamo tutte le immagini clickabili
 				const clickableImages = wrapper.querySelectorAll('.clickable-object');
-				console.log(clickableImages);
-				
+
 				// Controlla le immagini dalla superiore all'inferiore nel DOM
 				const imagesArray = Array.from(clickableImages).reverse();
-				
+
 				for (const img of imagesArray) {
-					const point = {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY};
 					if (isClickOnVisiblePixel(img, point)) {
 						const imgId = img.id;
 						const imgData = images.find(i => i.id === imgId);
-						
+
 						if (imgData && imgData.onClick) {
 							img.src = imgData.onClick;
 							img.classList.remove('clickable-object', 'highlight');
 							img.style.pointerEvents = 'none';
 						}
 
-						if(!clickableImages) this.clickedItems = true;
 						break; // Stop dopo il primo match
 					}
 				}
