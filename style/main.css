@@ -1577,3 +1577,144 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 /* game-screen[data-component="game-screen"].bg-transparent {
     background-color: rgba(0,0,0,0);
 } */
+
+
+/* =============================================================================
+   BREATHING GAME — stili del minigioco respirazione (scena Intermezzo_Respira)
+   =============================================================================
+
+   STRUTTURA DOM (index.html):
+     #breathing-game          ← overlay principale (questo elemento)
+       #breathing-circle      ← cerchio luminoso, scale animata via JS
+       #breathing-label       ← testo "INSPIRA / TRATTIENI / ESPIRA"
+       .breathing-hint        ← "Tieni premuto il dito" (sparisce al primo tocco)
+
+   LOGICA CLASSI (gestita da BreathingGame in main.js):
+     .visible  → display:block  (attiva il layer, ma ancora opaco 0)
+     .fade-in  → opacity:1      (avvia la transizione di ingresso)
+     .held     → glow più forte (dito/mouse premuto)
+
+   Le due classi .visible e .fade-in sono separate apposta: il browser ha
+   bisogno di un frame per renderizzare il display:block prima di poter
+   animare l'opacity. Aggiungendole in due requestAnimationFrame consecutivi
+   in JS si garantisce che la transizione CSS parta sempre correttamente.
+   ============================================================================= */
+
+/* --- Overlay principale ---------------------------------------------------- */
+.breathing-game {
+	position: fixed;
+	inset: 0;
+	background: rgba(4, 8, 22, 0.93); /* quasi nero con lieve sfumatura blu-notte */
+	display: none;                     /* nascosto di default; .visible → display:block */
+	z-index: 150;                      /* sopra la scena ma sotto il debug menu (z: 9999) */
+	overflow: hidden;
+	touch-action: none;                /* disabilita scroll/zoom durante il minigioco */
+	user-select: none;
+	-webkit-user-select: none;
+	opacity: 0;                        /* parte invisibile; .fade-in → opacity:1 */
+	transition: opacity 1.1s ease;    /* fade lento per un ingresso cinematografico */
+	cursor: pointer;
+}
+
+.breathing-game.visible { display: block; }
+.breathing-game.fade-in { opacity: 1; }
+
+
+/* --- Cerchio luminoso ------------------------------------------------------ */
+/*
+   Il cerchio è un div 230×230px centrato con translate(-50%,-50%).
+   La scala viene animata via JS (da 0.35 a 1.0) usando requestAnimationFrame:
+   a scala 1.0 il cerchio è ~230px, a 0.35 è ~80px.
+
+   L'effetto luce si ottiene con:
+   • radial-gradient: nucleo bianco-perlaceo → blu ghiaccio → trasparente
+   • box-shadow a tre strati: halo ravvicinato (forte) + alone medio + alone largo (tenue)
+
+   will-change:transform è fondamentale per far sì che il browser promuova
+   il cerchio su un layer GPU dedicato, evitando repaint ad ogni frame.
+*/
+.breathing-circle {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 230px;
+	height: 230px;
+	border-radius: 50%;
+	transform: translate(-50%, -50%) scale(0.35); /* stato iniziale = contratto */
+	will-change: transform;
+
+	/* Gradiente: nucleo quasi-bianco → azzurro → trasparente */
+	background: radial-gradient(circle at center,
+		rgba(230, 245, 255, 0.96) 0%,
+		rgba(155, 200, 248, 0.72) 30%,
+		rgba(90, 148, 228, 0.38) 62%,
+		transparent 100%
+	);
+
+	/* Tre strati di glow: ravvicinato / medio / largo */
+	box-shadow:
+		0 0 22px  8px  rgba(145, 200, 255, 0.32),
+		0 0 55px  22px rgba(100, 162, 242, 0.16),
+		0 0 110px 55px rgba(60,  120, 215, 0.08);
+
+	transition: box-shadow 0.7s ease; /* transizione morbida al tocco */
+}
+
+/* Quando il giocatore tiene premuto (.held sul genitore), il glow si intensifica */
+.breathing-game.held .breathing-circle {
+	box-shadow:
+		0 0 35px  14px rgba(180, 225, 255, 0.56),
+		0 0 80px  35px rgba(130, 195, 255, 0.28),
+		0 0 150px 80px rgba(85,  148, 240, 0.14);
+}
+
+
+/* --- Label fase (INSPIRA / TRATTIENI / ESPIRA) ----------------------------- */
+/*
+   Posizionata 135px sotto il centro: il cerchio a scala massima ha raggio
+   115px (230px/2), quindi 135px garantisce 20px di clearance dal bordo.
+   La label fa un crossfade: JS rimuove .visible (fade-out), cambia il testo
+   dopo 160ms, poi riaggiunte .visible (fade-in).
+*/
+.breathing-label {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translateX(-50%);
+	margin-top: 135px; /* 115px raggio cerchio max + 20px clearance */
+	font-size: clamp(1rem, 2.8vw, 1.5rem);
+	font-weight: 400;
+	letter-spacing: 0.28em;
+	color: rgba(195, 220, 248, 0.82);
+	text-align: center;
+	text-transform: uppercase;
+	white-space: nowrap;
+	min-height: 2em; /* evita salti di layout quando il testo è vuoto (fase pausa) */
+	opacity: 0;
+	transition: opacity 0.45s ease;
+}
+
+.breathing-label.visible { opacity: 1; }
+
+
+/* --- Hint "Tieni premuto" -------------------------------------------------- */
+/*
+   Appare 900ms dopo il fade-in dell'overlay, poi sparisce al primo tocco.
+   Opacity molto bassa (0.42) per non distrarre dall'esercizio principale.
+   La transizione da 1.2s la fa apparire/sparire in modo molto graduale.
+*/
+.breathing-hint {
+	position: absolute;
+	bottom: 13%;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: clamp(0.72rem, 1.8vw, 0.92rem);
+	font-style: italic;
+	color: rgba(145, 180, 218, 0.42); /* tenue: suggerimento, non istruzione imperativa */
+	text-align: center;
+	white-space: nowrap;
+	opacity: 0;
+	transition: opacity 1.2s ease;
+}
+
+.breathing-hint.visible { opacity: 1; }

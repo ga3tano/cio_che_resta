@@ -216,6 +216,22 @@
 
 		<div id="clock-display" class="clock-display">00:00</div>
 
+		<!--
+			Minigioco respirazione — scena Intermezzo_Respira.
+			Parte nascosto (display:none via CSS); BreathingGame in js/main.js
+			lo mostra aggiungendo le classi .visible e .fade-in in sequenza.
+
+			#breathing-circle → cerchio luminoso la cui scala viene animata via
+			                     requestAnimationFrame per guidare il ritmo respiratorio.
+			#breathing-label  → testo della fase corrente (INSPIRA / TRATTIENI / ESPIRA).
+			.breathing-hint   → "Tieni premuto il dito", sparisce al primo tocco.
+		-->
+		<div id="breathing-game" class="breathing-game">
+			<div id="breathing-circle" class="breathing-circle"></div>
+			<div id="breathing-label" class="breathing-label"></div>
+			<div class="breathing-hint">Tieni premuto il dito</div>
+		</div>
+
 	</body>
 
 </html>

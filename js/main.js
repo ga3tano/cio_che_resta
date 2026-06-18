@@ -2254,7 +2254,7 @@ const SCENE_IMAGES = {
 const SceneUtility = {
 	clickedItems: false,
 	hoverTimer: null,
-	currentHoverId: null,
+	currentHoveredId: null,
 
 	async loadSky(typeOfSky){
 		function preloadImage(src){
@@ -2595,7 +2595,7 @@ const SceneUtility = {
 		});
 
 		wrapper.addEventListener('touchend', (e) => {
-			if(this.currentHoverId){
+			if(this.currentHoveredId){
 				e.preventDefault();
 				e.stopPropagation();
 			}
@@ -2673,7 +2673,7 @@ const SceneUtility = {
 
 	unlockTorch(){
 		NightOverlay.isFrozen = false;
-		this.currentHoverId = null;
+		this.currentHoveredId = null;
 
 		// Riattiva i touch sul wrapper
 		const wrapper = document.getElementById('details-wrapper');
@@ -2792,6 +2792,518 @@ const PanicBreath = {
 		this.outAudio.pause();
 	}
 }
+
+// =============================================================================
+// BreathingGame — minigioco respirazione (scena Intermezzo_Respira)
+//
+// MECCANICA: un cerchio luminoso al centro guida il giocatore attraverso un
+// ciclo di respirazione diaframmatica. Il giocatore deve tenere premuto il
+// dito per tutta la durata; il cerchio mostra il ritmo con la sua scala.
+//
+// CICLO (3 volte, ~39 secondi totali):
+//   inspira (4s) → trattieni (2s) → espira (5s) → pausa (2s)
+//
+// INTEGRAZIONE MONOGATARI: start() restituisce una Promise. Nella scena si
+// usa `async () => await BreathingGame.start()` così Monogatari attende il
+// completamento prima di procedere con l'azione successiva (jump Torcia).
+// =============================================================================
+const BreathingGame = {
+
+	// --- STATO ---
+	// 'idle'    → il minigioco è spento, nessuna Promise pendente
+	// 'running' → ciclo in corso, Monogatari è in attesa
+	// 'complete'→ fase di fade-out, la Promise sta per risolversi
+	state: 'idle',
+
+	cycle: 0,         // cicli completati dall'inizio del run corrente
+	totalCycles: 3,   // numero di cicli prima del completamento
+	isHeld: false,    // true quando il giocatore tiene premuto il dito
+
+	// Fase attualmente in esecuzione. Usata in onUp per decidere se il rilascio
+	// del dito deve causare un riavvio (solo nelle fasi "attive", non in 'pause').
+	currentPhase: 'pause',
+
+	// Scala corrente del cerchio [0.35 – 1.0]. Tenuta aggiornata dal tick di
+	// _animateScale() per consentire a _restart() di partire dal punto esatto
+	// in cui si trovava il cerchio al momento del rilascio.
+	currentScale: 0.35,
+
+	animId: null,          // handle del requestAnimationFrame corrente (per cancellarlo)
+	phaseTimer: null,      // handle del setTimeout che segna la fine di ogni fase
+	_holdGraceTimer: null, // timeout di grazia per rilevare la mancanza di tocco a inizio fase
+	_completeTimer: null,  // timeout del fade-out finale in _complete(); tracciato per poterlo cancellare in stop()
+	resolver: null,        // funzione resolve() della Promise restituita da start()
+
+	// --- RIFERIMENTI DOM (inizializzati in init()) ---
+	overlay: null,    // #breathing-game   — contenitore principale
+	circle:  null,    // #breathing-circle — il cerchio luminoso
+	label:   null,    // #breathing-label  — testo "INSPIRA / TRATTIENI / ESPIRA"
+	hint:    null,    // .breathing-hint   — "Tieni premuto il dito"
+
+	// --- AUDIO (stessi file usati da PanicBreath, volume più basso) ---
+	inAudio:  null,
+	outAudio: null,
+
+	// Ordine fisso delle fasi in ogni ciclo
+	sequence: ['inhale', 'hold-in', 'exhale', 'pause'],
+
+	// Durata di ciascuna fase in millisecondi
+	durations: {
+		'inhale':  4000,  // il cerchio cresce lentamente
+		'hold-in': 2000,  // il cerchio resta grande
+		'exhale':  5000,  // il cerchio si riduce (espirazione più lunga = più calmante)
+		'pause':   2000,  // piccola pausa prima del ciclo successivo
+	},
+
+	// Testo mostrato sotto il cerchio per ciascuna fase.
+	// 'pause' è vuoto: nessuna istruzione, solo silenzio visivo.
+	labels: {
+		'inhale':  'Inspira',
+		'hold-in': 'Trattieni',
+		'exhale':  'Espira',
+		'pause':   '',
+	},
+
+	// Scala CSS del cerchio: 0.35 = contratto (~80px), 1.0 = espanso (~230px)
+	scaleMin: 0.35,
+	scaleMax: 1.0,
+
+
+	// -------------------------------------------------------------------------
+	// init() — aggancia gli elementi DOM e prepara gli audio.
+	// Chiamato la prima volta da start(); sicuro da chiamare più volte
+	// perché gli Audio vengono creati una sola volta.
+	// -------------------------------------------------------------------------
+	init() {
+		this.overlay = document.getElementById('breathing-game');
+		this.circle  = document.getElementById('breathing-circle');
+		this.label   = document.getElementById('breathing-label');
+		this.hint    = this.overlay?.querySelector('.breathing-hint');
+
+		if (!this.inAudio) {
+			this.inAudio  = new Audio('assets/sounds/breath_in.mp3');
+			this.outAudio = new Audio('assets/sounds/breath_out.mp3');
+			// Volume ridotto rispetto a PanicBreath (0.55 vs 1.0): il respiro
+			// guidato deve essere sottile, non invasivo.
+			this.inAudio.volume  = 0.55;
+			this.outAudio.volume = 0.55;
+		}
+	},
+
+
+	// -------------------------------------------------------------------------
+	// start() → Promise
+	// Avvia il minigioco e restituisce una Promise che si risolve dopo
+	// totalCycles cicli completi. Monogatari attende questa Promise prima
+	// di proseguire con l'azione successiva nello script.
+	// -------------------------------------------------------------------------
+	start() {
+		if (!this.overlay) this.init();
+
+		// Se per qualche motivo start() viene chiamato mentre già gira (es.
+		// doppio click da debug menu), ignoriamo la seconda chiamata.
+		if (this.state !== 'idle') return Promise.resolve();
+
+		// PanicBreath potrebbe essere ancora in fase 'release': lo fermiamo
+		// qui perché il respiro guidato prende il sopravvento sull'audio.
+		if (PanicBreath.state !== 'idle') PanicBreath.stop();
+
+		this.state = 'running';
+		this.cycle = 0;
+		this.isHeld = false;
+		this.currentPhase = 'pause';
+		this.currentScale = this.scaleMin;
+
+		// Resetta il cerchio alla scala minima prima del fade-in, così non
+		// appare già espanso durante la transizione di ingresso.
+		this.circle.style.transform = `translate(-50%, -50%) scale(${this.scaleMin})`;
+		this.label.textContent = '';
+		this.label.classList.remove('visible');
+		if (this.hint) this.hint.classList.remove('visible');
+
+		// Aggiunge 'visible' che imposta display:block (non ancora opacity:1).
+		this.overlay.classList.add('visible');
+
+		return new Promise((resolve) => {
+			this.resolver = resolve;
+
+			this._bindInput();
+
+			// DOPPIO requestAnimationFrame: il browser deve prima renderizzare
+			// il display:block (primo frame) prima di poter animare l'opacity
+			// (secondo frame). Senza questo trick la transizione CSS non parte.
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					this.overlay.classList.add('fade-in'); // → opacity: 1
+				});
+			});
+
+			// L'hint appare 900ms dopo il fade-in, quando l'overlay è già visibile
+			setTimeout(() => {
+				if (this.hint && this.state === 'running') this.hint.classList.add('visible');
+			}, 900);
+
+			// Piccola pausa prima del primo ciclo: dà al giocatore il tempo di
+			// orientarsi e all'hint di apparire prima che il cerchio inizi a muoversi.
+			this.phaseTimer = setTimeout(() => this._startPhase(0), 2200);
+		});
+	},
+
+
+	// -------------------------------------------------------------------------
+	// _startPhase(index) — avvia la fase n-esima della sequenza corrente.
+	// Imposta label + animazione + audio, poi schedula la fase successiva
+	// al termine della durata. Quando torna all'indice 0, incrementa il
+	// contatore dei cicli e controlla se il gioco è finito.
+	//
+	// MECCANICA TOCCO PER FASE:
+	//   inhale / hold-in → dito PREMUTO; se si alza → restart (onUp in _bindInput)
+	//   exhale           → dito ALZATO;  se si preme → restart (onDown in _bindInput)
+	//   pause            → nessun vincolo
+	//
+	// I timer di grazia gestiscono la transizione: all'inizio di ogni fase attiva
+	// il giocatore ha 1 secondo per adeguarsi allo stato richiesto.
+	// -------------------------------------------------------------------------
+	_startPhase(index) {
+		if (this.state !== 'running') return;
+
+		const phase    = this.sequence[index];
+		const duration = this.durations[phase];
+
+		// Aggiorna la fase corrente: usata da onUp/onDown per decidere se
+		// il tocco corrente è corretto o deve causare un riavvio.
+		this.currentPhase = phase;
+
+		clearTimeout(this._holdGraceTimer);
+
+		if (phase === 'inhale' || phase === 'hold-in') {
+			// Fase PREMUTA: il giocatore deve tenere il dito giù.
+			// Se non sta premendo, ha 1 secondo di grazia per farlo.
+			if (!this.isHeld) {
+				this._holdGraceTimer = setTimeout(() => {
+					if (this.state === 'running' && !this.isHeld && (this.currentPhase === 'inhale' || this.currentPhase === 'hold-in')) {
+						this._restart();
+					}
+				}, 1000);
+			}
+		} else if (phase === 'exhale') {
+			// Fase RILASCIATA: il giocatore deve alzare il dito.
+			// Se sta ancora premendo (transizione da hold-in), ha 1 secondo per rilasciare.
+			if (this.isHeld) {
+				this._holdGraceTimer = setTimeout(() => {
+					if (this.state === 'running' && this.isHeld && this.currentPhase === 'exhale') {
+						this._restart();
+					}
+				}, 1000);
+			}
+		}
+
+		this._setLabel(phase);
+		this._animateScale(phase, duration);
+		this._playAudio(phase);
+
+		this.phaseTimer = setTimeout(() => {
+			clearTimeout(this._holdGraceTimer);
+			const nextIndex = (index + 1) % this.sequence.length;
+
+			// nextIndex === 0 significa che abbiamo completato un ciclo intero
+			if (nextIndex === 0) {
+				this.cycle++;
+				if (this.cycle >= this.totalCycles) {
+					this._complete();
+					return;
+				}
+			}
+
+			this._startPhase(nextIndex);
+		}, duration);
+	},
+
+
+	// -------------------------------------------------------------------------
+	// _animateScale(phase, duration) — anima la scala del cerchio con rAF.
+	// Usa un'easing sinusoidale (ease-in-out sine) per movimenti morbidi
+	// che ricordano il respiro reale (lento all'inizio e alla fine della fase).
+	//
+	// Mappatura scala:
+	//   inhale   → scaleMin → scaleMax  (cresce)
+	//   hold-in  → scaleMax → scaleMax  (fermo grande)
+	//   exhale   → scaleMax → scaleMin  (si riduce)
+	//   pause    → scaleMin → scaleMin  (fermo piccolo)
+	// -------------------------------------------------------------------------
+	_animateScale(phase, duration) {
+		// Cancella l'animazione precedente prima di avviarne una nuova
+		if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
+
+		const t0 = performance.now();
+
+		// La logica del from/to si legge così:
+		//   le fasi che "partono piccole" sono inhale e pause → fromScale = min
+		//   le fasi che "arrivano piccole" sono exhale e pause → toScale = min
+		const fromScale = (phase === 'inhale' || phase === 'pause') ? this.scaleMin : this.scaleMax;
+		const toScale   = (phase === 'exhale' || phase === 'pause') ? this.scaleMin : this.scaleMax;
+
+		const tick = (now) => {
+			if (this.state !== 'running') return;
+
+			// t è il progresso normalizzato [0, 1] della fase corrente
+			const t = Math.min((now - t0) / duration, 1);
+
+			// Formula ease-in-out sine: -(cos(πt) - 1) / 2
+			// Produce una curva S che rallenta all'inizio e alla fine,
+			// rendendo il respiro fluido e non meccanico.
+			const e = -(Math.cos(Math.PI * t) - 1) / 2;
+
+			const scale = fromScale + (toScale - fromScale) * e;
+
+			// Teniamo traccia della scala corrente: _restart() ne ha bisogno per
+			// animare il cerchio dal punto esatto in cui si trova al momento del fail.
+			this.currentScale = scale;
+			this.circle.style.transform = `translate(-50%, -50%) scale(${scale})`;
+
+			if (t < 1) this.animId = requestAnimationFrame(tick);
+		};
+
+		this.animId = requestAnimationFrame(tick);
+	},
+
+
+	// -------------------------------------------------------------------------
+	// _setLabel(phase) — aggiorna il testo della label con un crossfade.
+	// Prima fa sparire la label (rimuovendo 'visible'), poi dopo 160ms
+	// cambia il testo e la rende di nuovo visibile. Il delay corrisponde
+	// alla metà della transizione opacity (0.45s → 225ms) così il testo
+	// cambia quando è quasi invisibile, evitando un salto brusco.
+	// -------------------------------------------------------------------------
+	_setLabel(phase) {
+		const text = this.labels[phase];
+
+		this.label.classList.remove('visible'); // fade-out
+
+		setTimeout(() => {
+			if (this.state !== 'running') return;
+			this.label.textContent = text || '';
+			if (text) this.label.classList.add('visible'); // fade-in
+		}, 160);
+	},
+
+
+	// -------------------------------------------------------------------------
+	// _playAudio(phase) — riproduce il suono del respiro associato alla fase.
+	// Usa gli stessi file audio di PanicBreath ma a volume ridotto.
+	// Le fasi hold-in e pause non hanno audio: il silenzio è intenzionale.
+	// Il .catch(() => {}) evita errori non gestiti se il browser blocca
+	// l'autoplay (per policy mobile/desktop).
+	// -------------------------------------------------------------------------
+	_playAudio(phase) {
+		if (phase === 'inhale') {
+			this.inAudio.currentTime = 0;
+			this.inAudio.play().catch(() => {});
+		} else if (phase === 'exhale') {
+			this.outAudio.currentTime = 0;
+			this.outAudio.play().catch(() => {});
+		}
+	},
+
+
+	// -------------------------------------------------------------------------
+	// _bindInput() — ascolta touch e click; applica la logica di riavvio
+	// in base alla fase corrente.
+	//
+	// REGOLE:
+	//   onDown durante 'inhale'/'hold-in' → OK (cancella timer di grazia)
+	//   onDown durante 'exhale'           → ERRORE → restart immediato
+	//   onUp   durante 'inhale'/'hold-in' → ERRORE → restart immediato
+	//   onUp   durante 'exhale'           → OK (annulla timer di grazia)
+	//   onUp/onDown durante 'pause'       → ignorato
+	//
+	// NOTA: touchstart usa { passive: false } perché chiamiamo preventDefault()
+	// per evitare che il browser mobile generi un click sintetico in ritardo.
+	// -------------------------------------------------------------------------
+	_bindInput() {
+		const onDown = (e) => {
+			e.preventDefault();
+
+			if (this.state === 'running' && this.currentPhase === 'exhale') {
+				// Premuto durante l'espirazione: azione sbagliata → ricomincia.
+				this.isHeld = true;
+				this.overlay.classList.add('held');
+				this._restart();
+				return;
+			}
+
+			this.isHeld = true;
+			this.overlay.classList.add('held');
+			if (this.hint) this.hint.classList.remove('visible');
+			// Annulla il timer di grazia "non stai premendo": il giocatore ha premuto
+			// in tempo, quindi non serve riavviare.
+			clearTimeout(this._holdGraceTimer);
+		};
+
+		const onUp = () => {
+			const wasHeld = this.isHeld;
+			this.isHeld = false;
+			this.overlay.classList.remove('held');
+
+			if (!wasHeld || this.state !== 'running') return;
+
+			if (this.currentPhase === 'inhale' || this.currentPhase === 'hold-in') {
+				// Rilasciato durante una fase che richiede il tocco → ricomincia.
+				this._restart();
+			} else if (this.currentPhase === 'exhale') {
+				// Rilasciato durante l'espirazione: azione corretta.
+				// Annulla il timer di grazia "stai ancora premendo".
+				clearTimeout(this._holdGraceTimer);
+			}
+		};
+
+		this.overlay.addEventListener('mousedown',  onDown);
+		this.overlay.addEventListener('touchstart', onDown, { passive: false });
+		this.overlay.addEventListener('mouseup',    onUp);
+		this.overlay.addEventListener('touchend',   onUp);
+		// mouseleave gestisce il caso in cui il cursore esca dall'overlay
+		// senza rilasciare il bottone (es. finestra resize durante il gioco)
+		this.overlay.addEventListener('mouseleave', onUp);
+
+		// Salviamo la funzione di rimozione listener come proprietà dell'oggetto
+		// così _complete() e stop() possono chiamarla senza tenere riferimenti esterni.
+		this._cleanupInput = () => {
+			this.overlay.removeEventListener('mousedown',  onDown);
+			this.overlay.removeEventListener('touchstart', onDown);
+			this.overlay.removeEventListener('mouseup',    onUp);
+			this.overlay.removeEventListener('touchend',   onUp);
+			this.overlay.removeEventListener('mouseleave', onUp);
+		};
+	},
+
+
+	// -------------------------------------------------------------------------
+	// _restart() — riavvia il ciclo da capo dopo un errore del giocatore.
+	//
+	// Viene chiamato quando:
+	//   a) rilascio durante inhale/hold-in  → dito alzato quando doveva essere giù
+	//   b) pressione durante exhale         → dito giù quando doveva essere alzato
+	//   c) timer di grazia scaduto          → giocatore non si è adeguato in tempo
+	//
+	// SEQUENZA VISIVA:
+	//   1. Il cerchio si ritrae dolcemente alla scala minima (700ms), partendo
+	//      dal punto esatto in cui si trovava grazie a this.currentScale.
+	//   2. Pausa silenziosa di 1.5s con l'hint visibile.
+	//   3. Riparte _startPhase(0) con cycle = 0.
+	// -------------------------------------------------------------------------
+	_restart() {
+		clearTimeout(this.phaseTimer);
+		clearTimeout(this._holdGraceTimer);
+		if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
+
+		this.cycle = 0;
+		this.currentPhase = 'pause';
+
+		// Resetta lo stato del tocco: ogni nuovo ciclo ricomincia da zero,
+		// il giocatore deve premere esplicitamente per la nuova 'inhale'.
+		this.isHeld = false;
+		this.overlay.classList.remove('held');
+
+		this.label.classList.remove('visible');
+
+		// Ri-mostra l'hint come promemoria
+		if (this.hint) this.hint.classList.add('visible');
+
+		// Animazione di rientro: dal punto corrente → scaleMin in 700ms
+		const fromScale = this.currentScale;
+		const t0 = performance.now();
+		const shrinkDuration = 700;
+
+		const shrink = (now) => {
+			if (this.state !== 'running') return;
+			const t = Math.min((now - t0) / shrinkDuration, 1);
+			const e = -(Math.cos(Math.PI * t) - 1) / 2;
+			const scale = fromScale + (this.scaleMin - fromScale) * e;
+			this.currentScale = scale;
+			this.circle.style.transform = `translate(-50%, -50%) scale(${scale})`;
+			if (t < 1) {
+				this.animId = requestAnimationFrame(shrink);
+			} else {
+				this.animId = null;
+				this.currentScale = this.scaleMin;
+			}
+		};
+
+		this.animId = requestAnimationFrame(shrink);
+
+		// Dopo la contrazione + pausa di orientamento, ricomincia il primo ciclo
+		this.phaseTimer = setTimeout(() => {
+			if (this.state !== 'running') return;
+			this._startPhase(0);
+		}, shrinkDuration + 1500);
+	},
+
+
+	// -------------------------------------------------------------------------
+	// _complete() — chiamato dopo totalCycles cicli riusciti.
+	// Fa un fade-out dell'overlay (1.2s), poi risolve la Promise di Monogatari
+	// così lo script può proseguire con 'jump Torcia'.
+	// -------------------------------------------------------------------------
+	_complete() {
+		this.state = 'complete';
+		clearTimeout(this.phaseTimer);
+		clearTimeout(this._holdGraceTimer);
+		if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
+		this._cleanupInput?.();
+
+		// Nasconde label e hint prima del fade-out dell'overlay
+		this.label.classList.remove('visible');
+		if (this.hint) this.hint.classList.remove('visible');
+
+		// Rimuovere 'fade-in' trigghera la transizione CSS opacity → 0
+		this.overlay.classList.remove('fade-in');
+
+		// Aspettiamo che la transizione finisca (1.1s definita in CSS + margine)
+		// prima di nascondere completamente l'overlay e risolvere la Promise.
+		// Il timer è tracciato in _completeTimer così stop() può cancellarlo
+		// se il debug menu salta scena durante il fade-out.
+		this._completeTimer = setTimeout(() => {
+			this._completeTimer = null;
+			this.overlay.classList.remove('visible', 'held');
+			this.state = 'idle';
+			const resolve = this.resolver;
+			this.resolver = null;
+			resolve?.(); // Monogatari può ora andare avanti (jump Torcia)
+		}, 1200);
+	},
+
+
+	// -------------------------------------------------------------------------
+	// stop() — interruzione forzata (es. salto da debug menu o cambio scena).
+	// A differenza di _complete(), non aspetta la transizione: rimuove tutto
+	// immediatamente e risolve la Promise pendente, così Monogatari non rimane
+	// bloccato ad aspettare un minigioco che non finirà mai.
+	// -------------------------------------------------------------------------
+	stop() {
+		if (this.state === 'idle') return;
+
+		clearTimeout(this.phaseTimer);
+		clearTimeout(this._holdGraceTimer);
+		clearTimeout(this._completeTimer);   // annulla il fade-out se _complete() era in corso
+		this._completeTimer = null;
+		if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
+		this._cleanupInput?.();
+		this.inAudio?.pause();
+		this.outAudio?.pause();
+
+		if (this.overlay) this.overlay.classList.remove('visible', 'fade-in', 'held');
+		if (this.label)   this.label.classList.remove('visible');
+		if (this.hint)    this.hint.classList.remove('visible');
+
+		// Risolviamo la Promise prima di azzerare il resolver, altrimenti
+		// Monogatari rimarrebbe bloccato sull'await di start().
+		const resolve = this.resolver;
+		this.resolver = null;
+		this.state = 'idle';
+		resolve?.();
+	},
+};
+
 
 const BlinkOverlay = {
 	speed: 300,
@@ -3103,7 +3615,10 @@ const DebugMenu = {
 		'ContinuaGlitch',
 		'Contrattazione',
 		'Depressione',
+		'Lascia_Andare',
+		'Non_Pronto',
 		'Accettazione',
+		'Finale',
 		'Test_telefono'
 	],
 
@@ -3373,6 +3888,11 @@ const DebugMenu = {
 			PanicBreath.stop();
 		}
 
+		// Ferma il minigioco respiro se e' attivo.
+		if (BreathingGame.state !== 'idle') {
+			BreathingGame.stop();
+		}
+
 		// Ferma il glitch/minigioco se e' attivo; altrimenti pulisce solo WordsGame.
 		if (Glitch.active) {
 			await Glitch.stop(false);
@@ -3443,6 +3963,12 @@ const DebugMenu = {
 			gameOver.classList.remove('visible');
 			gameOver.style.opacity = '0';
 			gameOver.style.background = 'transparent';
+		}
+
+		// Rimuove overlay del minigioco respiro, se visibile.
+		const breathingGame = document.getElementById('breathing-game');
+		if (breathingGame) {
+			breathingGame.classList.remove('visible', 'fade-in', 'held');
 		}
 
 		// Riapre eventuali palpebre chiuse e rimuove il nero di transizione scena.
