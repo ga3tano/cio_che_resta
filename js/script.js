@@ -162,9 +162,12 @@ monogatari.script ({
 		'jump Torcia'
 	],
 
+//TORCIA
 	'Torcia': [
-		() => SceneUtility.loadScene("torcia"),
-        'show scene room_night with fadeIn',
+		() => {
+			SceneUtility.loadScene("torcia");
+		},
+		'show scene room_night with fadeIn',
 		'wait 1500',
 		() => {
 			SceneUtility.revealPreparedScene();
@@ -181,11 +184,10 @@ monogatari.script ({
 
 	'DialogoTorcia_Pianta': [
 		() => showTextbox(),
-		'wait 1000',
+		'<div style="color: #000000;">.</div>',
     	'dad Dovrei annaffiarla, ha bisogno di luce, sta perdendo tutte le foglie.',
 		'dad Oggi lo faccio, devo solo organizzarmi meglio, non voglio che si secchi del tutto.',
 		'dad Si...si...lo farò dopo, dopo che mi sarò alzato.',
-		'wait 1000',
     	() => {
 			hideTextBox();
 			SceneUtility.unlockTorch();
@@ -195,14 +197,13 @@ monogatari.script ({
 
 	'DialogoTorcia_Cornice': [
 		() => showTextbox(),
-		'wait 1000',
+		'<div style="color: #000000;">.</div>',
     	'dad Quanta polvere...non si vede neanche più la fotografia.',
 		'dad Sei così felice lì, quel giorno al parco ci siamo divertiti molto, abbiamo preso un gelato, passeggiato e cantato le tue canzoni preferite.',
 		'dad Dovremmo rifarlo!',
 		'dad Anche perché...',
 		'dad ...si, potremmo...',
 		'dad ...dovremmo proprio rifarlo.',
-		'wait 1000',
 		() => {
 			hideTextBox();
 			SceneUtility.unlockTorch();
@@ -212,13 +213,12 @@ monogatari.script ({
 
 	'DialogoTorcia_Porta': [
 		() => showTextbox(),
-		'wait 1000',
+		'<div style="color: #000000;">.</div>',
     	'dad Mi sento così stanco, non ho voglia di uscire.',
 		'dad Non so neanche che ore sono.',
 		'dad Potrei dormire ancora un po’.',
 		'dad ...',
 		'dad Dovrei far sistemare la maniglia, prima o poi si romperà del tutto.',
-		'wait 1000',
 		() => {
 			hideTextBox();
 			SceneUtility.unlockTorch();
@@ -228,12 +228,11 @@ monogatari.script ({
 
 	'DialogoTorcia_Mobile': [
 		() => showTextbox(),
-		'wait 1000',
+		'<div style="color: #000000;">.</div>',
     	'dad Ti ho comprato una nuova maglietta, sono sicuro che ti piacerà',
 		'dad È verde, il tuo colore preferito.',
 		'dad ...',
 		'dad Chissà che faccia farai quando la vedrai!',
-		'wait 1000',
 		() => {
 			hideTextBox();
 			SceneUtility.unlockTorch();
@@ -253,18 +252,59 @@ monogatari.script ({
 				return store.clickedObjects.length === store.allObjects.length;
         	},
 
-        	'True': 'jump Continua with fadeOut',
+        	'True': 'jump Continua',
         	'False': 'jump wait_torcia'
     	}},
 	],
 
-	
-	// 'Test':[
-	// 	() => SceneWithSky.loadSky("giorno_2"),
-	// 	'show scene room_day_dark',
-	// 	() => SceneWithSky.revealPreparedScene(),
-	// ],
+	'Continua': [
+		// 'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">Si è fatta una certa ora...provo a riaddormentarmi.</div>',
+		// () => NightOverlay.hideTorch(),
+		'wait 2000',
+		() => {
+			NightOverlay.isFrozen = true;
+			const wrapper = document.getElementById('details-wrapper');
+			if(wrapper) wrapper.style.pointerEvents = 'none'
+			showTextbox();
+		},
 
+		'dad È tardi...meglio dormire.',
+
+		async () => {
+			await BlinkOverlay.doubleBlink(600);
+			SceneUtility.enableBackground();
+			SceneUtility.emptyScene();
+			hideTextBox();
+			NightOverlay.hide();
+		},
+		'show scene #000000 with fadeIn',
+		'wait 3000',
+		'jump Negazione_Cellulare'
+
+		// () => {
+		// 	SceneUtility.enableBackground();
+		// 	NightOverlay.hide();
+		// 	SceneUtility.emptyScene();
+		// 	hideTextBox();
+		// },
+		
+
+
+
+		// 'show scene #000000 with fadeIn',
+
+		// () => {
+		// 	NightOverlay.hide();
+		// 	hideClickableObjects();
+		// },
+		// 'wait 2000',
+		// 'show scene room with fadeIn',
+		// {
+		// 	TypeCentered : `Buongiornissimo, caffè?`
+		// }
+	],
+
+//NEGAZIONE
 	'Negazione_Cellulare': [
         () => SceneUtility.loadScene("negazione"),
 		'show scene room_day_dark',
@@ -419,24 +459,6 @@ monogatari.script ({
 		}}
 	],
 	
-	
-
-	'Continua': [
-		'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">Si è fatta una certa ora...provo a riaddormentarmi.</div>',
-		() => NightOverlay.hideTorch(),
-
-		'show scene #000000 with fadeIn',
-
-		() => {
-			NightOverlay.hide();
-			hideClickableObjects();
-		},
-		'wait 2000',
-		'show scene room with fadeIn',
-		{
-			TypeCentered : `Buongiornissimo, caffè?`
-		}
-	],
 
 //RABBIA
 	'Rabbia': [

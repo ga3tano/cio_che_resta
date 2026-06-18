@@ -1018,6 +1018,10 @@ const NightOverlay = {
 		this.element.classList.add('visible');
 		this.element.classList.add('torch');
 
+		 // Attiva i touch sul wrapper
+		const wrapper = document.getElementById('details-wrapper');
+		if (wrapper) wrapper.style.pointerEvents = 'auto';
+
 		const x = window.innerWidth / 2;
     	const y = window.innerHeight / 2;
 
@@ -2347,7 +2351,8 @@ const SceneUtility = {
 				const imagesArray = Array.from(clickableImages).reverse();
 				
 				for (const img of imagesArray) {
-					if (isClickOnVisiblePixel(img, e)) {
+					const point = {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY};
+					if (isClickOnVisiblePixel(img, point)) {
 						const imgId = img.id;
 						const imgData = images.find(i => i.id === imgId);
 						
@@ -2438,7 +2443,7 @@ const SceneUtility = {
 
 	async loadScene(typeOfScene){
 		switch(typeOfScene){
-			case "negazione", "torcia":
+			case "negazione":
 				await this.loadSky("giorno_2");
 				break;
 			case "rabbia":
@@ -2452,6 +2457,9 @@ const SceneUtility = {
 				break;
 			case "accettazione":
 				await this.loadSky("giorno_1");
+				break;
+			case "torcia":
+				await this.loadSky("notte");	
 				break;
 		}
 		await this.loadDetails(typeOfScene);
@@ -2471,6 +2479,11 @@ const SceneUtility = {
 				
 				if (clickableObjects.length === 0) {
 					// All objects have been clicked and removed
+					const torch = document.getElementById('night-overlay');
+					if(torch){
+						wrapper.style.pointerEvents = 'none';
+					}
+
 					resolve();
 				} else {
 					// Still objects remaining, check again in a bit
@@ -2502,13 +2515,13 @@ const SceneUtility = {
 		console.log(imgWrapper);
 		imgWrapper.classList.remove('hide');
 
-
 		wrapper.addEventListener('click', (e) => {
 			e.stopPropagation();
 
 			const img = imges.find(i => i.id === imgWrapper.id);
 
-			if (isClickOnVisiblePixel(imgWrapper, e)) {
+			const point = {clientX: e.clientX, clientY: e.clientY};
+			if (isClickOnVisiblePixel(imgWrapper, point)) {
 				
 				if (img && img.onClick) {
 					imgWrapper.classList.remove('clickable-object', 'highlight');
@@ -2520,9 +2533,13 @@ const SceneUtility = {
 	},
 
 	bindHoverEvents(wrapper, images){
-		wrapper.addEventListener('touchmove', (e) => {
-			// Funziona solo se la torcia è attiva
+		let rafId = null;
+		let lastPoint = null;
+
+		const processHover = (point) => {
+			// Funziona solo se la torcia è attiva e non è freezata
 			if (!NightOverlay.element?.classList.contains('torch')) return;
+        	if (NightOverlay.isFrozen) return;	
 
 			// Filtra solo gli oggetti con proprietà lighted
 			const lightedImages = images.filter(img => img.lighted);
@@ -2536,18 +2553,18 @@ const SceneUtility = {
 				const imgData = lightedImages.find(i => i.id === el.id);
 				if (!imgData) continue;
 
-				if (isClickOnVisiblePixel(el, e)) {
+				if (isClickOnVisiblePixel(el, point)) {
 					found = { element: el, data: imgData };
 					break;
 				}
 			}
-
+			
 			// Se non sei su nessun oggetto valido, pulisci e esci
 			if (!found) {
 				this.clearHover();
 				return;
 			}
-
+		
 			// Se sei su un oggetto diverso da prima, resetta il timer
 			if (this.currentHoveredId !== found.data.id) {
 				this.clearHover();
@@ -2556,8 +2573,31 @@ const SceneUtility = {
 				// Dopo 600ms di permanenza sullo stesso oggetto, apri il dettaglio
 				this.hoverTimer = setTimeout(() => {
 					// Muove la torcia e la congela centrando l'oggetto, facendo poi partire il dialogo
-					this.lockTorchOnObject();
+					this.lockTorchOnObject(found.element, found.data);
 				}, 600);
+			}
+		};
+	
+		wrapper.addEventListener('touchmove', (e) => {
+			//Sempre stesso discorso, solo se torcia attiva
+			if (!NightOverlay.element?.classList.contains('torch')) return;
+			const touch = e.touches[0];
+			if(!touch) return;
+
+			lastPoint = { clientX: touch.clientX, clientY: touch.clientY};
+
+			if(!rafId){
+				rafId = requestAnimationFrame(() => {
+					rafId = null;
+					if (lastPoint) processHover(lastPoint);
+				});
+			}
+		});
+
+		wrapper.addEventListener('touchend', (e) => {
+			if(this.currentHoverId){
+				e.preventDefault();
+				e.stopPropagation();
 			}
 		});
 
@@ -2580,18 +2620,28 @@ const SceneUtility = {
 			this.hoverTimer = null;
 		}
 
-		// Calcola il centro dell'oggetto
-		const rect = element.getBoundingClientRect();
-		const centerX = rect.left + rect.width / 2;
-		const centerY = rect.top + rect.height / 2;
-
-		// Sposta la torcia al centro e la blocca
-		NightOverlay.targetX = centerX;
-		NightOverlay.targetY = centerY;
-		NightOverlay.torchX = centerX;
-		NightOverlay.torchY = centerY;
-		NightOverlay.updateTorch(centerX, centerY);
+		//Per il momento blocco la torcia in posizione, poi capiamo se fattibile lo spostare la torcia
 		NightOverlay.isFrozen = true;
+
+		const wrapper = document.getElementById('details-wrapper');
+		if(wrapper) wrapper.style.pointerEvents = 'none'
+
+		// //Blocco i touch verso monogatari per evitare di skippare dialoghi involontariamente
+		// NightOverlay.element.style.pointerEvents = 'none';
+
+
+		// // Calcola il centro dell'oggetto
+		// const rect = element.getBoundingClientRect();
+		// const centerX = rect.left + rect.width / 2;
+		// const centerY = rect.top + rect.height / 2;
+
+		// // Sposta la torcia al centro e la blocca
+		// NightOverlay.targetX = centerX;
+		// NightOverlay.targetY = centerY;
+		// NightOverlay.torchX = centerX;
+		// NightOverlay.torchY = centerY;
+		// NightOverlay.updateTorch(centerX, centerY);
+		// NightOverlay.isFrozen = true;
 
 		// Salva l'oggetto cliccato
 		const store = monogatari.storage();
@@ -2603,23 +2653,32 @@ const SceneUtility = {
 		}
 
 		// Rimuove highlight e interattività dall'oggetto
-		element.classList.remove('clickable-object', 'highlight');
-		element.style.pointerEvents = 'none';
+		// element.classList.remove('clickable-object', 'highlight');
+		// element.style.pointerEvents = 'none';
+
+		//Tolgo l'oggetto dalla lista di oggetti puntabili
+		element.dataset.lighted = 'false';
+
+		//Blocco monogatari temporaneamente per evitare che gli arrivino click inaspettati
+		monogatari.global('block', true);
 
 		// Fa partire il dialogo Monogatari
 		// Usa la proprietà 'dialog' dell'oggetto in SCENE_IMAGES
-		const dialogLabel = imgData.dialog || imgData.onClick;
+		const dialogLabel = imgData.dialog;
 		if (dialogLabel) {
-			monogatari.global('block', false);
-			monogatari.run(dialogLabel);
+				monogatari.global('block', false);
+				monogatari.run(dialogLabel);
 		}
 	},
 
 	unlockTorch(){
 		NightOverlay.isFrozen = false;
 		this.currentHoverId = null;
-	}
 
+		// Riattiva i touch sul wrapper
+		const wrapper = document.getElementById('details-wrapper');
+    	if (wrapper) wrapper.style.pointerEvents = 'auto';
+	}
 }	
 
 
@@ -2940,7 +2999,7 @@ function hideDetail(objectId) {
 
 }
 
-function isClickOnVisiblePixel(imgElement, event) {
+function isClickOnVisiblePixel(imgElement, point) {
 	if (!imgElement.naturalWidth || !imgElement.naturalHeight) 
         return false;
 	
@@ -2960,8 +3019,8 @@ function isClickOnVisiblePixel(imgElement, event) {
     }
 	
 	const rect = imgElement.getBoundingClientRect();
-	const x = event.clientX - rect.left;
-	const y = event.clientY - rect.top;
+	const x = point.clientX - rect.left;
+	const y = point.clientY - rect.top;
 	
 	// Calculate position relative to natural image size
 	const scaleX = imgElement.naturalWidth / rect.width;
@@ -2970,13 +3029,28 @@ function isClickOnVisiblePixel(imgElement, event) {
 	const pixelY = Math.floor(y * scaleY);
 
 	 if (!Number.isFinite(pixelX) || !Number.isFinite(pixelY)) {
-		console.warn(x, " ", scaleX, " ", y, " ", scaleY);
+		// console.warn(x, " ", scaleX, " ", y, " ", scaleY);
+		// console.log({
+		// 	id: imgElement.id,
+		// 	naturalWidth: imgElement.naturalWidth,
+		// 	naturalHeight: imgElement.naturalHeight,
+		// 	rectWidth: rect.width,
+		// 	rectHeight: rect.height,
+		// 	clientX: event.clientX,
+		// 	clientY: event.clientY,
+		// 	rectLeft: rect.left,
+		// 	rectTop: rect.top,
+		// 	scaleX,
+		// 	scaleY,
+		// 	pixelX,
+		// 	pixelY
+		// });
         return false;
     }
 
 	try {
 		const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
-		console.log('Alpha value:', pixelData[3]);
+		// console.log('Alpha value:', pixelData[3]);
 		return pixelData[3] > 0;
 	} catch (error) {
 		console.error('Error getting pixel data:', error);
@@ -3015,6 +3089,8 @@ const DebugMenu = {
 	// Ogni stringa e' sia il testo mostrato nel bottone sia il label usato da jump.
 	labels: [
 		'Start',
+		'Torcia',
+		'Continua',
 		'Intermezzo_Respira',
 		'Negazione_Cellulare',
 		'Negazione_Rispondi',
@@ -3022,8 +3098,6 @@ const DebugMenu = {
 		'Secondo_Messaggio',
 		'Rimani_A_Casa',
 		'Esci_Casa',
-		'Torcia',
-		'Continua',
 		'Rabbia',
 		'GlitchRabbia',
 		'ContinuaGlitch',

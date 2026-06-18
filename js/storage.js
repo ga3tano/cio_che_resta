@@ -6,12 +6,12 @@ monogatari.storage ({
 		name: ''
 	},
 	clickedObjects: [],
-	allObjects:['obj1', 'obj2'],
+	allObjects:['cornice', 'mobile', 'porta', 'pianta'],
 	lastClickedObject: null,
-	objectDescriptions: {
-		obj1: "Descrizione oggetto 1, pappappero.",
-		obj2: "Descrizione oggetto 2, pappapperollà."
-	},
+	// objectDescriptions: {
+	// 	obj1: "Descrizione oggetto 1, pappappero.",
+	// 	obj2: "Descrizione oggetto 2, pappapperollà."
+	// },
 	frasiRabbia: [
 		"NO, NO, NO!",
 		"NON DOVEVA SUCCEDERE!",
