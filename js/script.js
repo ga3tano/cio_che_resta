@@ -141,31 +141,30 @@ monogatari.script ({
 			TypeCentered: `Attendere inerme o dimenarsi nella speranza di un appiglio che sia salvezza?`
 		},
 
-		//() => PanicBreath.start(),
-		//'wait 8000',
-
-		{
-			'Choice': {
-				'Respira': {
-					'Text': 'RESPIRA',
-					//'Do': 'stop sound breathing with fade 1'
-					'Do': 'jump Intermezzo_Respira',
-				}
-			}
-		},
+		// Niente pulsante "RESPIRA": dopo l'ultima domanda si scivola dritti
+		// nell'intermezzo. Il respiro di panico avviato sopra continua a salire e
+		// fa da ponte sonoro verso il minigioco della respirazione.
+		'jump Intermezzo_Respira',
 	],
 
-	// Intermezzo_Respira — transizione tra l'attacco di panico e la scena Torcia.
+	// Intermezzo_Respira — transizione fluida tra l'attacco di panico e il
+	// minigioco della respirazione (poi la scena Torcia). Nessun pulsante: il
+	// passaggio è guidato solo dal respiro e dalle dissolvenze.
 	//
-	// FLUSSO:
-	//   1. PanicBreath.release() → avvia il rallentamento graduale del respiro affannato (audio + rate diminuiscono a ogni ciclo).
-	//   2. wait 3500 → 3.5 secondi in cui si sente il respiro che rallenta creando un ponte sonoro tra panico e calma.
-	//   3. BreathingGame.start() → ferma PanicBreath internamente e mostra il cerchio guidato. Monogatari attende la Promise (async/await) finché il giocatore non completa i cicli respiratori.
+	// FLUSSO — un unico arco "panico → calma":
+	//   1. wait 1000  → il respiro di panico resta appeso al culmine ancora un
+	//                   istante dopo l'ultima domanda angosciante.
+	//   2. release()  → il respiro comincia a rallentare: ponte sonoro.
+	//   3. wait 1500  → lo si ascolta calare nel buio prima che appaia il cerchio.
+	//   4. start()    → il cerchio guidato appare in dissolvenza mentre
+	//                   BreathingGame dissolve (fade-out) l'audio di PanicBreath:
+	//                   nessuno stacco netto tra i due respiri. async/await così
+	//                   Monogatari attende la fine del minigioco prima di Torcia.
 
 	'Intermezzo_Respira': [
+		'wait 1000',
 		() => PanicBreath.release(),
-		'wait 3500',
-		// async/await è necessario: start() restituisce una Promise e Monogatari deve attenderne il completamento prima di proseguire con jump Torcia.
+		'wait 1500',
 		async () => await BreathingGame.start(),
 		'jump Torcia'
 	],

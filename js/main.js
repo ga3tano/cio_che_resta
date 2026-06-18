@@ -2787,14 +2787,48 @@ const PanicBreath = {
 	},
 
 	release(){
-		this.state = "release";
+		// Solo se il respiro è davvero in corso: evita di lasciare lo stato a
+		// 'release' (non-idle) quando il loop non sta girando — es. salto diretto
+		// all'intermezzo dal menu debug senza essere passati da start().
+		if(this.state === "buildup" || this.state === "plateau"){
+			this.state = "release";
+		}
+	},
+
+	// fadeOut(duration) — spegnimento morbido del respiro di panico.
+	// A differenza di stop() (taglio immediato), smette di programmare nuovi
+	// respiri ma dissolve a zero il volume dell'audio in corso. Serve per
+	// passare al respiro guidato (BreathingGame) senza stacchi netti.
+	fadeOut(duration = 1200){
+		this.state = "idle";
+		clearTimeout(this.timer);
+
+		// Audio mai inizializzato (es. intermezzo raggiunto dal debug senza panico).
+		if(!this.inAudio) return;
+
+		const startVol = Math.max(this.inAudio.volume, this.outAudio.volume);
+		const t0 = performance.now();
+
+		const tick = (now) => {
+			const t = Math.min((now - t0) / duration, 1);
+			const v = startVol * (1 - t);
+			this.inAudio.volume = v;
+			this.outAudio.volume = v;
+			if(t < 1){
+				requestAnimationFrame(tick);
+			} else {
+				this.inAudio.pause();
+				this.outAudio.pause();
+			}
+		};
+		requestAnimationFrame(tick);
 	},
 
 	stop(){
 		this.state = "idle";
 		clearTimeout(this.timer);
-		this.inAudio.pause();
-		this.outAudio.pause();
+		this.inAudio?.pause();
+		this.outAudio?.pause();
 	}
 }
 
@@ -2909,9 +2943,10 @@ const BreathingGame = {
 		// doppio click da debug menu), ignoriamo la seconda chiamata.
 		if (this.state !== 'idle') return Promise.resolve();
 
-		// PanicBreath potrebbe essere ancora in fase 'release': lo fermiamo
-		// qui perché il respiro guidato prende il sopravvento sull'audio.
-		if (PanicBreath.state !== 'idle') PanicBreath.stop();
+		// PanicBreath è ancora in fase 'release': non lo tagliamo di netto ma lo
+		// dissolviamo dolcemente mentre il cerchio guidato appare, così il
+		// passaggio dal respiro affannato a quello calmo non ha alcuno stacco.
+		if (PanicBreath.state !== 'idle') PanicBreath.fadeOut(1600);
 
 		this.state = 'running';
 		this.cycle = 0;
@@ -2943,14 +2978,16 @@ const BreathingGame = {
 				});
 			});
 
-			// L'hint appare 900ms dopo il fade-in, quando l'overlay è già visibile
+			// L'hint appare ~1.1s dopo il fade-in, quando il respiro di panico si
+			// è ormai dissolto e l'overlay è pienamente visibile.
 			setTimeout(() => {
 				if (this.hint && this.state === 'running') this.hint.classList.add('visible');
-			}, 900);
+			}, 1100);
 
-			// Piccola pausa prima del primo ciclo: dà al giocatore il tempo di
-			// orientarsi e all'hint di apparire prima che il cerchio inizi a muoversi.
-			this.phaseTimer = setTimeout(() => this._startPhase(0), 2200);
+			// Pausa di calma prima del primo ciclo: lascia spegnere del tutto il
+			// panico, fa apparire l'hint e dà al giocatore il tempo di orientarsi
+			// prima che il cerchio inizi a muoversi.
+			this.phaseTimer = setTimeout(() => this._startPhase(0), 2400);
 		});
 	},
 
