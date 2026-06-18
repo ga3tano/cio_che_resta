@@ -3666,6 +3666,10 @@ const DebugMenu = {
 	labels: [
 		'Start',
 		'Torcia',
+		'DialogoTorcia_Pianta',
+		'DialogoTorcia_Cornice',
+		'DialogoTorcia_Porta',
+		'DialogoTorcia_Mobile',
 		'Continua',
 		'Intermezzo_Respira',
 		'Negazione_Cellulare',
@@ -4051,8 +4055,13 @@ const DebugMenu = {
 		// Stato della torcia: nessun dettaglio oggetto rimane selezionato.
 		store.lastClickedObject = null;
 
-		// Se facciamo reset generico o saltiamo all'inizio/torcia, gli oggetti vanno ricliccati.
-		if (targetLabel === null || targetLabel === 'Torcia' || targetLabel === 'Start') {
+		// Reset torcia: sia per la scena principale sia per i dialoghi oggetto,
+		// in modo che loop_torcia riparta da zero e non avanzi per stato pregresso.
+		const isTorciaRelated = targetLabel === null ||
+			targetLabel === 'Start' ||
+			targetLabel === 'Torcia' ||
+			(typeof targetLabel === 'string' && targetLabel.startsWith('DialogoTorcia'));
+		if (isTorciaRelated) {
 			store.clickedObjects = [];
 			store.allClicked = false;
 		}

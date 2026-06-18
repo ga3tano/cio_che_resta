@@ -201,7 +201,7 @@ body.hide-textbox [data-component="text-box"]{
 
 /* Quick Menu Style */
 [data-component="quick-menu"] {
-
+    display: none !important;
 }
 
 /* Quick Menu Buttons Style */
