@@ -70,6 +70,7 @@ class TypeCentered extends Monogatari.Action {
 			container.style.color = 'white';
 			container.style.background = 'transparent';
 			container.style.cursor = 'pointer';
+			container.style.webkitTapHighlightColor = 'transparent';
 
 			const paragraph = document.createElement ('div');
 			paragraph.classList.add ('type-centered-text');
@@ -3003,6 +3004,23 @@ const BreathingGame = {
 		}
 
 		this._setLabel(phase);
+
+		// Aggiorna l'hint in base alla fase:
+		//   inhale  → "Tieni premuto il dito" (visibile solo se il dito è già alzato)
+		//   exhale  → "Alza il dito"          (sempre visibile: ricorda l'azione opposta)
+		//   hold-in, pause → nessun suggerimento, l'hint sparisce
+		if (this.hint) {
+			if (phase === 'inhale') {
+				this.hint.textContent = 'Tieni premuto il dito';
+				if (!this.isHeld) this.hint.classList.add('visible');
+			} else if (phase === 'exhale') {
+				this.hint.textContent = 'Alza il dito';
+				this.hint.classList.add('visible');
+			} else {
+				this.hint.classList.remove('visible');
+			}
+		}
+
 		this._animateScale(phase, duration);
 		this._playAudio(phase);
 
@@ -3158,6 +3176,8 @@ const BreathingGame = {
 				// Rilasciato durante l'espirazione: azione corretta.
 				// Annulla il timer di grazia "stai ancora premendo".
 				clearTimeout(this._holdGraceTimer);
+				// Nasconde l'hint "Alza il dito": il giocatore ha già obbedito.
+				if (this.hint) this.hint.classList.remove('visible');
 			}
 		};
 
@@ -3210,8 +3230,11 @@ const BreathingGame = {
 
 		this.label.classList.remove('visible');
 
-		// Ri-mostra l'hint come promemoria
-		if (this.hint) this.hint.classList.add('visible');
+		// Ri-mostra l'hint come promemoria (testo resettato a "inhale")
+		if (this.hint) {
+			this.hint.textContent = 'Tieni premuto il dito';
+			this.hint.classList.add('visible');
+		}
 
 		// Animazione di rientro: dal punto corrente → scaleMin in 700ms
 		const fromScale = this.currentScale;
