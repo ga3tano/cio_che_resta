@@ -1604,7 +1604,7 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 .breathing-game {
 	position: fixed;
 	inset: 0;
-	background: rgba(4, 8, 22, 0.93); /* quasi nero con lieve sfumatura blu-notte */
+	background: #000000; /* nero pieno */
 	display: none;                     /* nascosto di default; .visible → display:block */
 	z-index: 150;                      /* sopra la scena ma sotto il debug menu (z: 9999) */
 	overflow: hidden;
@@ -1708,7 +1708,7 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	bottom: 13%;
 	left: 50%;
 	transform: translateX(-50%);
-	font-size: clamp(0.72rem, 1.8vw, 0.92rem);
+	font-size: clamp(1.1rem, 3vw, 1.5rem);
 	font-style: italic;
 	color: rgba(145, 180, 218, 0.42); /* tenue: suggerimento, non istruzione imperativa */
 	text-align: center;

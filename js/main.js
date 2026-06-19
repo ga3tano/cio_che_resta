@@ -2855,7 +2855,7 @@ const BreathingGame = {
 	state: 'idle',
 
 	cycle: 0,         // cicli completati dall'inizio del run corrente
-	totalCycles: 3,   // numero di cicli prima del completamento
+	totalCycles: 2,   // numero di cicli prima del completamento
 	isHeld: false,    // true quando il giocatore tiene premuto il dito
 
 	// Fase attualmente in esecuzione. Usata in onUp per decidere se il rilascio
