@@ -3598,11 +3598,19 @@ function isClickOnVisiblePixel(imgElement, point) {
 	const x = point.clientX - rect.left;
 	const y = point.clientY - rect.top;
 	
-	// Calculate position relative to natural image size
-	const scaleX = imgElement.naturalWidth / rect.width;
-	const scaleY = imgElement.naturalHeight / rect.height;
-	const pixelX = Math.floor(x * scaleX);
-	const pixelY = Math.floor(y * scaleY);
+	// L'immagine è mostrata con object-fit:cover + object-position:center
+	// (vedi .wrapper-item in main.css): viene scalata di un UNICO fattore e
+	// centrata, con l'eccedenza ritagliata — NON riempie il box in modo lineare.
+	// Invertiamo quella trasformazione per campionare il pixel corretto. Con la
+	// vecchia mappatura "fill" (scaleX/scaleY separati) il tocco colpirebbe il
+	// pixel sbagliato appena lo schermo non è in proporzione 1440:2560.
+	const nW = imgElement.naturalWidth;
+	const nH = imgElement.naturalHeight;
+	const scale = Math.max(rect.width / nW, rect.height / nH);
+	const offsetX = (rect.width  - nW * scale) / 2; // ≤ 0: bordi ritagliati
+	const offsetY = (rect.height - nH * scale) / 2;
+	const pixelX = Math.floor((x - offsetX) / scale);
+	const pixelY = Math.floor((y - offsetY) / scale);
 
 	 if (!Number.isFinite(pixelX) || !Number.isFinite(pixelY)) {
 		// console.warn(x, " ", scaleX, " ", y, " ", scaleY);

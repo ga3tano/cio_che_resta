@@ -1279,8 +1279,9 @@ input[type=range]::-ms-fill-upper {
 .sky{
 	position: fixed;
 	z-index: -1000;
-	width: 100vw;
-	height: 100vh;
+	/* svw/svh per combaciare col box dello sfondo dell'engine (body = 100svh) */
+	width: 100svw;
+	height: 100svh;
 	top: 0;
 	left: 0;
 	touch-action: none;
@@ -1559,16 +1560,24 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	overflow: hidden;
 	z-index: 0;
 	background-color: transparent;
-	width: 100vw;
-	height: 100vh;
+	width: 100svw;
+	height: 100svh;
 }
 
 .wrapper-item{
 	position: absolute;
 	top: 0;
 	left: 0;
-	width: 100vw;
-	height: 100vh;
+	width: 100svw;
+	height: 100svh;
+	/* cover + center: identico a come l'engine mostra lo sfondo della stanza
+	   ([data-ui=background]) e a .sky. Gli oggetti sono PNG full-frame 1440x2560,
+	   quindi con cover vengono scalati e ritagliati ESATTAMENTE come lo sfondo e
+	   restano allineati a qualsiasi dimensione/proporzione dello schermo.
+	   (Il default di <img> sarebbe object-fit:fill: deformazione relativa allo
+	   schermo, la causa dello sfasamento degli oggetti.) */
+	object-fit: cover;
+	object-position: center;
 	z-index: 0;
 }
 
