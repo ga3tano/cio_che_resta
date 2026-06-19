@@ -39,7 +39,6 @@ monogatari.configuration ('credits', {
 
 // Define the images that will be available on your game's image gallery
 monogatari.assets ('gallery', {
-
 });
 
 // Define the music used in the game.
@@ -89,12 +88,12 @@ monogatari.assets ('scenes', {
 // Define the Characters
 monogatari.characters ({
 	'shadow': {
-		name: '???',
-		color: '#c9c9ff'
+		name: 'Ombra',
+		color: '#5a3d90'
 	},
 	'dad': {
 		name: 'Tu',
-		color: '#ffffff'
+		color: '#66bdda'
 	}
 });
 
@@ -625,12 +624,45 @@ monogatari.script ({
 		'wait 1500',
 		() => SceneUtility.revealPreparedScene(),
 
-		'wait 3000',
+		'wait 5000',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+		async () => {
+			PhoneUI.reset();
+			PhoneUI.addIncoming('Oggi è più difficile degli altri giorni, non devi essere sempre forte. Va bene anche così');
+
+			// Wait until the player opens the phone and reads the notification
+			// (the PhoneUI marks notifications as read when the chat is opened),
+			// then give an extra 4.5s for reading before continuing.
+			await PhoneUI.waitUntilAllNotificationsRead(20000);
+			await sleep(7000);
+			PhoneUI.hide();
+		},
+
+		'wait 2000',
+		
 		() => SceneUtility.emptyScene(),
-		'show scene teddybear with fadeIn',
+		'show scene auto with fadeIn',
 		'play sound crash',
 		'wait 3000',
-		'show scene #000000 with fadeIn duration 2s',
+		'show scene #000000 with',
+		'show scene teddybear with fadeIn',
+		() => {
+			const gameScreen = document.querySelector('game-screen');
+			if (!gameScreen) return;
+			gameScreen.style.transformOrigin = 'center center';
+			gameScreen.style.transition = 'transform 7s ease-in-out';
+			requestAnimationFrame(() => {
+				gameScreen.style.transform = 'scale(1.08)';
+			});
+		},
+		'wait 7000',
+		() => {
+			const gameScreen = document.querySelector('game-screen');
+			if (!gameScreen) return;
+			gameScreen.style.transition = 'transform 0.3s ease';
+			gameScreen.style.transform = '';
+		},
 
 		() => SceneUtility.loadScene("depressione"),
 		'show scene room_night with fadeIn',
@@ -642,9 +674,74 @@ monogatari.script ({
 		},
 		async () => await SceneUtility.endClickedItems(),
 		
-		() => showTextbox(),
-		'wait 1000',
-		'shadow inserire dialogo incidente',
+		() => showTextBox(),
+		'dad ...',
+		'dad Non eri nel tuo letto quando mi sono svegliato.',
+		'dad Non eri in giro per casa, {pause:500}non facevi colazione con i biscotti che tanto ti piacciono.',
+		'dad Non eri neanche a scuola.',
+		'dad Ho passato settimane a raccontarmi che eri solo nell’altra stanza, {pause:5000}che bastava non guardare per farti rimanere qui con me.',
+		() => pauseTextBox(),
+		'dad ...ma tu non ci sei più.',
+		'dad Non come dovresti',
+		'dad Ieri sono tornato dove tutto è successo ed io...{pause:500} io...',
+		
+		//Inserire pianto quando pronto
+		() => pauseTextBox(),
+		'shadow Papà, ho avuto paura, faceva così freddo',
+
+		'dad Lo so... ricordo tutto adesso. Lo ricordo fin troppo chiaramente.',
+		'dad Il rumore dei freni che non hanno risposto, la macchina capovolta e accartocciata.',
+		'dad Ho tentato di allungare il braccio verso il sedile posteriore, ma non ci arrivavo.',
+		'dad Ero incastrato e non sono riuscito a raggiungerti.',
+		'dad Tu eri lì...{pause:500}...ed io non sono riuscito ad aiutarti.',
+		() => pauseTextBox(),
+		'dad Se solo...{pause:500} se solo avessi preso una decisione diversa, se solo avessi avuto un momento di lucidità in più, ora tu saresti qui.',
+		
+		'shadow Non è colpa tua, papà, tu volevi salvarmi',
+		
+		'dad Avrei dovuto esserci io al tuo posto, prendere tutto il dolore che hai provato e riversarlo solo e solamente dentro di me.',
+		'dad Ma il mondo continua ad andare avanti anche senza di te.',
+		'dad Le giornate sono sempre le stesse, ma sono vuote e tristi e sembrano inutili e dolorose.',
+		() => pauseTextBox(),
+		'dad Mi sento un guscio vuoto e non voglio...{pause:500} non riesco a svegliarmi ancora con questa consapevolezza.',
+		'dad Non avrai più il futuro che sognavamo...',
+
+		'shadow Ma papà, tu sì! Puoi costruirlo tu per tutti e due!',
+		'shadow Esci fuori papà, vai avanti anche tu con il mondo.',
+		'shadow E se il mondo corre...',
+		'shadow ...tu sii un lumacone!',
+		'shadow Non devi correre papà, devi imparare di nuovo a camminare, come hai insegnato a me quando ero piccolo!',
+		
+		'dad ...',
+		'dad Ma fa troppo male... {pause:500} io non ci riesco.',
+
+		'shadow Fai un solo passo, papà.',
+		'shadow Esci fuori da questa stanza, continua a controllare i mostri sotto al mio letto, a raccogliere i fiori nel parco dove andavamo sempre',
+		'shadow Così posso continuare a guardare il mondo attraverso i tuoi occhi.',
+
+		'dad Attraverso i miei occhi...',
+
+		() => pauseTextBox(10000),
+
+		'shadow Papà, ti ricordi quando giocavamo a nascondino in giardino?',
+		'shadow Tu contavi e io trovato sempre un posto dove nascondermi',
+
+		'dad Si...ti nascondevi sempre dietro i cespugli di margherite, erano i tuoi preferiti.',
+		"shadow Si papà, ma tu mi trovavi sempre perchè c'erano quelle cose colorate che si posavano sulla mia testa!",
+		'shadow Tu le seguivi e mi trovavi, non è giusto!',
+
+		'dad Le cose colorate...le farfalle!',
+
+		'shadow Ecco, sì! Le farfalle...mi piacevano le farfalle.',
+		'shadow Ecco. Adesso tocca a te contare. Io mi sono nascosto benissimo stavolta papà, ma se esci da questa stanza, se guardi bene intorno...',
+		'shadow ...mi troverai.',
+		() => pauseTextBox(),
+		'shadow Cerca le piccole cose colorate: ogni volta che ne vedrai una, io sono lì con te.',
+		'shadow Promettimi che le cercherai!',
+
+		'dad ...',
+		() => pauseTextBox(),
+		'dad ...va bene, te lo prometto. Le cercherò.',
 		
 		{'Choice': {
 			'Let_Go':{
@@ -659,7 +756,8 @@ monogatari.script ({
 	],
 
 	'Lascia_Andare': [
-		'dad dialogo lascia andare',
+		'clear',
+		() => hideTextBox(),
 		
 		'show scene #000000 with fadeIn',
 		'wait 3000', 

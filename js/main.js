@@ -590,6 +590,39 @@ const PhoneUI = {
 		return this.unreadNotifications.length;
 	},
 
+	/**
+	 * waitUntilAllNotificationsRead - Returns a promise that resolves when the
+	 * unread notifications count reaches zero or when the timeout elapses.
+	 * Useful to pause game flow until the player opens the phone and reads
+	 * the notifications (which marks them as read).
+	 */
+	waitUntilAllNotificationsRead(timeout = 20000, pollInterval = 150) {
+		return new Promise((resolve) => {
+			const start = Date.now();
+
+			if (this.getUnreadCount() === 0) {
+				resolve('already-empty');
+				return;
+			}
+
+			const tick = () => {
+				if (this.getUnreadCount() === 0) {
+					resolve('read');
+					return;
+				}
+
+				if (Date.now() - start >= timeout) {
+					resolve('timeout');
+					return;
+				}
+
+				setTimeout(tick, pollInterval);
+			};
+
+			setTimeout(tick, pollInterval);
+		});
+	},
+
 	renderNotifications() {
 		if (!this.lockNotifications) return;
 
@@ -4115,7 +4148,7 @@ function sleep(ms){
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function showTextbox(){
+function showTextBox(){
 	document.body.classList.add('show-textbox');
 	document.body.classList.remove('hide-textbox');
 }
@@ -4123,6 +4156,13 @@ function showTextbox(){
 function hideTextBox(){
 	document.body.classList.add('hide-textbox')
 	document.body.classList.remove('show-textbox');
+}
+
+function pauseTextBox(time=3000){
+	hideTextBox();
+	setTimeout(() => {
+		showTextBox();
+	}, time);	
 }
 		
 $_ready (() => {
@@ -4147,6 +4187,67 @@ $_ready (() => {
 
 		// Il toggle e' indipendente dal telefono: decide solo quando mostrare il pulsante e il badge.
 		PhoneToggle.init();
+
+		//Cambia automaticamente la classe del body in base al nome dello speaker attivo, per permettere stili dinamici (es. ombra vs tu)
+		const speakerClassMap = {
+			'Tu': 'speaker-dad',
+			'Ombra': 'speaker-shadow'
+		};
+
+		const updateSpeakerClass = (speakerName) => {
+			const classes = Object.values(speakerClassMap);
+			document.body.classList.remove(...classes);
+
+			if (!speakerName || typeof speakerName !== 'string') {
+				return;
+			}
+
+			const className = speakerClassMap[speakerName.trim()];
+			if (className) {
+				document.body.classList.add(className);
+			}
+		};
+
+		const observeSpeakerName = (nameNode) => {
+			if (!nameNode) {
+				return;
+			}
+
+			const observer = new MutationObserver(() => {
+				updateSpeakerClass(nameNode.textContent);
+			});
+
+			observer.observe(nameNode, {
+				characterData: true,
+				childList: true,
+				subtree: true
+			});
+
+			updateSpeakerClass(nameNode.textContent);
+		};
+
+		const waitForNameNode = () => {
+			const nameNode = document.querySelector('text-box [data-content="name"]');
+			if (nameNode) {
+				observeSpeakerName(nameNode);
+				return;
+			}
+
+			const rootObserver = new MutationObserver(() => {
+				const node = document.querySelector('text-box [data-content="name"]');
+				if (node) {
+					rootObserver.disconnect();
+					observeSpeakerName(node);
+				}
+			});
+
+			rootObserver.observe(document.body, {
+				childList: true,
+				subtree: true
+			});
+		};
+
+		waitForNameNode();
 
 		// Il toggle globale evita di creare il menu quando DEBUG_MENU_ENABLED e' false.
 		if (DEBUG_MENU_ENABLED) {
