@@ -411,6 +411,12 @@ input[type=range]::-ms-fill-upper {
 @media screen and (min-width: 500em) {
 
 }
+/* --- BLOCCO GESTURE NON PERTINENTI (scroll, reload, double-tap, punch-zoom)---  */
+html, body {
+    overflow: hidden;
+    touch-action: none;
+    height: 100%;
+}
 
 /* --- PULSANTE GLOBALE TELEFONO --- */
 /* Wrapper fisso: resta fuori dal layout Monogatari e viene mostrato/nascosto da PhoneToggle. */
