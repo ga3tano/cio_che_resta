@@ -24,7 +24,7 @@ body {
 
 /* Simple Button styles*/
 button {
-
+    font-family: 'Pangolin', sans-serif;
 }
 
 /* Simple Button Style on Hover */
@@ -142,6 +142,14 @@ button:hover {
  * Game Elements Styling
  * ===========================
 **/
+/* FONTS */
+@font-face {
+    font-family: 'Pangolin';
+    src: url('../assets/fonts/Pangolin-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
 
 /* Choice Buttons style */
 [data-component="choice-container"] button {
@@ -158,6 +166,7 @@ button:hover {
     display: none !important;
     opacity: 0;
     transition: opacity 0.4s ease;
+    font-family: 'Pangolin', sans-serif;
     /* display: none !important; */
 }
 
@@ -711,6 +720,7 @@ body.show-textbox .phone-toggle {
     display: flex;
     flex-direction: column;
     gap: 3px;
+    font-family: 'Helvetica', sans-serif;
 }
 
 .phone-header span:first-child {
@@ -721,6 +731,7 @@ body.show-textbox .phone-toggle {
 .phone-status {
     font-size: 0.72rem;
     color: rgba(255, 255, 255, 0.55);
+    font-family: 'Helvetica', sans-serif;
 }
 
 .phone-chat {
@@ -738,6 +749,7 @@ body.show-textbox .phone-toggle {
     padding: 10px 12px;
     border-radius: 16px;
     font-size: 0.9rem;
+    font-family: 'Helvetica', sans-serif;
     line-height: 1.35;
     animation: bubble-in 0.28s ease both;
     text-align: left;
@@ -748,12 +760,14 @@ body.show-textbox .phone-toggle {
     align-self: flex-start;
     background: rgba(255, 255, 255, 0.12);
     border-bottom-left-radius: 4px;
+    font-family: 'Helvetica', sans-serif;
 }
 
 .phone-bubble.outgoing {
     align-self: flex-end;
     background: rgba(0, 102, 204, 0.85);
     border-bottom-right-radius: 4px;
+    font-family: 'Helvetica', sans-serif;
 }
 
 /* Contiene i pulsanti creati dalla custom action PhoneChoice dentro la chat. */
@@ -777,6 +791,7 @@ body.show-textbox .phone-toggle {
     color: white;
     cursor: pointer;
     font-size: 0.82rem;
+    font-family: 'Pangolin', sans-serif;
     font-weight: 700;
     letter-spacing: 0.04em;
     padding: 10px 12px;

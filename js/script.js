@@ -111,19 +111,19 @@ monogatari.script ({
 		},
 
 		{
-			TypeCentered: `la soffocante sensazione di affondare le gambe nelle sabbie mobili, che ti trascinano giù, sempre più giù`
+			TypeCentered: `La soffocante sensazione di affondare le gambe nelle sabbie mobili, che ti trascinano giù, sempre più giù`
 		},
 
 		{
-			TypeCentered: `e tu ti dimeni e pensi che provare ad uscirne in questo modo sia il punto di rottura che ti permetterà di trascinare fuori i polpacci pesanti dal fango`
+			TypeCentered: `E tu ti dimeni e pensi che provare ad uscirne in questo modo sia il punto di rottura che ti permetterà di trascinare fuori i polpacci pesanti dal fango`
 		},
 
 		{
-			TypeCentered: `ma le sabbie mobili illudono e tu speri che la soluzione si palesi nella forma più semplice ai tuoi occhi`
+			TypeCentered: `Ma le sabbie mobili illudono e tu speri che la soluzione si palesi nella forma più semplice ai tuoi occhi`
 		},
 
 		{
-			TypeCentered: `per poi pietrificarti, nell’angosciante consapevolezza che l’unica cosa da fare è rallentare e aspettare e respirare appena.`
+			TypeCentered: `Per poi pietrificarti, nell’angosciante consapevolezza che l’unica cosa da fare è rallentare e aspettare e respirare appena.`
 		},
 
 		{
@@ -178,10 +178,40 @@ monogatari.script ({
 		() => {
 			SceneUtility.revealPreparedScene();
 			NightOverlay.showNight();
+
+			//Disabilito i click per poter per mettere di far skippare i dialoghi
+			const wrapper = document.getElementById('details-wrapper');
+			if (wrapper) wrapper.style.pointerEvents = 'none';
+			
+			showTextBox();
+
 		},
 		
+		//'play breathe volume 30 loop',
+		'dad No! NO!',
+		'dad ...aspetta, respira. Era solo...solo un incubo, ma la stessa scena si ripete ormai tutte le notti.',
+		'dad Succede spesso quando dormo male...può capitare.',
+		
+		() => hideTextBox(),
+		
+		'wait 3000',
+
+		() => showTextBox(),
+
+		'dad Questa stanza è troppo buia...ma dove ho messo il telefono?',
+		() => hideTextBox(),
+		'wait 3000',
+		() => showTextBox(),
+
+		'dad ...eccolo!',
+
 		() => {
-			// showClickableObjects();
+			hideTextBox();
+
+			//Riabilito i click per permettere il corretto funzionamento della torcia
+			const wrapper = document.getElementById('details-wrapper');
+			if (wrapper) wrapper.style.pointerEvents = 'auto';
+
 			NightOverlay.showTorch();
 		},
 
@@ -277,14 +307,17 @@ monogatari.script ({
 		'dad È tardi...meglio dormire.',
 
 		async () => {
-			await BlinkOverlay.doubleBlink(600);
+			NightOverlay.hideTorch();
+			await BlinkOverlay.blink(1000);
+			SceneUtility.addBlur();
+			await BlinkOverlay.doubleBlink(400);
 			SceneUtility.enableBackground();
 			SceneUtility.emptyScene();
 			hideTextBox();
 			NightOverlay.hide();
 		},
 		'show scene #000000 with fadeIn',
-		'wait 3000',
+		'wait 5000',
 		'jump Negazione_Cellulare'
 
 		// () => {

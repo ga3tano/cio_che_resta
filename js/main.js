@@ -49,7 +49,7 @@ class TypeCentered extends Monogatari.Action {
 		this.speed = options.speed ?? 55;
 		this.sound = options.sound ?? 'assets/sounds/typewriter.mp3';
 		this.volume = options.volume ?? 0.25;
-		this.fontFamily = options.fontFamily ?? 'monospace';
+		this.fontFamily = options.fontFamily ?? 'Pangolin';	//old - monospace
 	}
 
 	apply () {
@@ -2413,6 +2413,7 @@ const SceneUtility = {
 				img.id = imgData.id;
 				img.src = imgData.src;
 				img.className = 'wrapper-item';
+				img.style.pointerEvents = 'none';
 
 				if(imgData.onClick){
 					img.classList.add('clickable-object', 'highlight');
