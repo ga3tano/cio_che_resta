@@ -315,7 +315,21 @@ monogatari.script ({
         () => SceneUtility.loadScene("negazione"),
 		'show scene room_day_dark',
 		'wait 1500',
-		() => SceneUtility.revealPreparedScene(),
+		() => {
+			SceneUtility.revealPreparedScene();
+			SceneUtility.addBlur();
+		},
+		
+		'wait 3000',
+		async () => {
+			await BlinkOverlay.blink(400);
+			await sleep(2000);
+			await BlinkOverlay.doubleBlink(200);
+			SceneUtility.removeBlur();
+		},
+
+		'wait 3500',
+
         'play sound phone_vibration',
 		'play sound phone_notification',
 
@@ -447,11 +461,19 @@ monogatari.script ({
 		},
 
 		'show scene outside with fadeIn',
-		() => SceneUtility.enableBackground(),
+		() => {
+			SceneUtility.enableBackground();
+			SceneUtility.addBlur();
+		},
 		
 		'wait 3000',
 		
-		() => BlinkOverlay.doubleBlink(400),
+		async () => {
+			await BlinkOverlay.blink(400);
+			SceneUtility.removeBlur();
+			await sleep(2500);
+			await BlinkOverlay.doubleBlink(400);
+		},
 		
 		'show scene feet with fadeIn',
 

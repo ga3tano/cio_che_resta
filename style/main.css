@@ -1043,18 +1043,24 @@ body.show-textbox .phone-toggle {
     cursor: none;
 } */
 
-.detail-blur {
+.blur-overlay {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100svw;
+    height: 100svh;
     backdrop-filter: blur(8px);
-    background: rgba(0,0,0,0.5);
     z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 2s ease;
 }
 
-.detail-zoom {
+.blur-overlay.visible{
+    opacity: 1;
+}
+
+/* .detail-zoom {
     position: fixed;
     top: 30%;
     left: 50%;
@@ -1088,7 +1094,7 @@ body.show-textbox .phone-toggle {
     cursor: pointer;
     z-index: 13;
     font-weight: bold;
-}
+} */
 
 .clickable-object {
     transition: filter 0.2s ease,  transform 0.2s ease;
@@ -1624,47 +1630,99 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	pointer-events: none;
 	z-index: 999999;
 	overflow: hidden;
+	background: transparent;
 }
 
 .blink-overlay .eyelid {
 	position: absolute;
-	left: -8%;
-	width: 116%;
-	height: 58%;
-	background:
-		radial-gradient(ellipse at center, rgba(28, 24, 24, 0.98) 0%, #030303 70%),
-		#000;
-	box-shadow: 0 0 42px rgba(0, 0, 0, 0.85);
-	will-change: transform;
-	transition: transform var(--speed) cubic-bezier(0.45, 0, 0.15, 1);
+	height: 100%;
+	will-change: transform, opacity;
+	transition:
+		transform var(--speed) cubic-bezier(0.45, 0, 0.2, 1),
+		opacity calc(var(--speed) * 0.35) linear;
+}
+
+.blink-overlay .eyelid {
+	left: 0;
+	width: 100%;
+	background: #000;
+	z-index: 2;
+}
+
+.blink-overlay .eyelid-shadow {
+	left: -3%;
+	width: 106%;
+	z-index: 1;
+	opacity: 0.45;
+	background: #000;
+	filter: blur(12px);
+}
+
+.blink-overlay .top {
+	top: 0;
+
+	-webkit-mask:
+		linear-gradient(#000 0 0),
+		radial-gradient(ellipse 86% 42% at 50% 100%, #000 99%, transparent 100%);
+	-webkit-mask-composite: xor;
+
+	mask:
+		linear-gradient(#000 0 0),
+		radial-gradient(ellipse 86% 42% at 50% 100%, #000 99%, transparent 100%);
+	mask-composite: exclude;
+}
+
+.blink-overlay .bottom {
+	bottom: 0;
+	transition-delay: 40ms;
+
+	-webkit-mask:
+		linear-gradient(#000 0 0),
+		radial-gradient(ellipse 86% 42% at 50% 0%, #000 99%, transparent 100%);
+	-webkit-mask-composite: xor;
+
+	mask:
+		linear-gradient(#000 0 0),
+		radial-gradient(ellipse 86% 42% at 50% 0%, #000 99%, transparent 100%);
+	mask-composite: exclude;
 }
 
 .blink-overlay .eyelid.top {
-	top: 0;
-	border-bottom-left-radius: 50% 16%;
-	border-bottom-right-radius: 50% 16%;
-	transform: translateY(-103%) scaleY(0.92);
+	transform: translateY(-100%);
 }
 
 .blink-overlay .eyelid.bottom {
-	bottom: 0;
-	border-top-left-radius: 50% 16%;
-	border-top-right-radius: 50% 16%;
-	transform: translateY(103%) scaleY(0.92);
+	transform: translateY(100%);
 }
 
-.blink-overlay.closed .eyelid.top {
-	transform: translateY(-4%) scaleY(1.04);
-	transition-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
+.blink-overlay .eyelid-shadow.top {
+	transform: translateY(-96%);
 }
 
+.blink-overlay .eyelid-shadow.bottom {
+	transform: translateY(96%);
+}
+
+.blink-overlay.closed .eyelid.top,
 .blink-overlay.closed .eyelid.bottom {
-	transform: translateY(4%) scaleY(1.04);
-	transition-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
+	transform: translateY(0);
+}
+
+.blink-overlay.closed .eyelid-shadow.top {
+	transform: translateY(-4%);
+}
+
+.blink-overlay.closed .eyelid-shadow.bottom {
+	transform: translateY(4%);
+}
+
+.blink-overlay.closed .eyelid-shadow {
+	opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.blink-overlay .eyelid {
+	.blink-overlay .eyelid,
+	.blink-overlay .eyelid-shadow {
 		transition-duration: 1ms;
 	}
 }

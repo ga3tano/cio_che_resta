@@ -2314,8 +2314,6 @@ const SceneUtility = {
 			rain.classList.add('rain');
 
 			sky.appendChild(rain);
-
-			console.log(sky);
 		}
 
 		overlay.classList.add("covering");
@@ -2728,6 +2726,16 @@ const SceneUtility = {
 		// Riattiva i touch sul wrapper
 		const wrapper = document.getElementById('details-wrapper');
     	if (wrapper) wrapper.style.pointerEvents = 'auto';
+	},
+
+	addBlur(){
+		const el = document.getElementById('blur-overlay');
+		el.classList.add('visible');
+	},
+
+	removeBlur(){
+		const el = document.getElementById('blur-overlay');
+		el.classList.remove('visible');
 	}
 }	
 
