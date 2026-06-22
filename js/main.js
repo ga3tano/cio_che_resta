@@ -2441,7 +2441,7 @@ const SceneUtility = {
 								
 				img.onload = () => {
 					wrapper.appendChild(img);
-					console.log(img);
+					// console.log(img);
 					resolve();
 				};
 				
@@ -2457,7 +2457,7 @@ const SceneUtility = {
 			await loadImage(imgData, wrapper);
 		}
 
-		console.log(`Loaded ${images.length} images for ${typeOfItems}`);
+		// console.log(`Loaded ${images.length} images for ${typeOfItems}`);
 	},
 
 
@@ -2550,7 +2550,7 @@ const SceneUtility = {
 
 		const imges = SCENE_IMAGES["depressione"];
 		const imgWrapper = wrapper.querySelector('.clickable-object');
-		console.log(imgWrapper);
+		// console.log(imgWrapper);
 		imgWrapper.classList.remove('hide');
 
 		wrapper.addEventListener('click', (e) => {
@@ -2622,6 +2622,11 @@ const SceneUtility = {
 			const touch = e.touches[0];
 			if(!touch) return;
 
+			// //Blocca lo scroll
+			// if(e.cancelable){
+			// 	e.preventDefault();
+			// }
+
 			lastPoint = { clientX: touch.clientX, clientY: touch.clientY};
 
 			if(!rafId){
@@ -2630,11 +2635,10 @@ const SceneUtility = {
 					if (lastPoint) processHover(lastPoint);
 				});
 			}
-		});
+		}, {passive: false});
 
 		wrapper.addEventListener('touchend', (e) => {
 			if(this.currentHoveredId){
-				e.preventDefault();
 				e.stopPropagation();
 			}
 		});

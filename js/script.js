@@ -189,7 +189,7 @@ monogatari.script ({
 	],
 
 	'DialogoTorcia_Pianta': [
-		() => showTextbox(),
+		() => showTextBox(),
 		'<div style="color: #000000;">.</div>',
     	'dad Dovrei annaffiarla, ha bisogno di luce, sta perdendo tutte le foglie.',
 		'dad Oggi lo faccio, devo solo organizzarmi meglio, non voglio che si secchi del tutto.',
@@ -202,7 +202,7 @@ monogatari.script ({
 	],
 
 	'DialogoTorcia_Cornice': [
-		() => showTextbox(),
+		() => showTextBox(),
 		'<div style="color: #000000;">.</div>',
     	'dad Quanta polvere...non si vede neanche più la fotografia.',
 		'dad Sei così felice lì, quel giorno al parco ci siamo divertiti molto, abbiamo preso un gelato, passeggiato e cantato le tue canzoni preferite.',
@@ -218,7 +218,7 @@ monogatari.script ({
 	],
 
 	'DialogoTorcia_Porta': [
-		() => showTextbox(),
+		() => showTextBox(),
 		'<div style="color: #000000;">.</div>',
     	'dad Mi sento così stanco, non ho voglia di uscire.',
 		'dad Non so neanche che ore sono.',
@@ -233,7 +233,7 @@ monogatari.script ({
 	],
 
 	'DialogoTorcia_Mobile': [
-		() => showTextbox(),
+		() => showTextBox(),
 		'<div style="color: #000000;">.</div>',
     	'dad Ti ho comprato una nuova maglietta, sono sicuro che ti piacerà',
 		'dad È verde, il tuo colore preferito.',
@@ -271,7 +271,7 @@ monogatari.script ({
 			NightOverlay.isFrozen = true;
 			const wrapper = document.getElementById('details-wrapper');
 			if(wrapper) wrapper.style.pointerEvents = 'none'
-			showTextbox();
+			showTextBox();
 		},
 
 		'dad È tardi...meglio dormire.',
