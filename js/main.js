@@ -2441,6 +2441,11 @@ const SceneUtility = {
 								
 				img.onload = () => {
 					wrapper.appendChild(img);
+
+					//Costruisce la mappa alpha subito dopo il caricamento dell'immagine
+					if(imgData.lighted)
+						buildAlphaMap(img);
+
 					// console.log(img);
 					resolve();
 				};
@@ -2456,6 +2461,9 @@ const SceneUtility = {
 		for (const imgData of images) {
 			await loadImage(imgData, wrapper);
 		}
+
+		//Pre-calcola le mappe alpha per gli oggetti lighted
+	
 
 		// console.log(`Loaded ${images.length} images for ${typeOfItems}`);
 	},
@@ -3612,71 +3620,129 @@ function hideDetail(objectId) {
 
 }
 
+// Cache delle mappe di trasparenza per ogni id immagine
+const alphaCache = new Map();	//Rimane in memoria ed è disponibile ogni volta che aggiungo nuovi oggetti alla scena
+
+function buildAlphaMap(imgElement) {
+    if (alphaCache.has(imgElement.id)) {
+        return alphaCache.get(imgElement.id);
+    }
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Riduci la risoluzione della mappa per performance
+    const scale = 0.25; // 25% della risoluzione originale
+    canvas.width = Math.floor(imgElement.naturalWidth * scale);
+    canvas.height = Math.floor(imgElement.naturalHeight * scale);
+    
+    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+    
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const map = {
+        width: canvas.width,
+        height: canvas.height,
+        data: new Uint8Array(imageData.data.length / 4)
+    };
+    
+    // Estrai solo il canale alpha (ogni 4 valori, prendi il 4°)
+    for (let i = 0; i < map.data.length; i++) {
+        map.data[i] = imageData.data[i * 4 + 3];
+    }
+    
+    alphaCache.set(imgElement.id, map);
+    return map;
+}
+
+
+// function isClickOnVisiblePixel(imgElement, point) {
+// 	if (!imgElement.naturalWidth || !imgElement.naturalHeight) 
+//         return false;
+	
+// 	const canvas = document.createElement('canvas');
+// 	const ctx = canvas.getContext('2d');
+	
+// 	// Use natural dimensions for accurate pixel sampling
+// 	canvas.width = imgElement.naturalWidth;
+// 	canvas.height = imgElement.naturalHeight;
+	
+// 	try {
+//         ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+//     } catch (error) {
+//         // drawImage fallisce se l'immagine non è completamente decodificata
+//         console.warn('drawImage failed, image may not be decoded yet:', imgElement.id);
+//         return false;
+//     }
+	
+// 	const rect = imgElement.getBoundingClientRect();
+// 	const x = point.clientX - rect.left;
+// 	const y = point.clientY - rect.top;
+	
+// 	// L'immagine è mostrata con object-fit:cover + object-position:center
+// 	// (vedi .wrapper-item in main.css): viene scalata di un UNICO fattore e
+// 	// centrata, con l'eccedenza ritagliata — NON riempie il box in modo lineare.
+// 	// Invertiamo quella trasformazione per campionare il pixel corretto. Con la
+// 	// vecchia mappatura "fill" (scaleX/scaleY separati) il tocco colpirebbe il
+// 	// pixel sbagliato appena lo schermo non è in proporzione 1440:2560.
+// 	const nW = imgElement.naturalWidth;
+// 	const nH = imgElement.naturalHeight;
+// 	const scale = Math.max(rect.width / nW, rect.height / nH);
+// 	const offsetX = (rect.width  - nW * scale) / 2; // ≤ 0: bordi ritagliati
+// 	const offsetY = (rect.height - nH * scale) / 2;
+// 	const pixelX = Math.floor((x - offsetX) / scale);
+// 	const pixelY = Math.floor((y - offsetY) / scale);
+
+// 	 if (!Number.isFinite(pixelX) || !Number.isFinite(pixelY)) {
+// 		// console.warn(x, " ", scaleX, " ", y, " ", scaleY);
+// 		// console.log({
+// 		// 	id: imgElement.id,
+// 		// 	naturalWidth: imgElement.naturalWidth,
+// 		// 	naturalHeight: imgElement.naturalHeight,
+// 		// 	rectWidth: rect.width,
+// 		// 	rectHeight: rect.height,
+// 		// 	clientX: event.clientX,
+// 		// 	clientY: event.clientY,
+// 		// 	rectLeft: rect.left,
+// 		// 	rectTop: rect.top,
+// 		// 	scaleX,
+// 		// 	scaleY,
+// 		// 	pixelX,
+// 		// 	pixelY
+// 		// });
+//         return false;
+//     }
+
+// 	try {
+// 		const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
+// 		// console.log('Alpha value:', pixelData[3]);
+// 		return pixelData[3] > 0;
+// 	} catch (error) {
+// 		console.error('Error getting pixel data:', error);
+// 		return false;
+// 	}
+// }
+
+//Per performance, il calcolo lo faccio su una mappa equivalente ma di dimensioni ridotte
 function isClickOnVisiblePixel(imgElement, point) {
-	if (!imgElement.naturalWidth || !imgElement.naturalHeight) 
+    if (!imgElement.naturalWidth || !imgElement.naturalHeight) 
         return false;
-	
-	const canvas = document.createElement('canvas');
-	const ctx = canvas.getContext('2d');
-	
-	// Use natural dimensions for accurate pixel sampling
-	canvas.width = imgElement.naturalWidth;
-	canvas.height = imgElement.naturalHeight;
-	
-	try {
-        ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-    } catch (error) {
-        // drawImage fallisce se l'immagine non è completamente decodificata
-        console.warn('drawImage failed, image may not be decoded yet:', imgElement.id);
-        return false;
-    }
-	
-	const rect = imgElement.getBoundingClientRect();
-	const x = point.clientX - rect.left;
-	const y = point.clientY - rect.top;
-	
-	// L'immagine è mostrata con object-fit:cover + object-position:center
-	// (vedi .wrapper-item in main.css): viene scalata di un UNICO fattore e
-	// centrata, con l'eccedenza ritagliata — NON riempie il box in modo lineare.
-	// Invertiamo quella trasformazione per campionare il pixel corretto. Con la
-	// vecchia mappatura "fill" (scaleX/scaleY separati) il tocco colpirebbe il
-	// pixel sbagliato appena lo schermo non è in proporzione 1440:2560.
-	const nW = imgElement.naturalWidth;
-	const nH = imgElement.naturalHeight;
-	const scale = Math.max(rect.width / nW, rect.height / nH);
-	const offsetX = (rect.width  - nW * scale) / 2; // ≤ 0: bordi ritagliati
-	const offsetY = (rect.height - nH * scale) / 2;
-	const pixelX = Math.floor((x - offsetX) / scale);
-	const pixelY = Math.floor((y - offsetY) / scale);
 
-	 if (!Number.isFinite(pixelX) || !Number.isFinite(pixelY)) {
-		// console.warn(x, " ", scaleX, " ", y, " ", scaleY);
-		// console.log({
-		// 	id: imgElement.id,
-		// 	naturalWidth: imgElement.naturalWidth,
-		// 	naturalHeight: imgElement.naturalHeight,
-		// 	rectWidth: rect.width,
-		// 	rectHeight: rect.height,
-		// 	clientX: event.clientX,
-		// 	clientY: event.clientY,
-		// 	rectLeft: rect.left,
-		// 	rectTop: rect.top,
-		// 	scaleX,
-		// 	scaleY,
-		// 	pixelX,
-		// 	pixelY
-		// });
-        return false;
-    }
+    const rect = imgElement.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
 
-	try {
-		const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
-		// console.log('Alpha value:', pixelData[3]);
-		return pixelData[3] > 0;
-	} catch (error) {
-		console.error('Error getting pixel data:', error);
-		return false;
-	}
+    const map = buildAlphaMap(imgElement);
+    
+    const x = point.clientX - rect.left;
+    const y = point.clientY - rect.top;
+    
+    // Mappa le coordinate dello schermo alle coordinate della mappa ridotta
+    const mapX = Math.floor((x / rect.width) * map.width);
+    const mapY = Math.floor((y / rect.height) * map.height);
+    
+    if (mapX < 0 || mapY < 0 || mapX >= map.width || mapY >= map.height) 
+        return false;
+    
+    return map.data[mapY * map.width + mapX] > 0;
 }
 
 /*
