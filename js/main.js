@@ -1074,10 +1074,13 @@ const NightOverlay = {
 	},
 
 	hideTorch(){
+		this.isFrozen = true;
 		if(!this.element) this.init();
 
 		this.playTorchSound();
 		this.element.classList.remove('torch');
+		this.element.style.maskImage = 'none';
+		this.element.style.webkitMaskImage = 'none';
 	},
 
 	playTorchSound(){
@@ -2301,7 +2304,7 @@ const SceneUtility = {
 		}
 		
 		const sky = document.getElementById("sky");
-		const overlay = document.getElementById("sceneFadeOverlay");
+		// const overlay = document.getElementById("sceneFadeOverlay");	Adesso gestisco il fade a parte
 
 		//Imposto l'immagine di background del div
 		const imageSrc = `assets/scenes/cielo_${typeOfSky}.png`;
@@ -2316,7 +2319,7 @@ const SceneUtility = {
 			sky.appendChild(rain);
 		}
 
-		overlay.classList.add("covering");
+		// overlay.classList.add("covering");	Come sopra
 
 		await preloadImage(imageSrc);
 
@@ -2468,23 +2471,24 @@ const SceneUtility = {
 	},
 
 
-	revealPreparedScene() {
-		const overlay = document.getElementById("sceneFadeOverlay");
+	// Il fade lo gestisco a parte
+	// revealPreparedScene() {	
+	// 	const overlay = document.getElementById("sceneFadeOverlay");
 
-		/*
-		Aspetto 2 volte il frame:
-		Stato iniziale: Opacity 1, quindi tutto nero
-		Stato intermedio: rimuovo l'overlay e do il tempo al browser di far partire l'animazione
-		Stato finale: Opacity 0, quindi trasparente
+	// 	/*
+	// 	Aspetto 2 volte il frame:
+	// 	Stato iniziale: Opacity 1, quindi tutto nero
+	// 	Stato intermedio: rimuovo l'overlay e do il tempo al browser di far partire l'animazione
+	// 	Stato finale: Opacity 0, quindi trasparente
 
-		Tecnica usata spesso per animazioni di questo tipo
-		*/ 
-		requestAnimationFrame(() => {
-			requestAnimationFrame(() => {
-				overlay.classList.remove("covering");
-			})
-		})
-	},
+	// 	Tecnica usata spesso per animazioni di questo tipo
+	// 	*/ 
+	// 	requestAnimationFrame(() => {
+	// 		requestAnimationFrame(() => {
+	// 			overlay.classList.remove("covering");
+	// 		})
+	// 	})
+	// },
 
 	async loadScene(typeOfScene){
 		switch(typeOfScene){
@@ -2619,7 +2623,7 @@ const SceneUtility = {
 				this.hoverTimer = setTimeout(() => {
 					// Muove la torcia e la congela centrando l'oggetto, facendo poi partire il dialogo
 					this.lockTorchOnObject(found.element, found.data);
-				}, 600);
+				}, 350);
 			}
 		};
 	
@@ -2738,7 +2742,48 @@ const SceneUtility = {
 		const el = document.getElementById('blur-overlay');
 		el.classList.remove('visible');
 	}
-}	
+}
+
+const SceneFade = {
+	element: null,
+	defaultDuration: 1.5,
+	defaultColor: '#000',
+
+	init() {
+		this.element = document.getElementById('sceneFadeOverlay');
+	},
+
+	wait(seconds) {
+		return new Promise(resolve => {
+			setTimeout(resolve, seconds * 1000);
+		});
+	},
+
+	async toVisible({ duration = this.defaultDuration, color = this.defaultColor } = {}) {
+		if (!this.element) this.init();
+
+		this.element.style.background = color;
+		this.element.style.transitionDuration = `${duration}s`;
+
+		requestAnimationFrame(() => {
+			this.element.style.opacity = '1';
+		});
+
+		await this.wait(duration);
+	},
+
+	async toHidden({ duration = this.defaultDuration } = {}) {
+		if (!this.element) this.init();
+
+		this.element.style.transitionDuration = `${duration}s`;
+
+		requestAnimationFrame(() => {
+			this.element.style.opacity = '0';
+		});
+
+		await this.wait(duration);
+	}
+};
 
 
 const PanicBreath = {
@@ -4161,7 +4206,8 @@ const DebugMenu = {
 
 		// Riapre eventuali palpebre chiuse e rimuove il nero di transizione scena.
 		document.getElementById('blink-overlay')?.classList.remove('closed');
-		document.getElementById('sceneFadeOverlay')?.classList.remove('covering');
+		const fadeOverlay = document.getElementById('sceneFadeOverlay');
+		if (fadeOverlay) fadeOverlay.style.opacity = '0';
 	},
 
 	resetStorageFlags(targetLabel = null) {

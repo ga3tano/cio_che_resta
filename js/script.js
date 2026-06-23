@@ -170,21 +170,21 @@ monogatari.script ({
 
 //TORCIA
 	'Torcia': [
-		() => {
+		async () => {
+			await SceneFade.toVisible();
 			SceneUtility.loadScene("torcia");
 		},
 		'show scene room_night with fadeIn',
 		'wait 1500',
-		() => {
-			SceneUtility.revealPreparedScene();
+		async () => {
 			NightOverlay.showNight();
-
+			await SceneFade.toHidden();
+			
 			//Disabilito i click per poter per mettere di far skippare i dialoghi
 			const wrapper = document.getElementById('details-wrapper');
 			if (wrapper) wrapper.style.pointerEvents = 'none';
 			
 			showTextBox();
-
 		},
 		
 		//'play breathe volume 30 loop',
@@ -309,15 +309,11 @@ monogatari.script ({
 		async () => {
 			NightOverlay.hideTorch();
 			await BlinkOverlay.blink(1000);
+			hideTextBox();
 			SceneUtility.addBlur();
 			await BlinkOverlay.doubleBlink(400);
-			SceneUtility.enableBackground();
-			SceneUtility.emptyScene();
-			hideTextBox();
-			NightOverlay.hide();
+			await SceneFade.toVisible({duration: 5});
 		},
-		'show scene #000000 with fadeIn',
-		'wait 5000',
 		'jump Negazione_Cellulare'
 
 		// () => {
@@ -345,15 +341,19 @@ monogatari.script ({
 
 //NEGAZIONE
 	'Negazione_Cellulare': [
-        () => SceneUtility.loadScene("negazione"),
+        async () => {
+			NightOverlay.hide();
+
+			SceneUtility.loadScene("negazione"); 
+		},
+
 		'show scene room_day_dark',
 		'wait 1500',
-		() => {
-			SceneUtility.revealPreparedScene();
+		async () => {
 			SceneUtility.addBlur();
+			await SceneFade.toHidden();
 		},
-		
-		'wait 3000',
+
 		async () => {
 			await BlinkOverlay.blink(400);
 			await sleep(2000);
@@ -462,9 +462,13 @@ monogatari.script ({
     ],
 
 	'Rimani_A_Casa':[
-		() => SceneUtility.emptyScene(),
-		'show scene #000000 with fadeIn',
-		() => PhoneUI.hide(),
+		async () => {
+			await SceneFade.toVisible();
+			SceneUtility.emptyScene();
+			PhoneUI.hide();
+		},
+		'show scene #000000',
+		() => SceneFade.toHidden(),
 		// 'show scene #000000 with fadeIn',
 		'wait 5000',
 		'play sound phone_vibration',
@@ -475,8 +479,6 @@ monogatari.script ({
 			PhoneUI.setContactName('Giulia');
 			PhoneUI.addIncoming('Non lasciarmi aspettare.');
 			PhoneUI.vibrate();
-
-			SceneUtility.toggleBackground();
 		},
 
 		{'PhoneChoice':{
@@ -488,34 +490,35 @@ monogatari.script ({
 	],
 
 	'Esci_Casa':[
-		() => {
+		async () => {
 			PhoneUI.hide();
+			await SceneFade.toVisible({
+				color: '#fff'
+			})
 			SceneUtility.emptyScene();
 		},
 
-		'show scene outside with fadeIn',
-		() => {
-			SceneUtility.enableBackground();
+		'show scene outside',
+		async () => {
 			SceneUtility.addBlur();
+			await SceneFade.toHidden({duration: 2});
 		},
 		
 		'wait 3000',
 		
 		async () => {
 			await BlinkOverlay.blink(400);
-			SceneUtility.removeBlur();
 			await sleep(2500);
 			await BlinkOverlay.doubleBlink(400);
+			SceneUtility.removeBlur();
 		},
 		
-		'show scene feet with fadeIn',
-
 		'wait 4000',
 
 		{'Choice':{
 			'Torna a casa':{
 				'Text': 'TORNA A CASA',
-				'Do': 'jump Rabbia with fadeOut'
+				'Do': 'jump Rabbia'
 			}
 		}}
 	],
@@ -523,10 +526,13 @@ monogatari.script ({
 
 //RABBIA
 	'Rabbia': [
-		() => SceneUtility.loadScene("rabbia"),
+		async () => {
+			await SceneFade.toVisible();
+			SceneUtility.loadScene("rabbia");
+		},
 		'show scene room_rage',
 		'wait 1500',
-		() => SceneUtility.revealPreparedScene(),
+		async() => await SceneFade.toHidden(),
 		'play music rage_scene with loop volume 75',
 
 		'wait 2000',
@@ -630,18 +636,21 @@ monogatari.script ({
 		},
 
 		'stop music',
-
-		'show scene #000000 with fadeIn',
 		'jump Contrattazione'
 	],
 //CONTRATTAZIONE
 	'Contrattazione': [
-		() => SceneUtility.loadScene("contrattazione"),
+		async () => {
+			await SceneFade.toVisible();
+			SceneUtility.loadScene("contrattazione");
+		},
 		'show scene room_day_dark',
 		'wait 1500',
-		() => SceneUtility.revealPreparedScene(),
-
-		async () => await SceneUtility.endClickedItems(),
+		
+		async () => {
+			await SceneFade.toHidden();
+			await SceneUtility.endClickedItems();
+		},
 
 		'wait 3000',
 		
@@ -649,35 +658,43 @@ monogatari.script ({
 		'play sound phone_notification',
 		
 		async () => {
-			PhoneUI.reset();
+			// PhoneUI.reset();	NON RESETTO perchè mi serve che rimanga il messaggio di prima
 			// Qui il telefono si apre perche' il giocatore sta gia scrivendo una chat attiva.
 			// Non e' una notifica passiva: vogliamo mostrare la conversazione sul momento.
 			PhoneUI.show('Giulia', { mode: 'chat' });
-			PhoneUI.addOutgoing("Ehi, ti va se ci prendiamo un caffè?");
+			PhoneUI.addIncoming("Ehi, come va oggi?");
+
+			await PhoneUI.waitUntilAllNotificationsRead(20000),
+			await sleep(3000);
 
 			// notify:false evita badge/lockscreen per una risposta gia visibile in chat.
-			PhoneUI.addIncoming("Volentieri! Ci troviamo al solito posto tra 15 min", {
+			PhoneUI.addOutgoing("Va...alti e bassi, ma un giorno alla volta, giusto?", {
 				notify: false
 			});
-			await sleep(6000);
+			await sleep(2000);
+			PhoneUI.addIncoming("Un giorno alla volta.", {notify: false})
+			await sleep(4000);
+			PhoneUI.addIncoming("Usciamo a fare una passeggiata? Ti vengo a prendere.", {notify: false});
+			await sleep(5000);
+			PhoneUI.addOutgoing("D'accordo. Ti aspetto, grazie.");
+			await sleep(4000);
 			PhoneUI.reset();
 			PhoneUI.hide();
 		},
-
-		//Monologo
-		'show scene #000000 with fadeIn',
-		'wait 1500',
 
 		'jump Depressione'
 	],
 
 //DEPRESSIONE
 	'Depressione': [
-		() => SceneUtility.loadScene("depressione"),
-		'show scene room_night with fadeIn',
+		async () => {
+			await SceneFade.toVisible({duration: 3.5});
+			SceneUtility.loadScene("depressione");
+		},
+		'show scene room_night',
 		'play music rain with loop volume 30',
 		'wait 1500',
-		() => SceneUtility.revealPreparedScene(),
+		async () => await SceneFade.toHidden({duration: 3.5}),
 
 		'wait 5000',
 		'play sound phone_vibration',
@@ -696,12 +713,16 @@ monogatari.script ({
 
 		'wait 2000',
 		
-		() => SceneUtility.emptyScene(),
-		'show scene auto with fadeIn',
+		async() => {
+			await SceneFade.toVisible({duration: 1});
+			SceneUtility.emptyScene();
+			await SceneFade.toHidden({duration: 1})
+		},
+		'show scene auto',
 		'play sound crash',
-		'wait 3000',
-		'show scene #000000 with',
-		'show scene teddybear with fadeIn',
+		
+		async() => await SceneFade.toVisible({duration: 1}),
+		'show scene teddybear',
 		() => {
 			const gameScreen = document.querySelector('game-screen');
 			if (!gameScreen) return;
@@ -719,15 +740,18 @@ monogatari.script ({
 			gameScreen.style.transform = '';
 		},
 
-		() => SceneUtility.loadScene("depressione"),
-		'show scene room_night with fadeIn',
-		'play music rain with loop volume 30',
-
-		() => {
-			SceneUtility.revealPreparedScene();
+		async () =>{
+			await SceneFade.toVisible({duration: 1});
+			SceneUtility.loadScene("depressione");
 			SceneUtility.addShadow();
 		},
-		async () => await SceneUtility.endClickedItems(),
+		'show scene room_night',
+		'play music rain with loop volume 30',
+
+		async () => {
+			await SceneFade.toHidden({duration: 3});
+			await SceneUtility.endClickedItems();
+		},
 		
 		() => showTextBox(),
 		'dad ...',
@@ -813,74 +837,70 @@ monogatari.script ({
 	'Lascia_Andare': [
 		'clear',
 		() => hideTextBox(),
-		
-		'show scene #000000 with fadeIn',
-		'wait 3000', 
 		'jump Accettazione'
 	],
 
 	'Non_Pronto': [
-		'dad dialogo non pronto',
-
-		'show scene #000000 with fadeIn',
-		'wait 3000',
-
-		() => SceneUtility.loadScene("rabbia"),
+		async () => {
+			await SceneFade.toVisible();
+			SceneUtility.loadScene("rabbia");
+		},
 		'show scene room_rage',
 		'wait 1500',
-		() => SceneUtility.revealPreparedScene(),
-		'play music rage_scene with loop volume 70',
+		async() => await SceneFade.toHidden(),
+		'play music rage_scene with loop volume 75',
 
 		'jump Glitch_Rabbia'
 	],
 
+	//DA RIFARE COMPLETAMENTE
 	'Accettazione': [
-		() => SceneUtility.loadScene("accettazione"),
-		'show scene room_day_normal',
-		'wait 1500',
-		() => SceneUtility.revealPreparedScene(),
+	// 	() => SceneUtility.loadScene("accettazione"),
+	// 	'show scene room_day_normal',
+	// 	'wait 1500',
+	// 	() => SceneUtility.revealPreparedScene(),
 
-		'wait 5000',
+	// 	'wait 5000',
 		
-		'play sound phone_vibration',
-		'play sound phone_notification',
+	// 	'play sound phone_vibration',
+	// 	'play sound phone_notification',
 
-        {'Function': {
-            'Apply': function () {
-                PhoneUI.reset();
-                // Imposta il mittente senza aprire il telefono: vedrai solo badge e lockscreen.
-                PhoneUI.setContactName('Giulia');
-                PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
-                PhoneUI.vibrate();
-                return true;
-            },
-            'Revert': function () {
-                PhoneUI.hide();
-                return true;
-            }
-        }},
+    //     {'Function': {
+    //         'Apply': function () {
+    //             PhoneUI.reset();
+    //             // Imposta il mittente senza aprire il telefono: vedrai solo badge e lockscreen.
+    //             PhoneUI.setContactName('Giulia');
+    //             PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
+    //             PhoneUI.vibrate();
+    //             return true;
+    //         },
+    //         'Revert': function () {
+    //             PhoneUI.hide();
+    //             return true;
+    //         }
+    //     }},
 
-        // PhoneChoice mostra questi pulsanti direttamente nella chat del telefono.
-        {'PhoneChoice': {
-            'Rispondi': {
-                'Text': 'RISPONDI',
-				'Do': 'jump Finale'          
-            },
-            'Ignora': {
-                'Text': 'IGNORA',
-                'Do': '',
-				'Disabled': true
-            }
-        }}
-	],
+    //     // PhoneChoice mostra questi pulsanti direttamente nella chat del telefono.
+    //     {'PhoneChoice': {
+    //         'Rispondi': {
+    //             'Text': 'RISPONDI',
+	// 			'Do': 'jump Finale'          
+    //         },
+    //         'Ignora': {
+    //             'Text': 'IGNORA',
+    //             'Do': '',
+	// 			'Disabled': true
+    //         }
+    //     }}
+	// ],
 
-	'Finale': [
-		() => {
-			PhoneUI.hide();
-			SceneUtility.emptyScene();
-			SceneUtility.enableBackground();
-		},
-		'show scene end with fadeIn duration 5s',
+	// 'Finale': [
+	// 	() => {
+	// 		PhoneUI.hide();
+	// 		SceneUtility.emptyScene();
+	// 		SceneUtility.enableBackground();
+	// 	},
+	// 	'show scene end with fadeIn duration 5s',
 	],
 
 

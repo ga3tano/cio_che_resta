@@ -17,13 +17,6 @@
             "name": "Edge",
             "url": "http://127.0.0.1:5500/index.html",
             "webRoot": "${workspaceFolder}"
-        },
-        {
-            "type": "editor-browser",
-            "request": "launch",
-            "name": "Internal",
-            "url": "http://127.0.0.1:5500/index.html",
-            "webRoot": "${workspaceFolder}"
         }
     ]
 }

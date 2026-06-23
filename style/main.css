@@ -1441,18 +1441,14 @@ body.show-textbox .phone-toggle {
 }
 
 .scene-fade-overlay {
-	position: fixed;
+    position: fixed;
 	inset: 0;
 	z-index: 999999;
 	background: #000;
 	opacity: 0;
 	pointer-events: none;
-	transition: opacity 0.5s ease;
-}
-
-.scene-fade-overlay.covering{
-	opacity: 1;
-	transition:none;
+	transition-property: opacity;
+	transition-timing-function: ease;
 }
 
 body.composite-sky-scene game-screen[data-component="game-screen"] {
