@@ -151,6 +151,14 @@ button:hover {
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'MrHorror';
+    src: url('../assets/fonts/MrHorror-Regular.otf');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 /* Choice Buttons style */
 [data-component="choice-container"] button {
 
@@ -1239,7 +1247,7 @@ body.show-textbox .phone-toggle {
 
 .word-label {
 	display: block;
-	font-family: 'Algerian', serif;
+	font-family: 'MrHorror', sans-serif;
 	font-weight: 900;
 	font-size: clamp(24px, 5vw, 48px);
 	line-height: 1.05;
