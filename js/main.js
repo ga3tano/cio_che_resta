@@ -3528,7 +3528,39 @@ const BlinkOverlay = {
 		await this.blink(speed);
 		await this.wait(this.speed * 0.35);
 		await this.blink(speed * 0.85);
-	}
+	},
+
+	async closeLid(speed = this.speed){
+		if (this.isBlinkning) return;
+
+		this.isBlinkning = true;
+
+		try{
+			this.setSpeed(speed);
+			
+			const overlay = this.getOverlay();
+
+			overlay.classList.add('closed');
+		} finally {
+			this.isBlinkning = false;
+		}
+	},
+
+	async openLid(speed = this.speed){
+		if (this.isBlinkning) return;
+
+		this.isBlinkning = true;
+
+		try{
+			this.setSpeed(speed);
+
+			const overlay = this.getOverlay();
+
+			overlay.classList.remove('closed');
+		} finally {
+			this.isBlinkning = false;
+		}
+	} 
 }
 
 const AcceleratingClock = {

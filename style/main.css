@@ -1650,41 +1650,27 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	z-index: 999999;
 	overflow: hidden;
 	background: transparent;
+	contain: layout style paint;
 }
 
 .blink-overlay .eyelid {
 	position: absolute;
-	height: 100%;
-	will-change: transform, opacity;
-	transition:
-		transform var(--speed) cubic-bezier(0.45, 0, 0.2, 1),
-		opacity calc(var(--speed) * 0.35) linear;
-}
-
-.blink-overlay .eyelid {
 	left: 0;
 	width: 100%;
+	height: 100%;
 	background: #000;
-	z-index: 2;
-}
-
-.blink-overlay .eyelid-shadow {
-	left: -3%;
-	width: 106%;
-	z-index: 1;
-	opacity: 0.45;
-	background: #000;
-	filter: blur(12px);
+	will-change: transform;
+	backface-visibility: hidden;
+	transform: translateZ(0);
+	transition: transform var(--speed) cubic-bezier(0.45, 0, 0.2, 1);
 }
 
 .blink-overlay .top {
 	top: 0;
-
 	-webkit-mask:
 		linear-gradient(#000 0 0),
 		radial-gradient(ellipse 86% 42% at 50% 100%, #000 99%, transparent 100%);
 	-webkit-mask-composite: xor;
-
 	mask:
 		linear-gradient(#000 0 0),
 		radial-gradient(ellipse 86% 42% at 50% 100%, #000 99%, transparent 100%);
@@ -1694,12 +1680,10 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 .blink-overlay .bottom {
 	bottom: 0;
 	transition-delay: 40ms;
-
 	-webkit-mask:
 		linear-gradient(#000 0 0),
 		radial-gradient(ellipse 86% 42% at 50% 0%, #000 99%, transparent 100%);
 	-webkit-mask-composite: xor;
-
 	mask:
 		linear-gradient(#000 0 0),
 		radial-gradient(ellipse 86% 42% at 50% 0%, #000 99%, transparent 100%);
@@ -1714,29 +1698,9 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	transform: translateY(100%);
 }
 
-.blink-overlay .eyelid-shadow.top {
-	transform: translateY(-96%);
-}
-
-.blink-overlay .eyelid-shadow.bottom {
-	transform: translateY(96%);
-}
-
 .blink-overlay.closed .eyelid.top,
 .blink-overlay.closed .eyelid.bottom {
 	transform: translateY(0);
-}
-
-.blink-overlay.closed .eyelid-shadow.top {
-	transform: translateY(-4%);
-}
-
-.blink-overlay.closed .eyelid-shadow.bottom {
-	transform: translateY(4%);
-}
-
-.blink-overlay.closed .eyelid-shadow {
-	opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

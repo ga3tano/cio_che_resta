@@ -508,13 +508,22 @@ monogatari.script ({
 		
 		async () => {
 			await BlinkOverlay.blink(400);
-			await sleep(2500);
-			await BlinkOverlay.doubleBlink(400);
 			SceneUtility.removeBlur();
+			await sleep(2000);
+			await BlinkOverlay.blink(200);
+			await BlinkOverlay.closeLid(200);
+			await sleep(1000);
 		},
 		
-		'wait 4000',
+		'show scene feet',
 
+		async () => {
+			await BlinkOverlay.openLid(400);
+			await sleep (3000);
+			await BlinkOverlay.blink(200);
+			await sleep(1500);
+		},
+		
 		{'Choice':{
 			'Torna a casa':{
 				'Text': 'TORNA A CASA',
