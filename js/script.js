@@ -182,8 +182,7 @@ monogatari.script ({
 			await SceneFade.toHidden();
 			
 			//Disabilito i click per poter per mettere di far skippare i dialoghi
-			const wrapper = document.getElementById('details-wrapper');
-			if (wrapper) wrapper.style.pointerEvents = 'none';
+			SceneUtility.lockItemWrapper();
 			
 			showTextBox();
 		},
@@ -210,8 +209,7 @@ monogatari.script ({
 			hideTextBox();
 
 			//Riabilito i click per permettere il corretto funzionamento della torcia
-			const wrapper = document.getElementById('details-wrapper');
-			if (wrapper) wrapper.style.pointerEvents = 'auto';
+			SceneUtility.unlockItemWrapper();
 
 			NightOverlay.showTorch();
 		},
@@ -289,12 +287,12 @@ monogatari.script ({
 				return store.clickedObjects.length === store.allObjects.length;
         	},
 
-        	'True': 'jump Continua',
+        	'True': 'jump Continua_Torcia',
         	'False': 'jump wait_torcia'
     	}},
 	],
 
-	'Continua': [
+	'Continua_Torcia': [
 		// 'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">Si è fatta una certa ora...provo a riaddormentarmi.</div>',
 		// () => NightOverlay.hideTorch(),
 		'wait 2000',
@@ -653,15 +651,92 @@ monogatari.script ({
 		async () => {
 			await SceneFade.toVisible();
 			SceneUtility.loadScene("contrattazione");
+
+			//Pulisco i precedenti clickedObjects e ripopolo allObjects
+			const store = monogatari.storage();
+			store.clickedObjects = [];
+			store.allObjects = SCENE_IMAGES.contrattazione
+				.filter(item => item.onClick)
+				.map(item => item.id);
 		},
+
 		'show scene room_day_dark',
 		'wait 1500',
 		
 		async () => {
-			await SceneFade.toHidden();
-			await SceneUtility.endClickedItems();
+			await SceneFade.toHidden();		
+			// await SceneUtility.endClickedItems();
 		},
 
+		'jump loop_contrattazione'
+	],
+
+	'wait_contrattazione': [
+		'wait 300',
+		'jump loop_contrattazione'
+	],
+
+	'loop_contrattazione': [
+		{'Conditional': {
+        	'Condition': function () {
+            	const store = monogatari.storage();
+				return store.clickedObjects.length === store.allObjects.length;
+        	},
+
+        	'True': 'jump Continua_Contrattazione',
+        	'False': 'jump wait_contrattazione'
+    	}},
+	],
+
+	'DialogoContrattazione_Cornice': [
+		() => showTextBox(),
+		'<div style="color: #000000;">.</div>',
+		'dad Mi dispiace... mi dispiace così tanto.',
+		'dad Non volevo, non doveva rompersi.',
+		'dad Non sei tu, non sono arrabbiato con te, non sei neanche qui...',
+		'dad Comprerò della colla e la sistemerò...',
+		'dad Si, sistemerò tutto.',
+
+		() => {
+			hideTextBox();
+			SceneUtility.unlockItemWrapper();
+		},
+
+		'jump loop_contrattazione'
+	],
+
+	'DialogoContrattazione_Vestiti': [
+		() => showTextBox(),
+		'<div style="color: #000000;">.</div>',
+		'dad Dov’è finita la tua maglietta nuova?',
+		'dad Ci sono troppi vestiti, non la trovo neanche più.',
+		'dad C’è troppo disordine qui dentro… ecco, piegandoli sembra già più ordinato, una cosa alla volta, giusto?',
+		'dad Un giorno alla volta.',
+		
+		() => {
+			hideTextBox();
+			SceneUtility.unlockItemWrapper();
+		},
+
+		'jump loop_contrattazione'
+	],
+
+	'DialogoContrattazione_Pianta':[
+		() => showTextBox(),
+		'<div style="color: #000000;">.</div>',
+		'dad Mi sono poi scordato di annaffiarla, se non lo faccio adesso non lo faccio più.',
+		'dad Ecco, così va molto meglio.',
+		'dad Guarda quanta luce che entra, sembra una bella giornata, oggi.',
+		
+		() => {
+			hideTextBox();
+			SceneUtility.unlockItemWrapper();
+		},
+
+		'jump loop_contrattazione'
+	],
+
+	'Continua_Contrattazione':[
 		'wait 3000',
 		
 		'play sound phone_vibration',
@@ -674,8 +749,8 @@ monogatari.script ({
 			PhoneUI.show('Giulia', { mode: 'chat' });
 			PhoneUI.addIncoming("Ehi, come va oggi?");
 
-			await PhoneUI.waitUntilAllNotificationsRead(20000),
-			await sleep(3000);
+			// await PhoneUI.waitUntilAllNotificationsRead(20000),
+			// await sleep(3000);
 
 			// notify:false evita badge/lockscreen per una risposta gia visibile in chat.
 			PhoneUI.addOutgoing("Va...alti e bassi, ma un giorno alla volta, giusto?", {

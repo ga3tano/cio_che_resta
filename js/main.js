@@ -1053,8 +1053,7 @@ const NightOverlay = {
 		this.element.classList.add('torch');
 
 		 // Attiva i touch sul wrapper
-		const wrapper = document.getElementById('details-wrapper');
-		if (wrapper) wrapper.style.pointerEvents = 'auto';
+		SceneUtility.unlockItemWrapper()
 
 		const x = window.innerWidth / 2;
     	const y = window.innerHeight / 2;
@@ -2267,9 +2266,9 @@ const SCENE_IMAGES = {
 		{ id: 'vestiti', src: 'assets/images/vestiti.png'}
 	],
 	'contrattazione': [
-		{ id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png', onClick: 'assets/images/cornice.png'},
-		{ id: 'pianta_1', src: 'assets/images/pianta_1.png', onClick: 'assets/images/pianta_2.png'},
-		{ id: 'vestiti', src: 'assets/images/vestiti.png', onClick: 'assets/images/blank.png'}
+		{ id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png', onClick: 'assets/images/cornice.png', dialog: 'jump DialogoContrattazione_Cornice'},
+		{ id: 'pianta_1', src: 'assets/images/pianta_1.png', onClick: 'assets/images/pianta_2.png', dialog: 'jump DialogoContrattazione_Pianta'},
+		{ id: 'vestiti', src: 'assets/images/vestiti.png', onClick: 'assets/images/blank.png', dialog: 'jump DialogoContrattazione_Vestiti'}
 	],
 	'depressione': [
 		{ id: 'cornice', src: 'assets/images/cornice.png'},
@@ -2392,18 +2391,13 @@ const SceneUtility = {
 				const imagesArray = Array.from(clickableImages).reverse();
 
 				for (const img of imagesArray) {
-					if (isClickOnVisiblePixel(img, point)) {
-						const imgId = img.id;
-						const imgData = images.find(i => i.id === imgId);
+					if (!isClickOnVisiblePixel(img, point)) continue;
 
-						if (imgData && imgData.onClick) {
-							img.src = imgData.onClick;
-							img.classList.remove('clickable-object', 'highlight');
-							img.style.pointerEvents = 'none';
-						}
+					const imgData = images.find(i => i.id === img.id);
+					if (!imgData) break;
 
-						break; // Stop dopo il primo match
-					}
+					this.lockContrattazioneObject(img, imgData);
+					break;
 				}
 			});
 		}
@@ -2530,7 +2524,7 @@ const SceneUtility = {
 					// All objects have been clicked and removed
 					const torch = document.getElementById('night-overlay');
 					if(torch){
-						wrapper.style.pointerEvents = 'none';
+						this.lockItemWrapper(wrapper);
 					}
 
 					resolve();
@@ -2575,7 +2569,7 @@ const SceneUtility = {
 				if (img && img.onClick) {
 					imgWrapper.classList.remove('clickable-object', 'highlight');
 					imgWrapper.style.pointerEvents = 'none';
-					wrapper.style.pointerEvents = 'none';
+					this.lockItemWrapper(wrapper);
 				}
 			}
 		});
@@ -2676,8 +2670,7 @@ const SceneUtility = {
 		//Per il momento blocco la torcia in posizione, poi capiamo se fattibile lo spostare la torcia
 		NightOverlay.isFrozen = true;
 
-		const wrapper = document.getElementById('details-wrapper');
-		if(wrapper) wrapper.style.pointerEvents = 'none'
+		this.lockItemWrapper();
 
 		// //Blocco i touch verso monogatari per evitare di skippare dialoghi involontariamente
 		// NightOverlay.element.style.pointerEvents = 'none';
@@ -2729,8 +2722,40 @@ const SceneUtility = {
 		this.currentHoveredId = null;
 
 		// Riattiva i touch sul wrapper
+		this.unlockItemWrapper();
+	},
+
+	lockContrattazioneObject(element, imgData) {
+		const store = monogatari.storage();
+
+		store.lastClickedObject = imgData.id;
+
+		if (!store.clickedObjects.includes(imgData.id)) {
+			store.clickedObjects.push(imgData.id);
+		}
+
+		if (imgData.onClick) {
+			element.src = imgData.onClick;
+		}
+
+		element.classList.remove('clickable-object', 'highlight');
+		element.style.pointerEvents = 'none';
+
+		this.lockItemWrapper();
+
+		if (imgData.dialog) {
+			monogatari.run(imgData.dialog);
+		}
+	},
+
+	unlockItemWrapper(){
 		const wrapper = document.getElementById('details-wrapper');
-    	if (wrapper) wrapper.style.pointerEvents = 'auto';
+		if (wrapper) wrapper.style.pointerEvents = 'auto';
+	},
+
+
+	lockItemWrapper(wrapper = document.getElementById('details-wrapper')){ 
+		if (wrapper) wrapper.style.pointerEvents = 'none';
 	},
 
 	addBlur(){
@@ -3710,34 +3735,38 @@ function hideDetail(objectId) {
 const alphaCache = new Map();	//Rimane in memoria ed è disponibile ogni volta che aggiungo nuovi oggetti alla scena
 
 function buildAlphaMap(imgElement) {
-    if (alphaCache.has(imgElement.id)) {
-        return alphaCache.get(imgElement.id);
-    }
+    const cacheKey = imgElement.currentSrc || imgElement.src;
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    // Riduci la risoluzione della mappa per performance
-    const scale = 0.25; // 25% della risoluzione originale
-    canvas.width = Math.floor(imgElement.naturalWidth * scale);
-    canvas.height = Math.floor(imgElement.naturalHeight * scale);
-    
-    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-    
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const map = {
-        width: canvas.width,
-        height: canvas.height,
-        data: new Uint8Array(imageData.data.length / 4)
-    };
-    
-    // Estrai solo il canale alpha (ogni 4 valori, prendi il 4°)
-    for (let i = 0; i < map.data.length; i++) {
-        map.data[i] = imageData.data[i * 4 + 3];
-    }
-    
-    alphaCache.set(imgElement.id, map);
-    return map;
+	if (alphaCache.has(cacheKey)) {
+		return alphaCache.get(cacheKey);
+	}
+
+	const canvas = document.createElement('canvas');
+	const ctx = canvas.getContext('2d');
+
+	const scale = 0.25;
+
+	canvas.width = Math.floor(imgElement.naturalWidth * scale);
+	canvas.height = Math.floor(imgElement.naturalHeight * scale);
+
+	ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+
+	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	const data = new Uint8Array(imageData.data.length / 4);
+
+	for (let i = 0; i < data.length; i++) {
+		data[i] = imageData.data[i * 4 + 3];
+	}
+
+	const map = {
+		width: canvas.width,
+		height: canvas.height,
+		scale,
+		data
+	};
+
+	alphaCache.set(cacheKey, map);
+	return map;
 }
 
 
@@ -3810,25 +3839,45 @@ function buildAlphaMap(imgElement) {
 
 //Per performance, il calcolo lo faccio su una mappa equivalente ma di dimensioni ridotte
 function isClickOnVisiblePixel(imgElement, point) {
-    if (!imgElement.naturalWidth || !imgElement.naturalHeight) 
-        return false;
+    if (!imgElement.naturalWidth || !imgElement.naturalHeight) {
+		return false;
+	}
 
-    const rect = imgElement.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return false;
+	const rect = imgElement.getBoundingClientRect();
+	if (rect.width === 0 || rect.height === 0) {
+		return false;
+	}
 
-    const map = buildAlphaMap(imgElement);
-    
-    const x = point.clientX - rect.left;
-    const y = point.clientY - rect.top;
-    
-    // Mappa le coordinate dello schermo alle coordinate della mappa ridotta
-    const mapX = Math.floor((x / rect.width) * map.width);
-    const mapY = Math.floor((y / rect.height) * map.height);
-    
-    if (mapX < 0 || mapY < 0 || mapX >= map.width || mapY >= map.height) 
-        return false;
-    
-    return map.data[mapY * map.width + mapX] > 0;
+	const map = buildAlphaMap(imgElement);
+
+	const x = point.clientX - rect.left;
+	const y = point.clientY - rect.top;
+
+	const naturalWidth = imgElement.naturalWidth;
+	const naturalHeight = imgElement.naturalHeight;
+
+	const coverScale = Math.max(
+		rect.width / naturalWidth,
+		rect.height / naturalHeight
+	);
+
+	const renderedWidth = naturalWidth * coverScale;
+	const renderedHeight = naturalHeight * coverScale;
+
+	const offsetX = (rect.width - renderedWidth) / 2;
+	const offsetY = (rect.height - renderedHeight) / 2;
+
+	const naturalX = (x - offsetX) / coverScale;
+	const naturalY = (y - offsetY) / coverScale;
+
+	const mapX = Math.floor(naturalX * map.scale);
+	const mapY = Math.floor(naturalY * map.scale);
+
+	if (mapX < 0 || mapY < 0 || mapX >= map.width || mapY >= map.height) {
+		return false;
+	}
+
+	return map.data[mapY * map.width + mapX] > 8;
 }
 
 /*
