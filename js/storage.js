@@ -16,10 +16,15 @@ monogatari.storage ({
 		"NO, NO, NO!",
 		"NON DOVEVA SUCCEDERE!",
 		"DOVEVO PROTEGGERTI",
-		"È COLPA MIA!",
+		"È COLPA MIA",
 		"PERCHÉ?!",
 		"NON È GIUSTO!",
-		"DOVEVO ESSERCI IO!"
+		"DOVEVO ESSERCI IO!",
+		"SONO UNA BRUTTA PERSONA",
+		"NON C'È SOLUZIONE!",
+		"VORREI SPARIRE",
+		"TUTTI MI ODIANO",
+		"HO ROVINATO TUTTO!"
 	],
 	allClicked: false,
 	torchInitialized: false,

@@ -1947,12 +1947,26 @@ const WordsGame = {
 
 		const spawnPoints = this.getSpawnPoints();
 		this.shuffleArray(spawnPoints);
-		this.activeWords = words.length;
 
-		for (let i = 0; i < words.length; i++) {
+		const wordsByPhase = {
+			fase1: 6,
+			fase2: 7,
+			fase3: 8
+		};
+
+		const amount = wordsByPhase[phase.label] || 5;
+
+		const phaseWords = words.slice(0, 12);
+		this.shuffleArray(phaseWords);
+
+		const selectedWords = phaseWords.slice(0, amount);
+
+		this.activeWords = selectedWords.length;
+
+		for (let i = 0; i < selectedWords.length; i++) {
 			if (!this.isCurrentRun(runId)) return;
 
-			const wordObj = this.createWordElement(words[i]);
+			const wordObj = this.createWordElement(selectedWords[i]);
 			this.element.appendChild(wordObj.wrapper);
 
 			this.freezeWordLayout(wordObj.textNode, wordObj.label, wordObj.wrapper);
@@ -1961,7 +1975,7 @@ const WordsGame = {
 			this.placeWord(wordObj.wrapper, point);
 			this.attachTouchSwipe(wordObj.wrapper, runId);
 
-			if (i < words.length - 1) {
+			if (i < selectedWords.length - 1) {
 				await this.wait(phase.spawnDelay, runId);
 			}
 		}
