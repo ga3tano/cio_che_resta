@@ -56,9 +56,10 @@ monogatari.assets ('voices', {
 // Define the sounds used in the game.
 monogatari.assets ('sounds', {
 	typewriter: 'typewriter.mp3',
-	crash: 'crash.mp3',
+	crash: 'sfx_incidente.mp3',
 	phone_vibration: 'phone_vibration.mp3',
-	phone_notification: 'phone_notification.mp3'
+	phone_notification: 'phone_notification.mp3',
+	brids: 'sfx_respiro_uccellini.mp3'
 });
 
 // Define the videos used in the game.
@@ -716,23 +717,26 @@ monogatari.script ({
 			// (the PhoneUI marks notifications as read when the chat is opened),
 			// then give an extra 4.5s for reading before continuing.
 			await PhoneUI.waitUntilAllNotificationsRead(20000);
-			await sleep(7000);
+			await sleep(5000);
 			PhoneUI.hide();
 		},
 
 		'wait 2000',
 		
 		async() => {
-			await SceneFade.toVisible({duration: 1});
+			await SceneFade.toVisible({duration: 0.25});
 			SceneUtility.emptyScene();
-			await SceneFade.toHidden({duration: 1})
 		},
 		'show scene auto',
+		async() => await SceneFade.toHidden({duration: 0.25}),
 		'play sound crash',
-		
-		async() => await SceneFade.toVisible({duration: 1}),
+
+		'wait 10000',
+		'pause music',
+		async() => await SceneFade.toVisible({duration: 0.25}),
 		'show scene teddybear',
-		() => {
+		async () => {
+			await SceneFade.toHidden({duration: 1});
 			const gameScreen = document.querySelector('game-screen');
 			if (!gameScreen) return;
 			gameScreen.style.transformOrigin = 'center center';
@@ -742,16 +746,19 @@ monogatari.script ({
 			});
 		},
 		'wait 7000',
-		() => {
-			const gameScreen = document.querySelector('game-screen');
-			if (!gameScreen) return;
-			gameScreen.style.transition = 'transform 0.3s ease';
-			gameScreen.style.transform = '';
-		},
 
 		async () =>{
 			await SceneFade.toVisible({duration: 1});
-			SceneUtility.loadScene("depressione");
+			
+			//Ritorno alle dimensioni normali in maniera trasparente mentre lo schermo è nero
+			//>>>
+			const gameScreen = document.querySelector('game-screen');
+			if (!gameScreen) return;
+			gameScreen.style.transition = '';
+			gameScreen.style.transform = '';
+			//<<<
+			
+			await SceneUtility.loadScene("depressione");
 			SceneUtility.addShadow();
 		},
 		'show scene room_night',
