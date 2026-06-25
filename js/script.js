@@ -44,6 +44,7 @@ monogatari.assets ('gallery', {
 // Define the music used in the game.
 monogatari.assets ('music', {
 	rage_scene: 'mus_rabbia_loop.mp3',
+	depression_scene: 'mus_depressione_loop.mp3',
 	rain: 'rain.mp3'
 
 });
@@ -59,7 +60,7 @@ monogatari.assets ('sounds', {
 	crash: 'sfx_incidente.mp3',
 	phone_vibration: 'phone_vibration.mp3',
 	phone_notification: 'phone_notification.mp3',
-	brids: 'sfx_respiro_uccellini.mp3'
+	birds: 'sfx_respiro_uccellini.mp3',
 });
 
 // Define the videos used in the game.
@@ -806,8 +807,11 @@ monogatari.script ({
 			await SceneFade.toVisible({duration: 3.5});
 			SceneUtility.loadScene("depressione");
 		},
-		'show scene room_night',
 		'play music rain with loop volume 30',
+		'play music depression_scene with loop volume 50',
+		'show scene room_night',
+		// 'play music rain with loop volume 30',
+		// 'play music depression_scene with loop volume 50',
 		'wait 1500',
 		async () => await SceneFade.toHidden({duration: 3.5}),
 
@@ -816,13 +820,18 @@ monogatari.script ({
 		'play sound phone_notification',
 		async () => {
 			PhoneUI.reset();
-			PhoneUI.addIncoming('Oggi è più difficile degli altri giorni, non devi essere sempre forte. Va bene anche così');
 
-			// Wait until the player opens the phone and reads the notification
-			// (the PhoneUI marks notifications as read when the chat is opened),
-			// then give an extra 4.5s for reading before continuing.
-			await PhoneUI.waitUntilAllNotificationsRead(20000);
-			await sleep(5000);
+			await PhoneUI.playMessages([
+				{
+					type: 'incoming',
+					text: 'Oggi è più difficile degli altri giorni, non devi essere sempre forte. '
+				},
+				{
+					type: 'incoming',
+					text: 'Va bene anche così.'
+				}
+			]),
+
 			PhoneUI.hide();
 		},
 
@@ -837,7 +846,6 @@ monogatari.script ({
 		'play sound crash',
 
 		'wait 10000',
-		'pause music',
 		async() => await SceneFade.toVisible({duration: 0.25}),
 		'show scene teddybear',
 		async () => {
