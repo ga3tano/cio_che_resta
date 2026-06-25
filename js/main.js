@@ -356,6 +356,8 @@ const PhoneUI = {
 	mode: 'lockscreen',
 	unreadNotifications: [],
 	notificationId: 0,
+	messageAdvanceResolve: null,
+	messageAdvanceEventsBound: false,	
 
     init() {
         this.layer = document.getElementById('phone-layer');
@@ -814,8 +816,56 @@ const PhoneUI = {
         if (this.layer) {
             this.layer.dataset.phoneMode = this.mode;
         }
-    }
-};
+    },
+
+	bindMessageAdvanceEvents() {
+		if (this.messageAdvanceEventsBound || !this.chatView) return;
+
+		const advance = (event) => {
+			if (!this.messageAdvanceResolve) return;
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			const resolve = this.messageAdvanceResolve;
+			this.messageAdvanceResolve = null;
+			resolve();
+		};
+
+		this.chatView.addEventListener('click', advance);
+		this.chatView.addEventListener('touchend', advance);
+
+		this.messageAdvanceEventsBound = true;
+	},
+
+	waitForMessageAdvance() {
+		this.bindMessageAdvanceEvents();
+
+		return new Promise(resolve => {
+			this.messageAdvanceResolve = resolve;
+		});
+	},
+
+	addPhoneMessage(message) {
+		const options = message.options || {};
+
+		if (message.type === 'outgoing') {
+			this.addOutgoing(message.text, options);
+			return;
+		}
+
+		this.addIncoming(message.text, options);
+	},
+
+	async playMessages(messages = []) {
+		if (!this.layer) this.init();
+
+		for (const message of messages) {
+			this.addPhoneMessage(message);
+			await this.waitForMessageAdvance();
+		}
+	}
+}
 
 const PhoneToggle = {
 	/*

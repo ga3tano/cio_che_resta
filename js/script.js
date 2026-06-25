@@ -747,22 +747,52 @@ monogatari.script ({
 			// Qui il telefono si apre perche' il giocatore sta gia scrivendo una chat attiva.
 			// Non e' una notifica passiva: vogliamo mostrare la conversazione sul momento.
 			PhoneUI.show('Giulia', { mode: 'chat' });
-			PhoneUI.addIncoming("Ehi, come va oggi?");
+			
+			//Old -- Cambiato approccio radicalmente
+			// PhoneUI.addIncoming("Ehi, come va oggi?");
 
-			// await PhoneUI.waitUntilAllNotificationsRead(20000),
-			// await sleep(3000);
+			// // await PhoneUI.waitUntilAllNotificationsRead(20000),
+			// // await sleep(3000);
 
-			// notify:false evita badge/lockscreen per una risposta gia visibile in chat.
-			PhoneUI.addOutgoing("Va...alti e bassi, ma un giorno alla volta, giusto?", {
-				notify: false
-			});
-			await sleep(2000);
-			PhoneUI.addIncoming("Un giorno alla volta.", {notify: false})
-			await sleep(4000);
-			PhoneUI.addIncoming("Usciamo a fare una passeggiata? Ti vengo a prendere.", {notify: false});
-			await sleep(5000);
-			PhoneUI.addOutgoing("D'accordo. Ti aspetto, grazie.");
-			await sleep(4000);
+			// // notify:false evita badge/lockscreen per una risposta gia visibile in chat.
+			// PhoneUI.addOutgoing("Va...alti e bassi, ma un giorno alla volta, giusto?", {
+			// 	notify: false
+			// });
+			// await sleep(2000);
+			// PhoneUI.addIncoming("Un giorno alla volta.", {notify: false})
+			// await sleep(4000);
+			// PhoneUI.addIncoming("Usciamo a fare una passeggiata? Ti vengo a prendere.", {notify: false});
+			// await sleep(5000);
+			// PhoneUI.addOutgoing("D'accordo. Ti aspetto, grazie.");
+			// await sleep(4000);
+
+			//New
+			await PhoneUI.playMessages([
+				{
+					type: 'incoming',
+					text: "Ehi, come va oggi?"
+				},
+				{
+					type: 'outgoing',
+					text: "Va...alti e bassi, ma un giorno alla volta, giusto?",
+					options: { notify: false }
+				},
+				{
+					type: 'incoming',
+					text: "Un giorno alla volta.",
+					options: { notify: false }
+				},
+				{
+					type: 'incoming',
+					text: "Usciamo a fare una passeggiata? Ti vengo a prendere.",
+					options: { notify: false }
+				},
+				{
+					type: 'outgoing',
+					text: "D'accordo. Ti aspetto, grazie."
+				}
+			]);
+
 			PhoneUI.reset();
 			PhoneUI.hide();
 		},
