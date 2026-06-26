@@ -58,9 +58,10 @@ monogatari.assets ('voices', {
 monogatari.assets ('sounds', {
 	typewriter: 'typewriter.mp3',
 	crash: 'sfx_incidente.mp3',
+	crash_short: 'crash.mp3',
 	phone_vibration: 'phone_vibration.mp3',
 	phone_notification: 'phone_notification.mp3',
-	birds: 'sfx_respiro_uccellini.mp3',
+	birds: 'sfx_respiro_uccellini.mp3'
 });
 
 // Define the videos used in the game.
@@ -164,6 +165,7 @@ monogatari.script ({
 
 	'Intermezzo_Respira': [
 		'wait 1000',
+		'play sound crash_short',
 		() => PanicBreath.release(),
 		'wait 1500',
 		async () => await BreathingGame.start(),
@@ -541,8 +543,15 @@ monogatari.script ({
 		},
 		'show scene room_rage',
 		'wait 1500',
-		async() => await SceneFade.toHidden(),
-		'play music rage_scene with loop volume 75',
+		async() => {
+			await SceneFade.toHidden();
+			await AudioManager.play('rage', {
+				loop: true,
+				volume: 0.75,
+				fade: 6
+			});
+		},
+		// 'play music rage_scene with loop volume 75',
 
 		'wait 2000',
 
@@ -806,9 +815,20 @@ monogatari.script ({
 		async () => {
 			await SceneFade.toVisible({duration: 3.5});
 			SceneUtility.loadScene("depressione");
+			await AudioManager.play('rain', {
+				loop: true,
+				volume: 0.05,
+				fade: 6
+			});
+
+			await AudioManager.play('depression', {
+				loop: true,
+				volume: 0.35,
+				fade: 6
+			});
 		},
-		'play music rain with loop volume 30',
-		'play music depression_scene with loop volume 50',
+		// 'play music rain with loop volume 30',
+		// 'play music depression_scene with loop volume 50',
 		'show scene room_night',
 		// 'play music rain with loop volume 30',
 		// 'play music depression_scene with loop volume 50',
@@ -840,13 +860,18 @@ monogatari.script ({
 		async() => {
 			await SceneFade.toVisible({duration: 0.25});
 			SceneUtility.emptyScene();
+			AudioManager.setVolume('depression', 0.15, 1);
 		},
 		'show scene auto',
 		async() => await SceneFade.toHidden({duration: 0.25}),
 		'play sound crash',
 
 		'wait 10000',
-		async() => await SceneFade.toVisible({duration: 0.25}),
+		async() =>{
+			await SceneFade.toVisible({duration: 0.25});
+			AudioManager.pause('rain');
+			AudioManager.pause('depression');
+		}, 
 		'show scene teddybear',
 		async () => {
 			await SceneFade.toHidden({duration: 1});
@@ -863,6 +888,11 @@ monogatari.script ({
 		async () =>{
 			await SceneFade.toVisible({duration: 1});
 			
+			//Qui uso solo 'play' perchè voglio che il loop della musica riparta da dove si è interrotto con l'orsacchiotto
+			await AudioManager.play('rain');
+			
+			AudioManager.setVolume('depression', 0.35);
+			await AudioManager.play('depression');
 			//Ritorno alle dimensioni normali in maniera trasparente mentre lo schermo è nero
 			//>>>
 			const gameScreen = document.querySelector('game-screen');
@@ -875,7 +905,7 @@ monogatari.script ({
 			SceneUtility.addShadow();
 		},
 		'show scene room_night',
-		'play music rain with loop volume 30',
+		// 'play music rain with loop volume 30',
 
 		async () => {
 			await SceneFade.toHidden({duration: 3});
@@ -932,7 +962,7 @@ monogatari.script ({
 		() => pauseTextBox(10000),
 
 		'shadow Papà, ti ricordi quando giocavamo a nascondino in giardino?',
-		'shadow Tu contavi e io trovato sempre un posto dove nascondermi',
+		'shadow Tu contavi e io trovavo sempre un posto dove nascondermi',
 
 		'dad Si...ti nascondevi sempre dietro i cespugli di margherite, erano i tuoi preferiti.',
 		"shadow Si papà, ma tu mi trovavi sempre perchè c'erano quelle cose colorate che si posavano sulla mia testa!",
@@ -976,10 +1006,18 @@ monogatari.script ({
 		},
 		'show scene room_rage',
 		'wait 1500',
-		async() => await SceneFade.toHidden(),
-		'play music rage_scene with loop volume 75',
+		async() => {
+			await SceneFade.toHidden();
+			await AudioManager.play('rage', {
+				loop: true,
+				volume: 75,
+				fade: 2
+			})
+		},
 
-		'jump Glitch_Rabbia'
+		// 'play music rage_scene with loop volume 75',
+
+		'jump GlitchRabbia'
 	],
 
 	//DA RIFARE COMPLETAMENTE

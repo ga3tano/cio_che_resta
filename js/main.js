@@ -1264,7 +1264,7 @@ const Glitch={
 		},
 		{
 			label: "fase2",
-			timeLimit: 8600,
+			timeLimit: 9000,
 			spawnDelay: 600,
 			intensityStart: 0.32,
 			intensityStepMultiplier: 1.22,
@@ -1279,7 +1279,7 @@ const Glitch={
 		},
 		{
 			label: "fase3",
-			timeLimit: 6200,
+			timeLimit: 8000,
 			spawnDelay: 420,
 			intensityStart: 0.52,
 			intensityStepMultiplier: 1.55,
@@ -1417,6 +1417,10 @@ const Glitch={
 		
 		this.ensureGameOverOverlay();
 
+		//Avvio il battito cardiaco
+		await HeartbeatManager.load(); //Mi assicuro che i buffer con gli audio siano caricati prima di partire
+		HeartbeatManager.start({bpm: 75, volume: 0.4, fadeIn: 1});
+
 		try {
 			//Gestione delle fasi fino al loro completamento
 			while (this.currentPhaseIndex < this.phases.length && this.active) {
@@ -1436,10 +1440,11 @@ const Glitch={
 					this.currentPhaseIndex += 1;
 					switch (this.currentPhaseIndex){
 						case 1: 
-							await this.cooldown(700, 0.16);
+							//Sincronizzo la decelerazione con l'inizio di una nuova fase, e decelero a un bpm sempre più alto
+							await this.cooldown(1400, 0.16, { bpmFrom: 160, bpmTo: 90});
 							break;
 						case 2: 
-							await this.cooldown(400, 0.05);
+							await this.cooldown(700, 0.05, {bpmFrom: 170, bpmTo: 110});
 							break;
 						default:
 							break;
@@ -1482,9 +1487,19 @@ const Glitch={
 	//Fa partire la fase
 	beginPhase(phase) {
 		this.phaseResolved = false;
-		this.intensity = phase.intensityStart;
+		this.intensity = 0; //era phase.intensityStart, provo a far partire sempre da zero
 		this.startTime = performance.now();
 		this.runLoop(phase);
+
+		// Mi assicura che il battito sia in riproduzione prima di accelerare in caso di reset
+		if (!HeartbeatManager.isPlaying) {
+			HeartbeatManager.start({ bpm: 75, volume: 0.4, fadeIn: 0.3 });
+		}
+
+		//Mappa l'intensità della fase al BPM
+		//intensityStart va da 0.14 a 0.52, lo mappiamo a BPM 75-170
+		const phaseBpm = 70 + (phase.intensityStart * 170);
+		HeartbeatManager.setBpm(phaseBpm, {duration: phase.timeLimit / 1000});
 	},
 
 	runLoop(phase) {
@@ -1511,9 +1526,14 @@ const Glitch={
 			// cresce lentamente all'inizio e accelera verso la fine.
 			const rampProgress = Math.pow(phaseProgress, this.config.rampExponent);
 
-			// L'intensità parte dal valore minimo della fase
-			// e arriva gradualmente a 1 man mano che si esaurisce il tempo.
-			this.intensity = phase.intensityStart + (1 - phase.intensityStart) * rampProgress;	
+			// // L'intensità parte dal valore minimo della fase
+			// // e arriva gradualmente a 1 man mano che si esaurisce il tempo.
+			// this.intensity = phase.intensityStart + (1 - phase.intensityStart) * rampProgress;	
+
+			// Nuovo: parte da 0 e arriva a 1, ma la velocità è data da intensityStart
+			const speedFactor = 1 - phase.intensityStart; // più intensityStart è alto, più il boost è piccolo
+			const boostedProgress = rampProgress / (rampProgress + speedFactor * (1 - rampProgress));
+			this.intensity = boostedProgress;
 
 			const vw = window.innerWidth;
 			const vh = window.innerHeight;
@@ -1578,6 +1598,9 @@ const Glitch={
 		clearTimeout(this.timer);
 		this.timer = null;
 		WordsGame.clearPhasePressure();
+
+		// //Decelera verso 60BPM in 2 secondi
+		// HeartbeatManager.decelerate(75, 0.5);
 	},
 
 	async playFirstPhaseFailFeedback() {
@@ -1619,6 +1642,9 @@ const Glitch={
 		this.currentPhaseIndex = 0;
 		this.intensity = 0;
 		WordsGame.reset();
+		
+		// Riavvio il battito per il nuovo tentativo
+		HeartbeatManager.start({ bpm: 75, volume: 0.4, fadeIn: 0.5 });
 	},
 
 	//Metodo utility utile al cooldown, calcola le effettive dimensioni iniziali della scena 
@@ -1634,7 +1660,7 @@ const Glitch={
 	// },
 
 	//Stessa animazione, ma a specchio e molto più brusca. Evito l'effetto "taglio netto".
-	cooldown(duration = 700, targetIntensity = 0, restoreAtEnd = false) {
+	cooldown(duration = 700, targetIntensity = 0, bpmRange = null, restoreAtEnd = false) {
 		if (!this.shakeWrapper?.isConnected) {
 			if (!this.prepareShakeWrapper()) {
 				return Promise.resolve();
@@ -1646,6 +1672,9 @@ const Glitch={
 		// Salviamo l'intensità iniziale del rientro:
 		// da qui partiremo per tornare gradualmente a zero.
 		const startingIntensity = this.intensity;
+
+		// Rallento il battito
+		HeartbeatManager.setBpm(60 - (startingIntensity * 30), {duration: duration / 1000});
 
 		// Se siamo già praticamente al target, impostiamo direttamente
 		// lo stato finale coerente e chiudiamo.
@@ -1690,6 +1719,11 @@ const Glitch={
 
 				// L'intensità scende gradualmente fino a al targetIntensity scelto (Default = 0).
 				const currentIntensity = startingIntensity + (targetIntensity - startingIntensity) * eased;
+
+				if(bpmRange){
+					const bpm = bpmRange.from + (bpmRange.to - bpmRange.from) * eased;
+					HeartbeatManager.setBpm(bpm);
+				}
 
 				// Riduciamo molto lo shake durante il cooldown:
 				// il rientro deve sembrare un rilascio di tensione,
@@ -1843,6 +1877,9 @@ const Glitch={
 
 	async playGameOverSequence() {
 
+		// Fermo il battito con fadeOut mentre parte il rosso
+		HeartbeatManager.stop({fadeOut: 0.85});
+
 		await this.animate(850, (t) => {
 			const eased = 1 - Math.pow(1 - t, 2.2);
 			this.renderGameOverOverlay(eased, 0);
@@ -1870,6 +1907,10 @@ const Glitch={
 			const store = monogatari.storage();
 			store.glitchGameCompleted = false;
 			store.glitchGamePhase = 1;
+			HeartbeatManager.stop({fadeOut: 0.3});
+		}
+		else{
+			HeartbeatManager.stop({fadeOut: 2});
 		}
 
 		await this.cooldown(500, 0, true);
@@ -3043,7 +3084,7 @@ const BreathingGame = {
 	state: 'idle',
 
 	cycle: 0,         // cicli completati dall'inizio del run corrente
-	totalCycles: 2,   // numero di cicli prima del completamento
+	totalCycles: 3,   // numero di cicli prima del completamento
 	isHeld: false,    // true quando il giocatore tiene premuto il dito
 
 	// Fase attualmente in esecuzione. Usata in onUp per decidere se il rilascio
@@ -3703,6 +3744,439 @@ const AcceleratingClock = {
 	}
 }
 
+const AudioManager = {
+	//Dizionario delle tracce audio già create, indicizzato per ID
+	tracks: {},
+
+	//Unico contesto audio per l'intera applicazione
+	context: null,
+
+	//Mappa degli audio
+	assets: {
+		rage: 'assets/music/mus_rabbia_loop.mp3',
+		rain: 'assets/music/rain.mp3',
+		depression: 'assets/music/mus_depressione_loop.mp3',
+		crash: 'assets/sounds/sfx_incidente.mp3',
+		crash_short: 'assets/sounds/crash.mp3',
+		phone_vibration: 'assets/sounds/phone_vibration.mp3',
+		phone_notification: 'assets/sounds/phone_notification.mp3'
+	},
+
+	//Restituisce il context, creandolo alla prima esecuzione
+	getContext() {
+		if (!this.context) {
+			this.context = new AudioContext();
+		}
+
+		return this.context;
+	},
+
+	/** 
+	* Converte un valore di volume in un guadagno lineare per il GainNode.
+	* - Se non è un numero finito, restituisce 1 (100%)
+	* - Se >1, lo interpreta come percentuale (es. 80 -> 0.8)
+	* - Altrimenti lo usa direttamente come fattore (es. 0.5)
+	*/
+	getVolume(value = 1) {
+		const volume = Number(value);
+		if (!Number.isFinite(volume)) return 1;
+
+		return volume > 1 ? volume / 100 : volume;
+	},
+
+	/**
+	 * Crea un nuovo elemento Audio, lo collega all'AudioContext tramite MediaElementSource e un GainNode, e salva la traccia
+	 * NB: createMediaElementSource può essere usato una sola volta per traccia, per questo l'array tracks{}
+	 */
+	createTrack(id) {
+		const audio = new Audio(this.assets[id] || id);
+		const context = this.getContext();
+
+		const source = context.createMediaElementSource(audio);
+		const gain = context.createGain();
+
+		source.connect(gain);
+		gain.connect(context.destination);
+
+		this.tracks[id] = {
+			audio,
+			gain,
+			fade: null
+		};
+
+		return this.tracks[id];
+	},
+	/**
+	 * Restituisce o crea la traccia con l'ID indicato
+	 */
+	getTrack(id) {
+		return this.tracks[id] || this.createTrack(id);
+	},
+
+	/**
+	 * Avvia la riproduzione di una traccia con opzioni di volume, fade-in e loop.
+	 * Se l'AudioContext è sospeso (politiche di autoplay), lo riattiva prima.
+	 * @param {string} id - Identificativo del suono.
+	 * @param {Object} options - Opzioni: volume, fade, loop.
+	 */
+	async play(id, options = {}) {
+		const track = this.getTrack(id);
+		const context = this.getContext();
+
+		if (context.state === 'suspended') {
+			await context.resume();
+		}
+
+		const volume = this.getVolume(options.volume ?? 1);
+		const fade = options.fade ?? 0;
+
+		track.audio.loop = options.loop ?? false;
+
+		if (fade > 0) {
+			track.gain.gain.setValueAtTime(0, context.currentTime);
+			track.gain.gain.linearRampToValueAtTime(volume, context.currentTime + fade);
+		} else {
+			track.gain.gain.setValueAtTime(volume, context.currentTime);
+		}
+
+		await track.audio.play();
+	},
+
+	/**
+	 * Mette in pausa la traccia (il currentTime non viene azzerato).
+	 */
+	pause(id) {
+		const track = this.tracks[id];
+		if (!track) return;
+
+		track.audio.pause();
+	},
+
+	/**
+	 * Ferma immediatamente la traccia: pausa e reset del tempo a 0.
+	 */
+	stop(id) {
+		const track = this.tracks[id];
+		if (!track) return;
+
+		track.audio.pause();
+		track.audio.currentTime = 0;
+	},
+
+	/**
+	 * Sfuma la traccia fino a 0 in un tempo dato, poi la ferma.
+	 * Restituisce una Promise che si risolve al termine del fade-out.
+	 * Usa setTimeout, non perfettamente sincrono con l'AudioContext,
+	 * ma sufficiente per molti casi pratici.
+	 */
+	fadeOut(id, duration = 1.5) {
+		const track = this.tracks[id];
+		if (!track) return Promise.resolve();
+
+		const context = this.getContext();
+
+		// Annulla rampe precedenti e congela il valore corrente
+		track.gain.gain.cancelScheduledValues(context.currentTime);
+		track.gain.gain.setValueAtTime(track.gain.gain.value, context.currentTime);
+
+		// Rampa lineare fino a 0
+		track.gain.gain.linearRampToValueAtTime(0, context.currentTime + duration);
+
+		return new Promise(resolve => {
+			setTimeout(() => {
+				this.stop(id);
+				resolve();
+			}, duration * 1000);
+		});
+	},
+
+	/**
+	 * Imposta il volume di una traccia, istantaneamente o con una rampa lineare.
+	 * @param {string} id - Identificativo della traccia.
+	 * @param {number} volume - Nuovo volume (valore >1 interpretato come percentuale).
+	 * @param {number} duration - Durata della rampa in secondi (0 = immediato).
+	 */
+	setVolume(id, volume, duration = 0) {
+		const track = this.getTrack(id);
+		const context = this.getContext();
+		const value = this.getVolume(volume);
+
+		track.gain.gain.cancelScheduledValues(context.currentTime);
+
+		if (duration > 0) {
+			// Rampa lineare dal valore corrente al nuovo volume
+			track.gain.gain.setValueAtTime(track.gain.gain.value, context.currentTime);
+			track.gain.gain.linearRampToValueAtTime(value, context.currentTime + duration);
+		} else {
+			track.gain.gain.setValueAtTime(value, context.currentTime);
+		}
+	}
+};
+
+const HeartbeatManager = {
+	// Contesto audio Web Audio API
+	context: null,
+	// Cache dei buffer audio già decodificati (lub, dub, single)
+	buffers: {},
+	// Nodo guadagno master per volume globale e fade
+	masterGain: null,
+	// Timer per il tick dello scheduler
+	timer: null,
+	// Timestamp AudioContext del prossimo battito da schedulare
+	nextBeatTime: 0,
+	// BPM attuale (può cambiare gradualmente durante un ramp)
+	currentBpm: 60,
+	// BPM target verso cui il ramp sta andando
+	targetBpm: 60,
+	minBpm: 30,
+	maxBpm: 220,
+	volume: 0.85,
+	isPlaying: false,
+	isLoading: false,
+	// Promise condivisa per non caricare due volte gli asset
+	loadPromise: null,
+	// Dati del ramp attivo (transizione graduale tra due BPM)
+	ramp: null,
+
+	// Percorsi dei tre suoni
+	assets: {
+		lub: 'assets/sounds/heartbeat_lub.mp3',
+		dub: 'assets/sounds/heartbeat_dub.mp3',
+		single: 'assets/sounds/heartbeat_single.mp3'
+	},
+
+	// Ritardo tra lub e dub in secondi (0.25 = fisiologico)
+	dubDelay: 0.25,
+	// Quanto tempo nel futuro guarda lo scheduler per pianificare i battiti
+	lookAhead: 0.12,
+	// Intervallo del timer in millisecondi (25ms = ~40 tick al secondo)
+	tickMs: 25,
+
+	// Inizializza l'AudioContext e il nodo master (pigro, al primo utilizzo)
+	getContext() {
+		if (!this.context) {
+			this.context = new AudioContext();
+			this.masterGain = this.context.createGain();
+			this.masterGain.gain.value = this.volume;
+			this.masterGain.connect(this.context.destination);
+		}
+		return this.context;
+	},
+
+	// Forza il BPM entro i limiti min/max
+	clampBpm(bpm) {
+		const value = Number(bpm);
+		if (!Number.isFinite(value)) return this.currentBpm;
+		return Math.min(this.maxBpm, Math.max(this.minBpm, value));
+	},
+
+	// Normalizza il volume (accetta 0-1 o 0-100)
+	getVolume(value = this.volume) {
+		const volume = Number(value);
+		if (!Number.isFinite(volume)) return this.volume;
+		const normalized = volume > 1 ? volume / 100 : volume;
+		return Math.min(1, Math.max(0, normalized));
+	},
+
+	// Carica e decodifica tutti i file audio in parallelo
+	async load() {
+		if (this.loadPromise) return this.loadPromise;
+		this.isLoading = true;
+		this.loadPromise = Promise.all(
+			Object.entries(this.assets).map(async ([id, path]) => {
+				const response = await fetch(path);
+				const data = await response.arrayBuffer();
+				this.buffers[id] = await this.getContext().decodeAudioData(data);
+			})
+		).finally(() => {
+			this.isLoading = false;
+		});
+		return this.loadPromise;
+	},
+
+	// Avvia il battito cardiaco
+	async start(options = {}) {
+		const context = this.getContext();
+		await this.load();
+
+		// Riprende l'AudioContext se sospeso (politiche browser)
+		if (context.state === 'suspended') {
+			await context.resume();
+		}
+
+		this.currentBpm = this.clampBpm(options.bpm ?? this.currentBpm);
+		this.targetBpm = this.currentBpm;
+		this.ramp = null;
+		this.dubDelay = Math.max(0.05, Number(options.dubDelay ?? this.dubDelay));
+		this.setVolume(options.volume ?? this.volume, options.fadeIn ?? 0);
+
+		this.stopTimer();
+		this.isPlaying = true;
+		// Primo battito con un piccolo delay per non partire "a secco"
+		this.nextBeatTime = context.currentTime + (options.startDelay ?? 0.02);
+		this.tick();
+		// Loop ogni tickMs per schedulare i battiti in anticipo
+		this.timer = setInterval(() => this.tick(), this.tickMs);
+	},
+
+	// Ferma il battito, con fadeOut opzionale
+	stop(options = {}) {
+		if (!this.context || !this.masterGain) {
+			this.stopTimer();
+			this.isPlaying = false;
+			return;
+		}
+
+		const fade = Number(options.fade ?? options.fadeOut ?? 0);
+		const now = this.context.currentTime;
+
+		this.stopTimer();
+		this.isPlaying = false;
+		this.ramp = null;
+
+		if (fade > 0) {
+			// FadeOut graduale del masterGain
+			this.masterGain.gain.cancelScheduledValues(now);
+			this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+			this.masterGain.gain.linearRampToValueAtTime(0, now + fade);
+			// Ripristina il volume dopo il fade
+			setTimeout(() => {
+				if (!this.isPlaying) {
+					this.masterGain.gain.setValueAtTime(this.volume, this.context.currentTime);
+				}
+			}, fade * 1000);
+			return;
+		}
+
+		this.masterGain.gain.cancelScheduledValues(now);
+		this.masterGain.gain.setValueAtTime(this.volume, now);
+	},
+
+	stopTimer() {
+		if (this.timer) {
+			clearInterval(this.timer);
+			this.timer = null;
+		}
+	},
+
+	// Scheduler: guarda nel futuro e pianifica i battiti in anticipo
+	tick() {
+		if (!this.isPlaying || !this.context) return;
+
+		const now = this.context.currentTime;
+		// Aggiorna il BPM se c'è un ramp attivo
+		this.updateRamp(now);
+
+		// Pianifica tutti i battiti entro la finestra lookAhead
+		while (this.nextBeatTime < now + this.lookAhead) {
+			this.scheduleBeat(this.nextBeatTime);
+			const interval = 60 / this.currentBpm;
+			this.nextBeatTime += interval;
+			this.updateRamp(this.nextBeatTime);
+		}
+	},
+
+	// Pianifica un singolo ciclo lub-dub
+	scheduleBeat(time) {
+		this.playBuffer('lub', time, 1);
+		this.playBuffer('dub', time + this.dubDelay, 0.82);
+	},
+
+	// Riproduce un buffer audio in un momento preciso
+	playBuffer(id, time = null, gain = 1) {
+		const buffer = this.buffers[id];
+		if (!buffer || !this.context || !this.masterGain) return;
+
+		const source = this.context.createBufferSource();
+		const node = this.context.createGain();
+
+		source.buffer = buffer;
+		node.gain.value = gain;
+		source.connect(node);
+		node.connect(this.masterGain);
+		source.start(time ?? this.context.currentTime);
+	},
+
+	// Riproduce un singolo battito (lub-dub) una volta sola
+	async pulse(options = {}) {
+		const context = this.getContext();
+		await this.load();
+
+		if (context.state === 'suspended') {
+			await context.resume();
+		}
+
+		this.setVolume(options.volume ?? this.volume);
+		this.scheduleBeat(context.currentTime + (options.delay ?? 0));
+	},
+
+	// Imposta un nuovo BPM, con transizione graduale opzionale
+	setBpm(bpm, options = {}) {
+		const nextBpm = this.clampBpm(bpm);
+		const duration = Number(options.duration ?? 0);
+
+		if (!this.context || duration <= 0) {
+			this.currentBpm = nextBpm;
+			this.targetBpm = nextBpm;
+			this.ramp = null;
+			return;
+		}
+
+		const now = this.context.currentTime;
+		this.ramp = {
+			from: this.currentBpm,
+			to: nextBpm,
+			start: now,
+			end: now + duration
+		};
+		this.targetBpm = nextBpm;
+	},
+
+	// Accelerazione graduale
+	accelerate(targetBpm, duration = 4) {
+		this.setBpm(targetBpm, { duration });
+	},
+
+	// Decelerazione graduale
+	decelerate(targetBpm, duration = 4) {
+		this.setBpm(targetBpm, { duration });
+	},
+
+	// Interpola il BPM durante un ramp (easing smooth)
+	updateRamp(time) {
+		if (!this.ramp) return;
+
+		if (time >= this.ramp.end) {
+			this.currentBpm = this.ramp.to;
+			this.ramp = null;
+			return;
+		}
+
+		const progress = (time - this.ramp.start) / (this.ramp.end - this.ramp.start);
+		// Easing smoothstep: inizio lento, centro veloce, fine lento
+		const smooth = progress * progress * (3 - 2 * progress);
+		this.currentBpm = lerp(this.ramp.from, this.ramp.to, smooth);
+	},
+
+	// Imposta il volume, con fade opzionale
+	setVolume(volume, duration = 0) {
+		const value = this.getVolume(volume);
+		this.volume = value;
+
+		if (!this.masterGain || !this.context) return;
+
+		const now = this.context.currentTime;
+		this.masterGain.gain.cancelScheduledValues(now);
+
+		if (duration > 0) {
+			this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+			this.masterGain.gain.linearRampToValueAtTime(value, now + duration);
+		} else {
+			this.masterGain.gain.setValueAtTime(value, now);
+		}
+	}
+};
+
 /*OGGETTI CLICKABILI*/
 function showClickableObjects(){
 	const container = document.createElement("div");
@@ -4270,6 +4744,8 @@ const DebugMenu = {
 		if (BreathingGame.state !== 'idle') {
 			BreathingGame.stop();
 		}
+
+		HeartbeatManager.stop();
 
 		// Ferma il glitch/minigioco se e' attivo; altrimenti pulisce solo WordsGame.
 		if (Glitch.active) {

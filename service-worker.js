@@ -46,7 +46,7 @@ const files = [
 	'assets/icons/icon_192x192.png',
 	'assets/icons/icon_310x150.png',
 	'assets/icons/icon_310x310.png',
-	'assets/icons/icon_512x512.png'
+	'assets/icons/icon_512x512.png',
 ];
 
 self.addEventListener ('install', (event) => {
