@@ -176,7 +176,7 @@ monogatari.script ({
 	'Torcia': [
 		async () => {
 			await SceneFade.toVisible();
-			SceneUtility.loadScene("torcia");
+			await SceneUtility.loadScene("torcia");
 		},
 		'show scene room_night with fadeIn',
 		'wait 1500',
@@ -346,7 +346,7 @@ monogatari.script ({
         async () => {
 			NightOverlay.hide();
 
-			SceneUtility.loadScene("negazione"); 
+			await SceneUtility.loadScene("negazione"); 
 		},
 
 		'show scene room_day_dark',
@@ -539,17 +539,18 @@ monogatari.script ({
 	'Rabbia': [
 		async () => {
 			await SceneFade.toVisible();
-			SceneUtility.loadScene("rabbia");
+			AudioManager.play('rage', {
+				loop: true,
+				volume: 0.50,
+				fade: 6
+			});
+			await SceneUtility.loadScene("rabbia");
 		},
 		'show scene room_rage',
 		'wait 1500',
 		async() => {
 			await SceneFade.toHidden();
-			await AudioManager.play('rage', {
-				loop: true,
-				volume: 0.75,
-				fade: 6
-			});
+			
 		},
 		// 'play music rage_scene with loop volume 75',
 
@@ -653,15 +654,15 @@ monogatari.script ({
 			PhoneUI.hide();
 		},
 
-		'stop music',
 		'jump Contrattazione'
 	],
 //CONTRATTAZIONE
 	'Contrattazione': [
 		async () => {
 			await SceneFade.toVisible();
-			SceneUtility.loadScene("contrattazione");
-
+			await AudioManager.fadeOut('rage', 2);
+			await SceneUtility.loadScene("contrattazione");
+	
 			//Pulisco i precedenti clickedObjects e ripopolo allObjects
 			const store = monogatari.storage();
 			store.clickedObjects = [];
@@ -814,7 +815,7 @@ monogatari.script ({
 	'Depressione': [
 		async () => {
 			await SceneFade.toVisible({duration: 3.5});
-			SceneUtility.loadScene("depressione");
+			await SceneUtility.loadScene("depressione");
 			await AudioManager.play('rain', {
 				loop: true,
 				volume: 0.05,
@@ -1002,7 +1003,7 @@ monogatari.script ({
 	'Non_Pronto': [
 		async () => {
 			await SceneFade.toVisible();
-			SceneUtility.loadScene("rabbia");
+			await SceneUtility.loadScene("rabbia");
 		},
 		'show scene room_rage',
 		'wait 1500',

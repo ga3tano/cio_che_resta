@@ -1419,7 +1419,7 @@ const Glitch={
 
 		//Avvio il battito cardiaco
 		await HeartbeatManager.load(); //Mi assicuro che i buffer con gli audio siano caricati prima di partire
-		HeartbeatManager.start({bpm: 75, volume: 0.4, fadeIn: 1});
+		HeartbeatManager.start({bpm: 75, volume: 1, fadeIn: 1});
 
 		try {
 			//Gestione delle fasi fino al loro completamento
