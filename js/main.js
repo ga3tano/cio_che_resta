@@ -1486,20 +1486,45 @@ const Glitch={
 
 	//Fa partire la fase
 	beginPhase(phase) {
-		this.phaseResolved = false;
-		this.intensity = 0; //era phase.intensityStart, provo a far partire sempre da zero
+		//old
+		// this.phaseResolved = false;
+		// this.intensity = 0; //era phase.intensityStart, provo a far partire sempre da zero
+		// this.startTime = performance.now();
+		// this.runLoop(phase);
+
+
+		//New
+		this.phaseResolved= false;
 		this.startTime = performance.now();
-		this.runLoop(phase);
+
+		// Calcola l'intensità iniziale inversamente proporzionale alla durata
+		// Fase più corta = parte più forte
+		// 10000ms (fase1) → intensityStart basso
+		// 8000ms (fase3) → intensityStart più alto
+		const maxDuration = this.phases[0].timeLimit; // 10000ms, la fase più lunga
+		const minDuration = this.phases[2].timeLimit; // 8000ms, la fase più corta
 
 		// Mi assicura che il battito sia in riproduzione prima di accelerare in caso di reset
 		if (!HeartbeatManager.isPlaying) {
 			HeartbeatManager.start({ bpm: 75, volume: 0.4, fadeIn: 0.3 });
 		}
 
-		//Mappa l'intensità della fase al BPM
-		//intensityStart va da 0.14 a 0.52, lo mappiamo a BPM 75-170
-		const phaseBpm = 70 + (phase.intensityStart * 170);
-		HeartbeatManager.setBpm(phaseBpm, {duration: phase.timeLimit / 1000});
+		// Normalizza: 0 = fase più lunga, 1 = fase più corta
+    	const urgency = (maxDuration - phase.timeLimit) / (maxDuration - minDuration);
+
+
+		// Mappa a un range di intensità iniziale: da 0.05 a 0.30
+    	this.intensity = 0.05 + urgency * 0.25;
+		
+		//Fa partire la fase
+    	this.runLoop(phase);
+
+		// Mappa l'intensità iniziale della fase a un BPM target.
+	// intensityStart: 0.14 (fase 1) → 0.52 (fase 3)
+	// BPM target:     ~94 (fase 1) → ~158 (fase 3)
+	// Formula: BPM base (70) + intensità × range (170)
+	const phaseBpm = 70 + (phase.intensityStart * 170);
+	HeartbeatManager.setBpm(phaseBpm, { duration: phase.timeLimit / 1000 });
 	},
 
 	runLoop(phase) {
