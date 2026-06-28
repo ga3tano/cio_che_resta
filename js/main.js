@@ -2404,8 +2404,8 @@ const SCENE_IMAGES = {
 		{ id: 'tenda',            src: 'assets/images/tenda_chiusa.png',      onClick: 'assets/images/tenda_aperta.png',      dialog: 'jump DialogoAccettazione_Tenda' },
 		{ id: 'orsacchiotto_acc', src: 'assets/images/orsacchiotto_terra.png', onClick: 'assets/images/orsacchiotto_letto.png', dialog: 'jump DialogoAccettazione_Orsacchiotto' },
 		{ id: 'cesta',            src: 'assets/images/cesta_vuota.png',        onClick: 'assets/images/cesta_piena.png',        dialog: 'jump DialogoAccettazione_Cesta' }
-		// La porta NON fa parte della stanza durante il riordino: viene creata
-		// dinamicamente in Continua_Accettazione, solo al momento dell'uscita.
+		// La porta NON fa parte della stanza durante il riordino: la fase finale
+		// (creazione porta + uscita) è da sviluppare.
 	],
 	'torcia': [
 		{ id: 'cornice', src: 'assets/images/cornice.png', lighted: true, dialog: 'jump DialogoTorcia_Cornice'},

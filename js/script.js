@@ -1028,8 +1028,8 @@ monogatari.script ({
 	//      il click sulla porta porta a Scena_Accettazione
 	//   1. Scena_Accettazione: setup scena (fade, audio, oggetti interattivi)
 	//   2. loop_accettazione: polling ogni 300ms finche' tutti gli oggetti sono stati cliccati
-	//   3. Continua_Accettazione: dialogo finale + attesa click sulla porta,
-	//      poi chiusura neutra (dissolvenza). Il finale verra' aggiunto piu' avanti.
+	//   3. (da sviluppare) dialogo finale + uscita dalla porta: per ora il flusso
+	//      termina ('end') quando tutti gli oggetti sono stati cliccati.
 
 	// Ingresso alla fase: la stanza e' ancora buia, l'unica cosa che attira
 	// l'attenzione e' la porta che lampeggia (stessa meccanica .highlight degli
@@ -1071,7 +1071,7 @@ monogatari.script ({
 
 			// Inizializza il tracciamento degli oggetti cliccabili.
 			// allObjects contiene solo gli id con 'onClick': tenda, orsacchiotto, cesta.
-			// La porta non è in scena qui: compare solo alla fine (Continua_Accettazione).
+			// La porta non è in scena qui: la fase finale (uscita) è da sviluppare.
 			const store = monogatari.storage();
 			store.clickedObjects = [];
 			store.allObjects = SCENE_IMAGES.accettazione
@@ -1098,7 +1098,7 @@ monogatari.script ({
 				const store = monogatari.storage();
 				return store.clickedObjects.length === store.allObjects.length;
 			},
-			'True': 'jump Continua_Accettazione',
+			'True': 'end',
 			'False': 'jump wait_accettazione'
 		}},
 	],
@@ -1144,77 +1144,6 @@ monogatari.script ({
 		},
 		'jump loop_accettazione'
 	],
-
-	'Continua_Accettazione': [
-		'wait 2000',
-		() => showTextBox(),
-		'dad La stanza \u00e8 in ordine.',
-		'dad Come ti sarebbe piaciuta.',
-		'dad ...',
-		'dad \u00c8 ora di uscire.',
-		() => hideTextBox(),
-		'wait 1000',
-
-		// Async lambda: Monogatari aspetta che la Promise si risolva prima di
-		// procedere alla chiusura. Questo blocca il flusso finche'
-		// il giocatore non clicca fisicamente sulla porta.
-		async () => {
-			const wrapper = document.getElementById('details-wrapper');
-			if (!wrapper) return;
-
-			// La porta non esiste nella stanza durante il riordino: la creiamo
-			// adesso, dopo il dialogo finale, come ultimo elemento del wrapper.
-			// Compare con un breve fade per non "spuntare" di colpo.
-			const door = document.createElement('img');
-			door.id = 'porta_acc';
-			door.src = 'assets/images/porta.png';
-			door.className = 'wrapper-item';
-			door.style.opacity = '0';
-			door.style.transition = 'opacity 1s ease';
-			await new Promise(res => { door.onload = res; door.onerror = res; });
-			wrapper.appendChild(door);
-			// Forza un reflow cosi' la transizione di opacita' parte da 0
-			void door.offsetWidth;
-			door.style.opacity = '1';
-
-			// La rendiamo interattiva (lampeggiante) dopo che e' comparsa.
-			door.classList.add('clickable-object', 'highlight');
-			door.style.pointerEvents = 'auto';
-			wrapper.style.pointerEvents = 'auto';
-
-			await new Promise(resolve => {
-				const handler = (e) => {
-					// stopPropagation evita che il touchend bubbli al wrapper,
-					// che ha il suo listener contrattazione/accettazione.
-					e.stopPropagation();
-					const touch = e.changedTouches?.[0];
-					const point = touch
-						? { clientX: touch.clientX, clientY: touch.clientY }
-						: { clientX: e.clientX, clientY: e.clientY };
-					// Scarta i tap sui pixel trasparenti dell'immagine porta
-					if (!isClickOnVisiblePixel(door, point)) return;
-					door.removeEventListener('touchend', handler);
-					door.removeEventListener('click', handler);
-					door.classList.remove('clickable-object', 'highlight');
-					wrapper.style.pointerEvents = 'none';
-					resolve();
-				};
-				door.addEventListener('touchend', handler);
-				door.addEventListener('click', handler); // fallback desktop
-			});
-		},
-
-		// Fine della fase Accettazione. Chiusura neutra: dissolvenza al nero e
-		// smontaggio della scena. Il finale vero e proprio (titolo, credits, ...)
-		// verra' aggiunto piu' avanti: per ora ci concentriamo solo sull'Accettazione.
-		async () => {
-			SceneUtility.lockItemWrapper();
-			await SceneFade.toVisible({duration: 2});
-			SceneUtility.emptyScene();         // rimuove #details-wrapper e svuota #sky
-			SceneUtility.enableBackground();   // rimuove la classe CSS composite-sky-scene
-		}
-	],
-
 
 	// Scena isolata: non viene richiamata dal flow narrativo, solo dal menu di debug.
 	'Test_telefono': [
