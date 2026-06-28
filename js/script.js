@@ -80,6 +80,7 @@ monogatari.assets ('scenes', {
 	room_rage: 'stanza_sfondo_2.png',
 	room_day_normal: 'stanza_sfondo_1.png',
 	room_day_dark: 'stanza_sfondo_3.png',
+	room_accettazione: 'stanza2_sfondo_1.png',
 	auto: 'Auto.png',
 	feet: 'Piedi.png',
 	teddybear: 'Orsacchiotto.png',
@@ -1021,54 +1022,196 @@ monogatari.script ({
 		'jump GlitchRabbia'
 	],
 
-	//DA RIFARE COMPLETAMENTE
+//ACCETTAZIONE
+//ACCETTAZIONE
+	// Flusso:
+	//   0. Accettazione: stanza buia (room_day_dark) con la porta che lampeggia;
+	//      il click sulla porta porta a Scena_Accettazione
+	//   1. Scena_Accettazione: setup scena (fade, audio, oggetti interattivi)
+	//   2. loop_accettazione: polling ogni 300ms finch\u00e9 tutti gli oggetti sono stati cliccati
+	//   3. Continua_Accettazione: dialogo finale + attesa click sulla porta,
+	//      poi chiusura neutra (dissolvenza). Il finale verr\u00e0 aggiunto pi\u00f9 avanti.
+
+	// Ingresso alla fase: la stanza \u00e8 ancora buia, l'unica cosa che attira
+	// l'attenzione \u00e8 la porta che lampeggia (stessa meccanica .highlight degli
+	// oggetti della contrattazione). Il click sulla porta \u2014 gestito da
+	// lockContrattazioneObject \u2014 lancia 'jump Scena_Accettazione' tramite il
+	// campo dialog dell'oggetto porta_acc in SCENE_IMAGES.accettazione_porta.
 	'Accettazione': [
-	// 	() => SceneUtility.loadScene("accettazione"),
-	// 	'show scene room_day_normal',
-	// 	'wait 1500',
-	// 	() => SceneUtility.revealPreparedScene(),
+		async () => {
+			// Nero prima di staccare dalla scena precedente
+			await SceneFade.toVisible({duration: 2});
 
-	// 	'wait 5000',
-		
-	// 	'play sound phone_vibration',
-	// 	'play sound phone_notification',
+			// Ferma pioggia e musica depressione in parallelo: i due fadeOut sono indipendenti
+			await Promise.all([
+				AudioManager.fadeOut('rain', 1.5),
+				AudioManager.fadeOut('depression', 1.5)
+			]);
 
-    //     {'Function': {
-    //         'Apply': function () {
-    //             PhoneUI.reset();
-    //             // Imposta il mittente senza aprire il telefono: vedrai solo badge e lockscreen.
-    //             PhoneUI.setContactName('Giulia');
-    //             PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
-    //             PhoneUI.vibrate();
-    //             return true;
-    //         },
-    //         'Revert': function () {
-    //             PhoneUI.hide();
-    //             return true;
-    //         }
-    //     }},
+			// Stanza buia + sola porta lampeggiante
+			await SceneUtility.loadScene("accettazione_porta");
+		},
+		'show scene room_day_dark',
+		'wait 1500',
+		async () => await SceneFade.toHidden({duration: 2}),
+		// Nessun jump qui: il flusso prosegue solo quando il giocatore clicca
+		// la porta (vedi commento sopra al label).
+	],
 
-    //     // PhoneChoice mostra questi pulsanti direttamente nella chat del telefono.
-    //     {'PhoneChoice': {
-    //         'Rispondi': {
-    //             'Text': 'RISPONDI',
-	// 			'Do': 'jump Finale'          
-    //         },
-    //         'Ignora': {
-    //             'Text': 'IGNORA',
-    //             'Do': '',
-	// 			'Disabled': true
-    //         }
-    //     }}
-	// ],
+	'Scena_Accettazione': [
+		async () => {
+			// Torna al nero prima di passare dalla stanza buia alla stanza luminosa
+			await SceneFade.toVisible({duration: 2});
 
-	// 'Finale': [
-	// 	() => {
-	// 		PhoneUI.hide();
-	// 		SceneUtility.emptyScene();
-	// 		SceneUtility.enableBackground();
-	// 	},
-	// 	'show scene end with fadeIn duration 5s',
+			// Carica cielo giorno_1 (soleggiato) + immagini degli oggetti
+			// interattivi della stanza del bambino nel #details-wrapper
+			await SceneUtility.loadScene("accettazione");
+
+			// Inizializza il tracciamento degli oggetti cliccabili.
+			// allObjects contiene solo gli id con 'onClick': tenda, orsacchiotto, cesta.
+			// La porta non è in scena qui: compare solo alla fine (Continua_Accettazione).
+			const store = monogatari.storage();
+			store.clickedObjects = [];
+			store.allObjects = SCENE_IMAGES.accettazione
+				.filter(item => item.onClick)
+				.map(item => item.id);
+		},
+		'show scene room_accettazione',
+		'wait 1500',
+		async () => await SceneFade.toHidden({duration: 2}),
+		'wait 3000',
+		'jump loop_accettazione'
+	],
+
+	// Stessa meccanica di loop_contrattazione/loop_torcia:
+	// polling leggero ogni 300ms, jump appena il contatore \u00e8 completo.
+	'wait_accettazione': [
+		'wait 300',
+		'jump loop_accettazione'
+	],
+
+	'loop_accettazione': [
+		{'Conditional': {
+			'Condition': function () {
+				const store = monogatari.storage();
+				return store.clickedObjects.length === store.allObjects.length;
+			},
+			'True': 'jump Continua_Accettazione',
+			'False': 'jump wait_accettazione'
+		}},
+	],
+
+	// Ogni dialogo:
+	//   1. mostra textbox e testo del padre
+	//   2. nasconde textbox
+	//   3. unlockItemWrapper: lockContrattazioneObject aveva bloccato il wrapper
+	//      al momento del tap sull'oggetto \u2014 va riabilitato a fine dialogo
+	//   4. torna al loop per controllare se ci sono altri oggetti da cliccare
+
+	'DialogoAccettazione_Tenda': [
+		() => showTextBox(),
+		'<div style="color: #000000;">.</div>',
+		'dad La luce...',
+		'dad Da quanto non la lasciavo entrare.',
+		() => {
+			hideTextBox();
+			SceneUtility.unlockItemWrapper();
+		},
+		'jump loop_accettazione'
+	],
+
+	'DialogoAccettazione_Orsacchiotto': [
+		() => showTextBox(),
+		'<div style="color: #000000;">.</div>',
+		'dad Sei sempre stato il tuo preferito.',
+		'dad Adesso stai qui, dove puoi guardare.',
+		() => {
+			hideTextBox();
+			SceneUtility.unlockItemWrapper();
+		},
+		'jump loop_accettazione'
+	],
+
+	'DialogoAccettazione_Cesta': [
+		() => showTextBox(),
+		'<div style="color: #000000;">.</div>',
+		'dad Uno alla volta.',
+		'dad Proprio come mi hai detto tu.',
+		() => {
+			hideTextBox();
+			SceneUtility.unlockItemWrapper();
+		},
+		'jump loop_accettazione'
+	],
+
+	'Continua_Accettazione': [
+		'wait 2000',
+		() => showTextBox(),
+		'dad La stanza \u00e8 in ordine.',
+		'dad Come ti sarebbe piaciuta.',
+		'dad ...',
+		'dad \u00c8 ora di uscire.',
+		() => hideTextBox(),
+		'wait 1000',
+
+		// Async lambda: Monogatari aspetta che la Promise si risolva prima di
+		// procedere alla chiusura. Questo blocca il flusso finch\u00e9
+		// il giocatore non clicca fisicamente sulla porta.
+		async () => {
+			const wrapper = document.getElementById('details-wrapper');
+			if (!wrapper) return;
+
+			// La porta non esiste nella stanza durante il riordino: la creiamo
+			// adesso, dopo il dialogo finale, come ultimo elemento del wrapper.
+			// Compare con un breve fade per non "spuntare" di colpo.
+			const door = document.createElement('img');
+			door.id = 'porta_acc';
+			door.src = 'assets/images/porta.png';
+			door.className = 'wrapper-item';
+			door.style.opacity = '0';
+			door.style.transition = 'opacity 1s ease';
+			await new Promise(res => { door.onload = res; door.onerror = res; });
+			wrapper.appendChild(door);
+			// Forza un reflow cos\u00ec la transizione di opacit\u00e0 parte da 0
+			void door.offsetWidth;
+			door.style.opacity = '1';
+
+			// La rendiamo interattiva (lampeggiante) dopo che \u00e8 comparsa.
+			door.classList.add('clickable-object', 'highlight');
+			door.style.pointerEvents = 'auto';
+			wrapper.style.pointerEvents = 'auto';
+
+			await new Promise(resolve => {
+				const handler = (e) => {
+					// stopPropagation evita che il touchend bubbli al wrapper,
+					// che ha il suo listener contrattazione/accettazione.
+					e.stopPropagation();
+					const touch = e.changedTouches?.[0];
+					const point = touch
+						? { clientX: touch.clientX, clientY: touch.clientY }
+						: { clientX: e.clientX, clientY: e.clientY };
+					// Scarta i tap sui pixel trasparenti dell'immagine porta
+					if (!isClickOnVisiblePixel(door, point)) return;
+					door.removeEventListener('touchend', handler);
+					door.removeEventListener('click', handler);
+					door.classList.remove('clickable-object', 'highlight');
+					wrapper.style.pointerEvents = 'none';
+					resolve();
+				};
+				door.addEventListener('touchend', handler);
+				door.addEventListener('click', handler); // fallback desktop
+			});
+		},
+
+		// Fine della fase Accettazione. Chiusura neutra: dissolvenza al nero e
+		// smontaggio della scena. Il finale vero e proprio (titolo, credits, ...)
+		// verra' aggiunto piu' avanti: per ora ci concentriamo solo sull'Accettazione.
+		async () => {
+			SceneUtility.lockItemWrapper();
+			await SceneFade.toVisible({duration: 2});
+			SceneUtility.emptyScene();         // rimuove #details-wrapper e svuota #sky
+			SceneUtility.enableBackground();   // rimuove la classe CSS composite-sky-scene
+		}
 	],
 
 

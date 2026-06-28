@@ -2406,9 +2406,22 @@ const SCENE_IMAGES = {
 		{ id: 'uomo', src: 'assets/images/uomo.png'},
 		{ id: 'ombra', src: 'assets/images/bambino_ombra.png', onClick: 'pipo', isVisible: 'false'}
 	],
+	// Schermata d'ingresso alla fase di accettazione: la stanza buia (room_day_dark)
+	// con la sola porta che lampeggia. Riusa la stessa meccanica .highlight + click
+	// degli oggetti della contrattazione. onClick punta alla stessa immagine (porta.png)
+	// perché non vogliamo cambiare la grafica: al click parte solo il jump della scena.
+	'accettazione_porta': [
+		{ id: 'porta_acc', src: 'assets/images/porta.png', onClick: 'assets/images/porta.png', dialog: 'jump Scena_Accettazione' }
+	],
 	'accettazione': [
-		{ id: 'cornice', src: 'assets/images/cornice.png'},
-		{ id: 'pianta_3', src: 'assets/images/pianta_3.png'}
+		// TODO: sostituire con gli asset definitivi (attualmente i file non esistono)
+		// onClick: immagine sostituita dopo il click (stato "sistemato")
+		// dialog: label Monogatari lanciato dopo il click tramite lockContrattazioneObject
+		{ id: 'tenda',            src: 'assets/images/tenda_chiusa.png',      onClick: 'assets/images/tenda_aperta.png',      dialog: 'jump DialogoAccettazione_Tenda' },
+		{ id: 'orsacchiotto_acc', src: 'assets/images/orsacchiotto_terra.png', onClick: 'assets/images/orsacchiotto_letto.png', dialog: 'jump DialogoAccettazione_Orsacchiotto' },
+		{ id: 'cesta',            src: 'assets/images/cesta_vuota.png',        onClick: 'assets/images/cesta_piena.png',        dialog: 'jump DialogoAccettazione_Cesta' }
+		// La porta NON fa parte della stanza durante il riordino: viene creata
+		// dinamicamente in Continua_Accettazione, solo al momento dell'uscita.
 	],
 	'torcia': [
 		{ id: 'cornice', src: 'assets/images/cornice.png', lighted: true, dialog: 'jump DialogoTorcia_Cornice'},
@@ -2417,6 +2430,38 @@ const SCENE_IMAGES = {
 		{ id: 'mobile', src: 'assets/images/mobile.png', lighted: true, dialog: 'jump DialogoTorcia_Mobile'}
 	]
 }
+
+// ============================================================================
+// MODALITÀ PLACEHOLDER — ACCETTAZIONE (TEMPORANEA, DA RIMUOVERE)
+// ----------------------------------------------------------------------------
+// Gli asset definitivi degli oggetti della stanza dell'accettazione
+// (tenda_*, orsacchiotto_*, cesta_*) NON esistono ancora. isClickOnVisiblePixel() ritorna sempre false e
+// 'loop_accettazione' resta bloccato all'infinito: si entra nella stanza e non
+// si va più avanti.
+//
+// Con questo flag a `true`, src/onClick di quegli oggetti vengono rimpiazzati a
+// runtime con placeholder.png (immagine esistente e opaca: 1280x1280). Essendo
+// renderizzata in object-fit:cover diventa un riquadro cliccabile a tutto schermo,
+// quindi BASTA UN CLICK QUALSIASI per "sistemare" un oggetto: così puoi testare
+// l'intero flusso  click → dialogo → (x3) → dialogo finale → porta → uscita.
+//
+// NB: in questa modalità la stanza è coperta dai placeholder, quindi non si
+// vede lo sfondo: è normale, serve solo a provare la logica, non la grafica.
+//
+//  Per disattivare: mettere ACCETTAZIONE_PLACEHOLDER_MODE = false.
+//  Quando gli asset definitivi sono pronti: eliminare l'intero blocco.
+// ============================================================================
+const ACCETTAZIONE_PLACEHOLDER_MODE = true;
+
+if (ACCETTAZIONE_PLACEHOLDER_MODE) {
+	const PLACEHOLDER_SRC = 'assets/images/placeholder.png';
+	SCENE_IMAGES.accettazione.forEach((obj) => {
+		obj.src = PLACEHOLDER_SRC;
+		if (obj.onClick) obj.onClick = PLACEHOLDER_SRC; // stato "sistemato" = stesso placeholder
+	});
+	console.warn('[ACCETTAZIONE] MODALITÀ PLACEHOLDER ATTIVA: oggetti stanza = placeholder.png (vedi main.js)');
+}
+
 const SceneUtility = {
 	clickedItems: false,
 	hoverTimer: null,
@@ -2502,7 +2547,7 @@ const SceneUtility = {
 			return;
 		}
 		
-		if(typeOfItems === "contrattazione"){
+		if(typeOfItems === "contrattazione" || typeOfItems === "accettazione" || typeOfItems === "accettazione_porta"){
 			// Aggiungiamo un eventListener unico che gestisce i vari layer di immagini.
 			// Usiamo 'touchend' (non 'click') perché 'click' non ha e.touches.
 			// Su touchend le touches attive sono già vuote: si usa changedTouches.
@@ -2627,6 +2672,9 @@ const SceneUtility = {
 				break;
 			case "depressione":
 				await this.loadSky("nuvolo");
+				break;
+			case "accettazione_porta":
+				await this.loadSky("giorno_2");
 				break;
 			case "accettazione":
 				await this.loadSky("giorno_1");
@@ -4474,17 +4522,9 @@ const DebugMenu = {
 	// Ogni stringa e' sia il testo mostrato nel bottone sia il label usato da jump.
 	labels: [
 		'Start',
-		'Torcia',
-		'DialogoTorcia_Pianta',
-		'DialogoTorcia_Cornice',
-		'DialogoTorcia_Porta',
-		'DialogoTorcia_Mobile',
-		'Continua',
 		'Intermezzo_Respira',
+		'Torcia',
 		'Negazione_Cellulare',
-		'Negazione_Rispondi',
-		'Negazione_Ignora',
-		'Secondo_Messaggio',
 		'Rimani_A_Casa',
 		'Esci_Casa',
 		'Rabbia',
@@ -4492,10 +4532,8 @@ const DebugMenu = {
 		'ContinuaGlitch',
 		'Contrattazione',
 		'Depressione',
-		'Lascia_Andare',
-		'Non_Pronto',
 		'Accettazione',
-		'Finale',
+		'Scena_Accettazione',
 		'Test_telefono'
 	],
 
