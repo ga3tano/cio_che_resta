@@ -611,13 +611,13 @@ monogatari.script ({
 		// 'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">...</div>',
 		// async () => {
 		// 	document.getElementById('clock-display').style.display = 'block';
-		// 	AcceleratingClock.stopClock = AcceleratingClock.startAcceleratingClock('clock-display');
+		// 	window.stopClock = startAcceleratingClock('clock-display');
 		// },
 
 		// 'wait 10000',
 
 		// async () => {
-		// 	if(AcceleratingClock.stopClock) AcceleratingClock.stopClock();
+		// 	if(window.stopClock) window.stopClock();
 		// 	document.getElementById('clock-display').style.display = 'none';
 		// },
 
@@ -1023,17 +1023,16 @@ monogatari.script ({
 	],
 
 //ACCETTAZIONE
-//ACCETTAZIONE
 	// Flusso:
 	//   0. Accettazione: stanza buia (room_day_dark) con la porta che lampeggia;
 	//      il click sulla porta porta a Scena_Accettazione
 	//   1. Scena_Accettazione: setup scena (fade, audio, oggetti interattivi)
-	//   2. loop_accettazione: polling ogni 300ms finch\u00e9 tutti gli oggetti sono stati cliccati
+	//   2. loop_accettazione: polling ogni 300ms finche' tutti gli oggetti sono stati cliccati
 	//   3. Continua_Accettazione: dialogo finale + attesa click sulla porta,
-	//      poi chiusura neutra (dissolvenza). Il finale verr\u00e0 aggiunto pi\u00f9 avanti.
+	//      poi chiusura neutra (dissolvenza). Il finale verra' aggiunto piu' avanti.
 
-	// Ingresso alla fase: la stanza \u00e8 ancora buia, l'unica cosa che attira
-	// l'attenzione \u00e8 la porta che lampeggia (stessa meccanica .highlight degli
+	// Ingresso alla fase: la stanza e' ancora buia, l'unica cosa che attira
+	// l'attenzione e' la porta che lampeggia (stessa meccanica .highlight degli
 	// oggetti della contrattazione). Il click sulla porta \u2014 gestito da
 	// lockContrattazioneObject \u2014 lancia 'jump Scena_Accettazione' tramite il
 	// campo dialog dell'oggetto porta_acc in SCENE_IMAGES.accettazione_porta.
@@ -1047,6 +1046,9 @@ monogatari.script ({
 				AudioManager.fadeOut('rain', 1.5),
 				AudioManager.fadeOut('depression', 1.5)
 			]);
+
+			// Svuota la scena precedente (rimuove la pioggia della depressione dal #sky)
+			SceneUtility.emptyScene();
 
 			// Stanza buia + sola porta lampeggiante
 			await SceneUtility.loadScene("accettazione_porta");
@@ -1084,7 +1086,7 @@ monogatari.script ({
 	],
 
 	// Stessa meccanica di loop_contrattazione/loop_torcia:
-	// polling leggero ogni 300ms, jump appena il contatore \u00e8 completo.
+	// polling leggero ogni 300ms, jump appena il contatore e' completo.
 	'wait_accettazione': [
 		'wait 300',
 		'jump loop_accettazione'
@@ -1123,8 +1125,7 @@ monogatari.script ({
 	'DialogoAccettazione_Orsacchiotto': [
 		() => showTextBox(),
 		'<div style="color: #000000;">.</div>',
-		'dad Sei sempre stato il tuo preferito.',
-		'dad Adesso stai qui, dove puoi guardare.',
+		'dad Sei sempre stato il suo giocattolo preferito.',
 		() => {
 			hideTextBox();
 			SceneUtility.unlockItemWrapper();
@@ -1155,7 +1156,7 @@ monogatari.script ({
 		'wait 1000',
 
 		// Async lambda: Monogatari aspetta che la Promise si risolva prima di
-		// procedere alla chiusura. Questo blocca il flusso finch\u00e9
+		// procedere alla chiusura. Questo blocca il flusso finche'
 		// il giocatore non clicca fisicamente sulla porta.
 		async () => {
 			const wrapper = document.getElementById('details-wrapper');
@@ -1172,11 +1173,11 @@ monogatari.script ({
 			door.style.transition = 'opacity 1s ease';
 			await new Promise(res => { door.onload = res; door.onerror = res; });
 			wrapper.appendChild(door);
-			// Forza un reflow cos\u00ec la transizione di opacit\u00e0 parte da 0
+			// Forza un reflow cosi' la transizione di opacita' parte da 0
 			void door.offsetWidth;
 			door.style.opacity = '1';
 
-			// La rendiamo interattiva (lampeggiante) dopo che \u00e8 comparsa.
+			// La rendiamo interattiva (lampeggiante) dopo che e' comparsa.
 			door.classList.add('clickable-object', 'highlight');
 			door.style.pointerEvents = 'auto';
 			wrapper.style.pointerEvents = 'auto';

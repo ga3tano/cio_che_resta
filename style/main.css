@@ -1850,6 +1850,7 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	left: 50%;
 	transform: translateX(-50%);
 	margin-top: 135px; /* 115px raggio cerchio max + 20px clearance */
+	font-family: 'Pangolin', sans-serif;
 	font-size: clamp(1rem, 2.8vw, 1.5rem);
 	font-weight: 400;
 	letter-spacing: 0.28em;
@@ -1876,6 +1877,7 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	bottom: 13%;
 	left: 50%;
 	transform: translateX(-50%);
+	font-family: 'Pangolin', sans-serif;
 	font-size: clamp(1.1rem, 3vw, 1.5rem);
 	font-style: italic;
 	color: rgba(145, 180, 218, 0.42); /* tenue: suggerimento, non istruzione imperativa */
@@ -1886,3 +1888,27 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 }
 
 .breathing-hint.visible { opacity: 1; }
+
+/* TypeCentered — testo a tutto schermo (vedi TypeCentered in main.js).
+   fontFamily resta inline perché arriva dalle options. */
+.type-centered-container {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	padding: 2rem;
+	z-index: 9999;
+	color: white;
+	background: transparent;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.type-centered-text {
+	max-width: 1000px;
+	font-size: clamp(1.4rem, 3vw, 3rem);
+	line-height: 1.5;
+	white-space: pre-wrap;
+}

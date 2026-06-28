@@ -59,27 +59,11 @@ class TypeCentered extends Monogatari.Action {
 			const container = document.createElement ('div');
 			container.classList.add ('type-centered-container');
 
-			container.style.position = 'fixed';
-			container.style.inset = '0';
-			container.style.display = 'flex';
-			container.style.alignItems = 'center';
-			container.style.justifyContent = 'center';
-			container.style.textAlign = 'center';
-			container.style.padding = '2rem';
-			container.style.zIndex = '9999';
-			container.style.color = 'white';
-			container.style.background = 'transparent';
-			container.style.cursor = 'pointer';
-			container.style.webkitTapHighlightColor = 'transparent';
-
 			const paragraph = document.createElement ('div');
 			paragraph.classList.add ('type-centered-text');
 
-			paragraph.style.maxWidth = '1000px';
-			paragraph.style.fontSize = 'clamp(1.4rem, 3vw, 3rem)';
-			paragraph.style.lineHeight = '1.5';
+			// fontFamily resta inline: arriva dalle options dello statement.
 			paragraph.style.fontFamily = this.fontFamily;
-			paragraph.style.whiteSpace = 'pre-wrap';
 
 			container.appendChild (paragraph);
 			root.appendChild (container);
@@ -2431,37 +2415,6 @@ const SCENE_IMAGES = {
 	]
 }
 
-// ============================================================================
-// MODALITÀ PLACEHOLDER — ACCETTAZIONE (TEMPORANEA, DA RIMUOVERE)
-// ----------------------------------------------------------------------------
-// Gli asset definitivi degli oggetti della stanza dell'accettazione
-// (tenda_*, orsacchiotto_*, cesta_*) NON esistono ancora. isClickOnVisiblePixel() ritorna sempre false e
-// 'loop_accettazione' resta bloccato all'infinito: si entra nella stanza e non
-// si va più avanti.
-//
-// Con questo flag a `true`, src/onClick di quegli oggetti vengono rimpiazzati a
-// runtime con placeholder.png (immagine esistente e opaca: 1280x1280). Essendo
-// renderizzata in object-fit:cover diventa un riquadro cliccabile a tutto schermo,
-// quindi BASTA UN CLICK QUALSIASI per "sistemare" un oggetto: così puoi testare
-// l'intero flusso  click → dialogo → (x3) → dialogo finale → porta → uscita.
-//
-// NB: in questa modalità la stanza è coperta dai placeholder, quindi non si
-// vede lo sfondo: è normale, serve solo a provare la logica, non la grafica.
-//
-//  Per disattivare: mettere ACCETTAZIONE_PLACEHOLDER_MODE = false.
-//  Quando gli asset definitivi sono pronti: eliminare l'intero blocco.
-// ============================================================================
-const ACCETTAZIONE_PLACEHOLDER_MODE = true;
-
-if (ACCETTAZIONE_PLACEHOLDER_MODE) {
-	const PLACEHOLDER_SRC = 'assets/images/placeholder.png';
-	SCENE_IMAGES.accettazione.forEach((obj) => {
-		obj.src = PLACEHOLDER_SRC;
-		if (obj.onClick) obj.onClick = PLACEHOLDER_SRC; // stato "sistemato" = stesso placeholder
-	});
-	console.warn('[ACCETTAZIONE] MODALITÀ PLACEHOLDER ATTIVA: oggetti stanza = placeholder.png (vedi main.js)');
-}
-
 const SceneUtility = {
 	clickedItems: false,
 	hoverTimer: null,
@@ -3766,55 +3719,42 @@ const BlinkOverlay = {
 	} 
 }
 
-const AcceleratingClock = {
-	stopClock: null,
+// Orologio che accelera in modo esponenziale (scena #clock-display).
+// Ritorna una funzione stop() per fermarlo.
+function startAcceleratingClock(elementId) {
+	const display = document.getElementById(elementId);
+	const now = new Date();
 
-	startAcceleratingClock(elementId) {
-        const display = document.getElementById(elementId);
-		const now = new Date();
+	let hours = now.getHours();
+	let minutes = now.getMinutes();
+	let delay = 800;
+	let timeoutId;
+	let tickCount = 0;
 
-		let hours = now.getHours();
-		let minutes = now.getMinutes();
-		let seconds = now.getSeconds();
-		let delay = 800;
-		let timeoutId;
-		let tickCount = 0;
-		
-		console.log(hours, minutes, seconds);
+	function updateClock() {
+		display.textContent = [
+			hours.toString().padStart(2, '0'),
+			minutes.toString().padStart(2, '0')
+		].join(':');
 
-		function updateClock() {
-			const timeString = [
-				hours.toString().padStart(2, '0'),
-				minutes.toString().padStart(2, '0')
-			].join(':');
-			
-			display.textContent = timeString;
-			
-			tickCount++;
-			
-			//L'aggiunta dei minuti è esponenziale
-			let minutesToAdd = Math.pow(2, tickCount);
+		tickCount++;
+		minutes += Math.pow(2, tickCount); // l'aggiunta dei minuti è esponenziale
 
-			minutes += minutesToAdd;
-
-			while (minutes >= 60) {
-				minutes -= 60;
-				hours++;
-			}
-			while (hours >= 24) {
-				hours -= 24;
-			}
-			
-			delay = Math.max(30, delay * 0.85);
-			timeoutId = setTimeout(updateClock, delay);
+		while (minutes >= 60) {
+			minutes -= 60;
+			hours++;
 		}
-		
-		updateClock();
-		
-		return function stop() {
-			clearTimeout(timeoutId);
-		};
+		while (hours >= 24) {
+			hours -= 24;
+		}
+
+		delay = Math.max(30, delay * 0.85);
+		timeoutId = setTimeout(updateClock, delay);
 	}
+
+	updateClock();
+
+	return () => clearTimeout(timeoutId);
 }
 
 const AudioManager = {
@@ -3903,7 +3843,11 @@ const AudioManager = {
 		const volume = this.getVolume(options.volume ?? 1);
 		const fade = options.fade ?? 0;
 
-		track.audio.loop = options.loop ?? false;
+		// Imposta il loop solo se passato esplicitamente, così una ripresa
+		// con play(id) senza opzioni preserva il loop impostato in precedenza
+		if ('loop' in options) {
+			track.audio.loop = options.loop;
+		}
 
 		if (fade > 0) {
 			track.gain.gain.setValueAtTime(0, context.currentTime);
@@ -4533,8 +4477,7 @@ const DebugMenu = {
 		'Contrattazione',
 		'Depressione',
 		'Accettazione',
-		'Scena_Accettazione',
-		'Test_telefono'
+		//'Test_telefono'
 	],
 
 	init() {
