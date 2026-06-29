@@ -1764,6 +1764,11 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	z-index: 0;
 }
 
+/* porta_2: sempre in primo piano rispetto agli altri oggetti della scena */
+#porta_2{
+	z-index: 1;
+}
+
 
 
 /* game-screen[data-component="game-screen"].bg-transparent {

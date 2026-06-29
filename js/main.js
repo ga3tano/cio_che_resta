@@ -2405,8 +2405,9 @@ const SCENE_IMAGES = {
 		// onClick: immagine sostituita dopo il click (stato "sistemato")
 		// dialog: label Monogatari lanciato dopo il click tramite lockContrattazioneObject
 		{ id: 'tenda',            src: 'assets/images/tenda_chiusa.png',      onClick: 'assets/images/tenda_aperta.png',      dialog: 'jump DialogoAccettazione_Tenda' },
-		{ id: 'orsacchiotto_acc', src: 'assets/images/orsacchiotto_terra.png', onClick: 'assets/images/orsacchiotto_letto.png', dialog: 'jump DialogoAccettazione_Orsacchiotto' },
-		{ id: 'cesta',            src: 'assets/images/cesta_vuota.png',        onClick: 'assets/images/cesta_piena.png',        dialog: 'jump DialogoAccettazione_Cesta' }
+		{ id: 'cesta',            src: 'assets/images/cesta_vuota.png',        onClick: 'assets/images/cesta_piena.png',        dialog: 'jump DialogoAccettazione_Cesta' },
+		// Oggetto statico, già al suo posto (non interattivo)
+		{ id: 'porta_2', src: 'assets/images/porta_2.png' }
 		// La porta NON fa parte della stanza durante il riordino: la fase finale
 		// (creazione porta + uscita) è da sviluppare.
 	],

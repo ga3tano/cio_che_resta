@@ -1120,7 +1120,7 @@ monogatari.script ({
 			await SceneUtility.loadScene("accettazione");
 
 			// Inizializza il tracciamento degli oggetti cliccabili.
-			// allObjects contiene solo gli id con 'onClick': tenda, orsacchiotto, cesta.
+			// allObjects contiene solo gli id con 'onClick': tenda, cesta.
 			// La porta non è in scena qui: la fase finale (uscita) è da sviluppare.
 			const store = monogatari.storage();
 			store.clickedObjects = [];
@@ -1165,17 +1165,6 @@ monogatari.script ({
 		'<div style="color: #000000;">.</div>',
 		'dad La luce...',
 		'dad Da quanto non la lasciavo entrare.',
-		() => {
-			hideTextBox();
-			SceneUtility.unlockItemWrapper();
-		},
-		'jump loop_accettazione'
-	],
-
-	'DialogoAccettazione_Orsacchiotto': [
-		() => showTextBox(),
-		'<div style="color: #000000;">.</div>',
-		'dad Sei sempre stato il suo giocattolo preferito.',
 		() => {
 			hideTextBox();
 			SceneUtility.unlockItemWrapper();
