@@ -1025,7 +1025,7 @@ monogatari.script ({
 //ACCETTAZIONE
 	// Flusso:
 	//   0. Accettazione: stanza buia (room_day_dark) con la porta che lampeggia;
-	//      il click sulla porta porta a Scena_Accettazione
+	//      il click sulla porta conduce a Scena_Accettazione
 	//   1. Scena_Accettazione: setup scena (fade, audio, oggetti interattivi)
 	//   2. loop_accettazione: polling ogni 300ms finche' tutti gli oggetti sono stati cliccati
 	//   3. (da sviluppare) dialogo finale + uscita dalla porta: per ora il flusso
