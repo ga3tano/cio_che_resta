@@ -2889,15 +2889,47 @@ const SceneUtility = {
 		if (wrapper) wrapper.style.pointerEvents = 'none';
 	},
 
-	addBlur(){
-		const el = document.getElementById('blur-overlay');
-		el.classList.add('visible');
-	},
+	addBlur(duration = 2000) {
+    const el = document.getElementById('blur-overlay');
+    if (!el) return;
+    el.style.transition = `opacity ${duration}ms ease`;
+    el.classList.add('visible');
+},
 
-	removeBlur(){
-		const el = document.getElementById('blur-overlay');
-		el.classList.remove('visible');
-	}
+removeBlur(duration = 0) {
+    const el = document.getElementById('blur-overlay');
+    if (!el) return;
+    el.style.transition = `opacity ${duration}ms ease`;
+    el.classList.remove('visible');
+},
+
+addBW(duration = 0) {
+    const el = document.getElementById('bw-filter-overlay');
+    if (!el) return;
+    el.style.transition = `opacity ${duration}ms ease`;
+    el.classList.add('visible');
+},
+
+removeBW(duration = 0) {
+    const el = document.getElementById('bw-filter-overlay');
+    if (!el) return;
+    el.style.transition = `opacity ${duration}ms ease`;
+    el.classList.remove('visible');
+},
+
+addSaturation(duration = 0) {
+    const el = document.getElementById('saturation-overlay');
+    if (!el) return;
+    el.style.transition = `opacity ${duration}ms ease`;
+    el.classList.add('visible');
+},
+
+removeSaturation(duration = 0) {
+    const el = document.getElementById('saturation-overlay');
+    if (!el) return;
+    el.style.transition = `opacity ${duration}ms ease`;
+    el.classList.remove('visible');
+}
 }
 
 const SceneFade = {
@@ -3764,6 +3796,12 @@ const AudioManager = {
 	//Unico contesto audio per l'intera applicazione
 	context: null,
 
+	// Filtro passa-basso condiviso (collegato tra gain e destination)
+	lowPassFilter: null,
+
+	// Frequenza massima = filtro trasparente	(bypass effettivo)
+	LOWPASS_BYPASS_FREQ: 20000,
+
 	//Mappa degli audio
 	assets: {
 		rage: 'assets/music/mus_rabbia_loop.mp3',
@@ -3772,7 +3810,9 @@ const AudioManager = {
 		crash: 'assets/sounds/sfx_incidente.mp3',
 		crash_short: 'assets/sounds/crash.mp3',
 		phone_vibration: 'assets/sounds/phone_vibration.mp3',
-		phone_notification: 'assets/sounds/phone_notification.mp3'
+		phone_notification: 'assets/sounds/phone_notification.mp3',
+		ambience: 'assets/sounds/sfx_ambience_v3_ok.mp3',
+		whistle: 'assets/sounds/sfx_whistle_loop.mp3'
 	},
 
 	//Restituisce il context, creandolo alla prima esecuzione
@@ -3783,6 +3823,30 @@ const AudioManager = {
 
 		return this.context;
 	},
+
+	/**
+	 * Restituisce (o crea) il filtro passa-basso condiviso.
+	 * Collegato una volta sola nella catena: gain → filter → destination.
+	 * Inizializzato a 20kHz = trasparente, così le tracce suonano normali
+	 * finché non si chiama setLowPass().
+	 */
+	getLowPassFilter() {
+		if (!this.lowPassFilter) {
+			const ctx = this.getContext();
+			
+			this.lowPassFilter = ctx.createBiquadFilter();
+			this.lowPassFilter.type = 'lowpass';
+			this.lowPassFilter.frequency.value = this.LOWPASS_BYPASS_FREQ;
+			this.lowPassFilter.Q.value = 0; // nessuna risonanza
+			
+			// Lo inserisce tra gain e destination
+			this.lowPassFilter.connect(ctx.destination);
+			console.log('Filter connected to destination');
+		}
+		
+		return this.lowPassFilter;
+	},
+
 
 	/** 
 	* Converte un valore di volume in un guadagno lineare per il GainNode.
@@ -3807,9 +3871,10 @@ const AudioManager = {
 
 		const source = context.createMediaElementSource(audio);
 		const gain = context.createGain();
+		const filter = this.getLowPassFilter();	
 
 		source.connect(gain);
-		gain.connect(context.destination);
+		gain.connect(filter);
 
 		this.tracks[id] = {
 			audio,
@@ -3927,6 +3992,36 @@ const AudioManager = {
 		} else {
 			track.gain.gain.setValueAtTime(value, context.currentTime);
 		}
+	},
+
+	/**
+	 * Applica il filtro passa-basso a TUTTE le tracce.
+	 * @param {number} frequency - Frequenza di taglio in Hz (200-400 = ovattato, 20000 = bypass)
+	 * @param {number} rampTime - Tempo della rampa in secondi (default 0.1)
+	 * 
+	 * Esempi:
+	 *   AudioManager.setLowPass(300, 2)   → fade a suono ovattato in 2s
+	 *   AudioManager.setLowPass(800, 0.5) → filtra solo gli alti in 0.5s
+	 *   AudioManager.setLowPass(20000)    → rimuove il filtro istantaneamente
+	 */
+	setLowPass(frequency, rampTime = 0.1) {
+		const filter = this.getLowPassFilter();
+		const ctx = this.getContext();
+
+		console.log('setLowPass called:', {
+			frequency,
+			rampTime,
+			currentFreq: filter.frequency.value,
+			filterType: filter.type,
+			ctxState: ctx.state,
+			numberOfInputs: filter.numberOfInputs,
+			numberOfOutputs: filter.numberOfOutputs
+    	});
+
+		filter.frequency.setValueAtTime(filter.frequency.value, ctx.currentTime);
+		filter.frequency.linearRampToValueAtTime(frequency, ctx.currentTime + rampTime);
+		// Debug dopo il set
+   		console.log('Frequency set to:', filter.frequency.value);
 	}
 };
 
@@ -4192,6 +4287,36 @@ const HeartbeatManager = {
 			this.masterGain.gain.setValueAtTime(value, now);
 		}
 	}
+};
+
+const BWFilter = {
+    overlay: null,
+    
+    // Inizializza - chiamare in init o nel costruttore principale
+    init() {
+        this.overlay = document.getElementById('bw-filter-overlay');
+    },
+    
+    // Attiva il filtro bianco e nero
+    enable(duration = 800) {
+        if (!this.overlay) return;
+        this.overlay.style.transition = `background-color ${duration}ms ease`;
+        this.overlay.classList.add('active');
+    },
+    
+    // Disattiva il filtro
+    disable(duration = 800) {
+        if (!this.overlay) return;
+        this.overlay.style.transition = `background-color ${duration}ms ease`;
+        this.overlay.classList.remove('active');
+    },
+    
+    // Attiva/disattiva immediatamente senza transizione
+    set(active) {
+        if (!this.overlay) return;
+        this.overlay.style.transition = 'none';
+        active ? this.overlay.classList.add('active') : this.overlay.classList.remove('active');
+    }
 };
 
 /*OGGETTI CLICKABILI*/

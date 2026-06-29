@@ -313,7 +313,7 @@ monogatari.script ({
 			NightOverlay.hideTorch();
 			await BlinkOverlay.blink(1000);
 			hideTextBox();
-			SceneUtility.addBlur();
+			SceneUtility.addBlur(2000);
 			await BlinkOverlay.doubleBlink(400);
 			await SceneFade.toVisible({duration: 5});
 		},
@@ -352,16 +352,13 @@ monogatari.script ({
 
 		'show scene room_day_dark',
 		'wait 1500',
-		async () => {
-			SceneUtility.addBlur();
-			await SceneFade.toHidden();
-		},
+		async () =>  await SceneFade.toHidden(),
 
 		async () => {
 			await BlinkOverlay.blink(400);
 			await sleep(2000);
 			await BlinkOverlay.doubleBlink(200);
-			SceneUtility.removeBlur();
+			SceneUtility.removeBlur(2000);
 		},
 
 		'wait 3500',
@@ -495,38 +492,91 @@ monogatari.script ({
 	'Esci_Casa':[
 		async () => {
 			PhoneUI.hide();
-			await SceneFade.toVisible({
-				color: '#fff'
-			})
+			await SceneFade.toVisible({ color: '#fff' });
 			SceneUtility.emptyScene();
 		},
 
 		'show scene outside',
+		
 		async () => {
-			SceneUtility.addBlur();
-			await SceneFade.toHidden({duration: 2});
+			// Ambience parte subito
+			AudioManager.play('ambience', { volume: 1, loop: false, fade: 1 });
+			
+			// Bagliore iniziale bianco (5 secondi)
+			SceneUtility.addBW(500);
+			await SceneFade.toHidden({ duration: 5 });
 		},
 		
-		'wait 3000',
-		
+		// B/N + primo blink
 		async () => {
-			await BlinkOverlay.blink(400);
-			SceneUtility.removeBlur();
-			await sleep(2000);
-			await BlinkOverlay.blink(200);
-			await BlinkOverlay.closeLid(200);
 			await sleep(1000);
-		},
-		
-		'show scene feet',
-
-		async () => {
-			await BlinkOverlay.openLid(400);
-			await sleep (3000);
-			await BlinkOverlay.blink(200);
+			await BlinkOverlay.blink(400);
 			await sleep(1500);
 		},
 		
+		// Scena normale
+		async () => {
+			SceneUtility.removeBW(4000);
+			await sleep(4000);
+		},
+		
+		// Secondo blink, poi saturazione graduale
+		async () => {
+			await BlinkOverlay.blink(200);
+			await sleep(800);
+			SceneUtility.addSaturation(6500);
+			await sleep(3500);
+		},
+		
+		// Picco saturazione: blur + fischio ovattato che emerge
+		async () => {
+			SceneUtility.addBlur(2000);
+			
+			await AudioManager.play('whistle', { volume: 1, loop: true, fade: 8 });
+
+			const track = AudioManager.getTrack('whistle');
+			await new Promise(resolve => {
+				track.audio.onplay = resolve;	//Si trigghera solo quando l'audio parte veramente
+				if(!track.audio.paused) resolve(); //se è già partito, risolvi subito 
+			})
+
+			AudioManager.setLowPass(1200, 3);
+			await sleep(3000);
+			AudioManager.setLowPass(5000, 5);
+			// AudioManager.setLowPass(20000, 5);
+			
+			await sleep(5000);
+		},
+		
+		// Blink → doppio blink
+		async () => {
+			await BlinkOverlay.blink(300);
+			await sleep(600);
+			await BlinkOverlay.blink(200);
+			await sleep(400);
+			await BlinkOverlay.blink(200);
+			await sleep(800);
+		},
+		
+		// Cambio sui piedi: rimuovi filtri
+		'show scene feet',
+		
+		async () => {
+			await BlinkOverlay.closeLid(400);
+			SceneUtility.removeBlur(1500);
+			await sleep(500);
+			SceneUtility.removeSaturation(2000);
+			await sleep(1800);
+			await BlinkOverlay.openLid(400);
+			await sleep(1500);
+		},
+		
+		// Scelta
+		async () => {
+			await BlinkOverlay.blink(200);
+			await sleep(1500);
+		},
+			
 		{'Choice':{
 			'Torna a casa':{
 				'Text': 'TORNA A CASA',
