@@ -2395,7 +2395,10 @@ const SCENE_IMAGES = {
 	// degli oggetti della contrattazione. onClick punta alla stessa immagine (porta.png)
 	// perché non vogliamo cambiare la grafica: al click parte solo il jump della scena.
 	'accettazione_porta': [
-		{ id: 'porta_acc', src: 'assets/images/porta.png', onClick: 'assets/images/porta.png', dialog: 'jump Scena_Accettazione' }
+		{ id: 'porta_acc', src: 'assets/images/porta.png', onClick: 'assets/images/porta.png', dialog: 'jump Scena_Accettazione' },
+		// Oggetti già al loro posto ordinato (statici, non interattivi)
+		{ id: 'pianta_3', src: 'assets/images/pianta_3.png' },
+		{ id: 'cornice',  src: 'assets/images/cornice.png' }
 	],
 	'accettazione': [
 		// TODO: sostituire con gli asset definitivi (attualmente i file non esistono)
