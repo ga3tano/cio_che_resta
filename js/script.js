@@ -184,10 +184,7 @@ monogatari.script ({
 		async () => {
 			NightOverlay.showNight();
 			await SceneFade.toHidden();
-			
-			//Disabilito i click per poter per mettere di far skippare i dialoghi
-			SceneUtility.lockItemWrapper();
-			
+						
 			showTextBox();
 		},
 		
@@ -211,10 +208,6 @@ monogatari.script ({
 
 		() => {
 			hideTextBox();
-
-			//Riabilito i click per permettere il corretto funzionamento della torcia
-			SceneUtility.unlockItemWrapper();
-
 			NightOverlay.showTorch();
 		},
 
@@ -223,7 +216,7 @@ monogatari.script ({
 
 	'DialogoTorcia_Pianta': [
 		() => showTextBox(),
-		'<div style="color: #000000;">.</div>',
+		'<div style="color: #000000;">dad .</div>',
     	'dad Dovrei annaffiarla, ha bisogno di luce, sta perdendo tutte le foglie.',
 		'dad Oggi lo faccio, devo solo organizzarmi meglio, non voglio che si secchi del tutto.',
 		'dad Si...si...lo farò dopo, dopo che mi sarò alzato.',
@@ -236,7 +229,7 @@ monogatari.script ({
 
 	'DialogoTorcia_Cornice': [
 		() => showTextBox(),
-		'<div style="color: #000000;">.</div>',
+		'<div style="color: #000000;">dad .</div>',
     	'dad Quanta polvere...non si vede neanche più la fotografia.',
 		'dad Sei così felice lì, quel giorno al parco ci siamo divertiti molto, abbiamo preso un gelato, passeggiato e cantato le tue canzoni preferite.',
 		'dad Dovremmo rifarlo!',
@@ -252,7 +245,7 @@ monogatari.script ({
 
 	'DialogoTorcia_Porta': [
 		() => showTextBox(),
-		'<div style="color: #000000;">.</div>',
+		'dad <div style="color: #000000;">.</div>',
     	'dad Mi sento così stanco, non ho voglia di uscire.',
 		'dad Non so neanche che ore sono.',
 		'dad Potrei dormire ancora un po’.',
@@ -267,7 +260,7 @@ monogatari.script ({
 
 	'DialogoTorcia_Mobile': [
 		() => showTextBox(),
-		'<div style="color: #000000;">.</div>',
+		'dad <div style="color: #000000;">.</div>',
     	'dad Ti ho comprato una nuova maglietta, sono sicuro che ti piacerà',
 		'dad È verde, il tuo colore preferito.',
 		'dad ...',
@@ -344,49 +337,41 @@ monogatari.script ({
 
 //NEGAZIONE
 	'Negazione_Cellulare': [
-        async () => {
-			NightOverlay.hide();
+        // async () => {
+		// 	NightOverlay.hide();
 
-			await SceneUtility.loadScene("negazione"); 
-		},
+		// 	await SceneUtility.loadScene("negazione"); 
+		// },
 
-		'show scene room_day_dark',
-		'wait 1500',
-		async () =>  await SceneFade.toHidden(),
+		// 'show scene room_day_dark',
+		// 'wait 1500',
+		// async () =>  await SceneFade.toHidden(),
 
-		async () => {
-			await BlinkOverlay.blink(400);
-			await sleep(2000);
-			await BlinkOverlay.doubleBlink(200);
-			SceneUtility.removeBlur(2000);
-		},
+		// async () => {
+		// 	await BlinkOverlay.blink(150);
+		// 	await sleep(2000);
+		// 	await BlinkOverlay.doubleBlink(150);
+		// 	SceneUtility.removeBlur(2000);
+		// },
 
-		'wait 3500',
+		// 'wait 3500',
 
-        'play sound phone_vibration',
-		'play sound phone_notification',
+        // 'play sound phone_vibration',
+		// 'play sound phone_notification',
 
-        {'Function': {
-            'Apply': function () {
-                PhoneUI.reset();
-                // Imposta il mittente senza aprire il telefono: vedrai solo badge e lockscreen.
-                PhoneUI.setContactName('Giulia');
-                PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
-                PhoneUI.vibrate();
-                return true;
-            },
-            'Revert': function () {
-                PhoneUI.hide();
-                return true;
-            }
-        }},
+        () => {
+			PhoneUI.reset();
+			// Imposta il mittente senza aprire il telefono: vedrai solo badge e lockscreen.
+			PhoneUI.setContactName('Giulia');
+			PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
+			PhoneUI.vibrate();
+		},                
 
         // PhoneChoice mostra questi pulsanti direttamente nella chat del telefono.
         {'PhoneChoice': {
             'Rispondi': {
-                'Text': 'RISPONDI(WIP)',
-				'Do': '',
-				'Disabled': true          
+                'Text': 'RISPONDI',
+				'Do': 'jump Negazione_Rispondi',       
             },
             'Ignora': {
                 'Text': 'IGNORA',
@@ -396,37 +381,85 @@ monogatari.script ({
     ],
 
     'Negazione_Rispondi': [
-        {'Function': {
-            'Apply': function () {
-                PhoneUI.addOutgoing('Oggi non ho le forze per uscire, scusami.');
-                return true;
-            },
-            'Revert': function () {
-                PhoneUI.reset();
-                PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
-                return true;
-            }
-        }},
+        async () => {
+			// await HeartbeatManager.start({bpm: 75, fadeIn: 1.5, volume: 1})
+			// HeartbeatManager.accelerate(120, 6);
+			return new Promise(resolve => {
+				PhoneTyping.show('Si dai, perché no...fammi finire un paio di cose e ti aggiorno', 8, resolve);
+			})
+		},
 
-        'play sound crash with volume 100',
-        'show scene #300000 with fadeIn',
+		async() => {
+			PhoneTyping.send();
+			await sleep(300);
+			PhoneUI.addOutgoing('Si dai, perchè no...fammi finire un paio di cose e ti aggiorno');
+			PhoneTyping.hide();
+			await sleep(2000);
+			// SceneUtility.addBlur(2000);
+			// await sleep(1500);
+			// SceneUtility.addSaturation(2500);
+			// HeartbeatManager.accelerate(180, 4);
+			// await sleep(6000);
+			// SceneUtility.removeBlur(2000);
+			// SceneUtility.removeSaturation(0);
+			// HeartbeatManager.decelerate(75, 3);
+			PhoneGlitch.trigger(2000);
+			await sleep(2000);
+			const bubbles = document.querySelectorAll('.phone-bubble.outgoing');
+			const lastBubble = bubbles[bubbles.length - 1];
+
+			if(lastBubble){
+				lastBubble.innerHTML = `\u2298 Questo messaggio è stato eliminato`;
+				lastBubble.classList.add('deleted');
+			}
+
+			// SceneUtility.removeBlur(1000);
+			// await sleep(3000);
+			// HeartbeatManager.stop();
+			
+			await sleep(4000);
+		},
+		
+
+		{'PhoneChoice':{ 
+			'Rispondi': {
+				'Text': 'Rispondi',
+				'Do': '',
+				'Disabled': true
+			},
+			'Ignora': {
+				'Text': 'Ignora',
+				'Do': 'jump Negazione_Ignora_2'
+			}
+		}}
+                
         // 'jump Esercizio_Respirazione'	DA IMPLEMENTARE
     ],
 
-    'Negazione_Ignora': [
-        {'Function': {
-            'Apply': function () {
-                PhoneUI.hide();
-                return true;
-            },
-            'Revert': function () {
-                // Anche tornando indietro non apriamo il telefono in automatico.
-                PhoneUI.setContactName('Giulia');
-                return true;
-            }
-        }},
+	'Negazione_Ignora_2':[
+		async () => {
+			PhoneUI.hide();
+			await AudioManager.play('birds', {fade: 1, volume: 0.5, loop: true});
+		},
 
-        'wait 2000',
+		() => showTextBox(),
+
+		'dad Oggi.. oggi non ci riesco. Mi dispiace. Non ho neanche le forze per dirtelo.',
+
+		() => hideTextBox(),
+
+		async () => {
+			await sleep(6000);
+			AudioManager.fadeOut('birds', 2);
+		},
+
+		'jump Secondo_Messaggio'
+	],
+
+    'Negazione_Ignora': [
+		() => PhoneUI.hide(),
+		
+		'wait 2000',
         'jump Secondo_Messaggio'
     ],
 
@@ -434,20 +467,14 @@ monogatari.script ({
         'play sound phone_vibration',
 		'play sound phone_notification',
 
-        {'Function': {
-            'Apply': function () {
+        () => {
                 PhoneUI.reset();
                 // Nuovo messaggio: telefono chiuso, solo notifica/badge.
                 PhoneUI.setContactName('Giulia');
                 PhoneUI.addIncoming('Sai che può solo farti bene, hai bisogno di aria. Ti aspetto.');
                 PhoneUI.vibrate();
                 return true;
-            },
-            'Revert': function () {
-                PhoneUI.hide();
-                return true;
-            }
-        }},
+		},
 
         {'PhoneChoice': {
             'Esci': {

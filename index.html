@@ -178,6 +178,16 @@
 							<span class="phone-status">online</span>
 						</div>
 						<div id="phone-chat" class="phone-chat"></div>
+						
+						<!-- Area scrittura messaggio -->
+						<div id="phone-composer" class="phone-composer" style="display: none;">
+							<div id="phone-input" class="phone-input" contenteditable="false">
+								<span id="phone-input-text" class="phone-input-text"></span>
+							</div>
+							<button id="phone-send-btn" class="phone-send-btn" type="button">
+								<span>↑</span>
+							</button>
+						</div>
 					</div>
 					
 					<!--
@@ -198,9 +208,10 @@
 							<div class="lock-hint">Tocca per sbloccare</div>
 						</div>
 					</div>
-					
 				</div>
 			</div>
+
+			<div id="phone-glitch" class="phone-glitch"></div>
 		</div>
 
 		<div id="night-overlay" class="night-overlay"></div>

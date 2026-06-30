@@ -851,6 +851,101 @@ const PhoneUI = {
 	}
 }
 
+const PhoneTyping = {
+    composer: null,
+    inputText: null,
+    sendBtn: null,
+    currentText: '',
+    fullText: '',
+    charIndex: 0,
+    isAnimating: false,
+    onComplete: null, // callback quando finisce
+
+    /**
+     * Inizializza i riferimenti DOM.
+     */
+    init() {
+        this.composer = document.getElementById('phone-composer');
+        this.inputText = document.getElementById('phone-input-text');
+        this.sendBtn = document.getElementById('phone-send-btn');
+    },
+
+    /**
+     * Mostra il compositore e anima la scrittura del testo.
+     * @param {string} text - Il testo completo da "digitare"
+     * @param {number} speed - Millisecondi tra un carattere e l'altro (default 80)
+     * @param {Function} onComplete - Callback quando la digitazione finisce
+     */
+    show(text, speed = 80, onComplete = null) {
+        if (!this.composer) this.init();
+        
+        this.fullText = text;
+        this.currentText = '';
+        this.charIndex = 0;
+        this.isAnimating = true;
+        this.onComplete = onComplete;
+
+        this.composer.style.display = 'flex';
+        this.sendBtn.disabled = true;
+        this.inputText.textContent = '';
+
+        this._typeNextChar(speed);
+    },
+
+    /**
+     * Digita un carattere alla volta.
+     */
+    _typeNextChar(speed) {
+        if (this.charIndex >= this.fullText.length) {
+            this._finish();
+            return;
+        }
+
+        this.currentText += this.fullText[this.charIndex];
+        this.inputText.textContent = this.currentText;
+        this.charIndex++;
+
+        // Variazione casuale della velocità per realismo (±30%)
+        const variation = speed * (0.7 + Math.random() * 0.6);
+        
+        setTimeout(() => this._typeNextChar(speed), variation);
+    },
+
+    /**
+     * Termina l'animazione di scrittura.
+     */
+    _finish() {
+        this.isAnimating = false;
+        this.sendBtn.disabled = false;
+		
+		if (typeof this.onComplete === 'function') {
+            this.onComplete();
+        }
+    },
+
+    /**
+     * Simula il click sul tasto invio.
+     * Chiamala quando vuoi "inviare" il messaggio.
+     */
+    send() {
+        if (this.isAnimating) return;
+        
+        this.sendBtn.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+            this.sendBtn.style.transform = '';
+        }, 100);
+    },
+
+    /**
+     * Nasconde il compositore.
+     */
+    hide() {
+        if (!this.composer) return;
+        this.composer.style.display = 'none';
+        this.isAnimating = false;
+    }
+}
+
 const PhoneToggle = {
 	/*
 		Controller del pulsante globale.
@@ -1010,6 +1105,96 @@ const PhoneToggle = {
 
 		this.button.setAttribute('aria-pressed', String(isExpanded));
 	}
+};
+
+//CREDITS TO STANKO: https://codepen.io/stanko/pen/emYEpvP
+const PhoneGlitch = {
+    overlay: null,
+    strips: [],
+    isRunning: false,
+
+    KEYFRAMES: `
+        @keyframes g5 {
+            0%,30%,40%,70%,80%,100% { transform:translateX(0); }
+            30.1%,39.9% { transform:translateX(var(--x1)); }
+            70.1%,79.9% { transform:translateX(var(--x2)); }
+        }
+        @keyframes g6 {
+            0%,25%,35%,65%,75%,100% { transform:translateX(0); }
+            25.1%,34.9% { transform:translateX(var(--x1)); }
+            65.1%,74.9% { transform:translateX(var(--x2)); }
+        }
+        @keyframes g7 {
+            0%,35%,45%,75%,85%,100% { transform:translateX(0); }
+            35.1%,44.9% { transform:translateX(var(--x1)); }
+            75.1%,84.9% { transform:translateX(var(--x2)); }
+        }
+        @keyframes g8 {
+            0%,20%,30%,60%,70%,100% { transform:translateX(0); }
+            20.1%,29.9% { transform:translateX(var(--x1)); }
+            60.1%,69.9% { transform:translateX(var(--x2)); }
+        }
+    `,
+
+    init() {
+        if (this.overlay) return;
+
+        if (!document.getElementById('glitch-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'glitch-keyframes';
+            style.textContent = this.KEYFRAMES;
+            document.head.appendChild(style);
+        }
+
+        this.overlay = document.getElementById('phone-glitch');
+        if (!this.overlay) return;
+
+        // Ottieni la shell come riferimento per clonare lo sfondo
+        const shell = document.getElementById('phone-shell');
+        const shellStyle = getComputedStyle(shell);
+
+        const animations = ['g5', 'g6', 'g7', 'g8'];
+
+        let top = 0;
+        while (top < 100) {
+            const height = 2 + Math.random() * 8;
+            const actualHeight = Math.min(height, 100 - top);
+
+            const strip = document.createElement('div');
+            strip.className = 'glitch-strip';
+
+            // Clona l'aspetto della shell in questa striscia
+            Object.assign(strip.style, {
+                top: `${top}%`,
+                height: `${actualHeight}%`,
+                background: shellStyle.background,
+                border: shellStyle.border,
+                borderRadius: shellStyle.borderRadius,
+                animationName: animations[Math.floor(Math.random() * animations.length)],
+                animationDuration: `${5 + Math.random() * 5}s`,
+                animationDelay: `${Math.random() * 2}s`,
+                '--x1': `${Math.floor(Math.random() * 16 - 8)}px`,
+                '--x2': `${Math.floor(Math.random() * 16 - 8)}px`
+            });
+
+            this.overlay.appendChild(strip);
+            this.strips.push(strip);
+            top += actualHeight;
+        }
+    },
+
+    trigger(duration = 1000) {
+        if (!this.overlay) this.init();
+        if (this.isRunning) return;
+        this.isRunning = true;
+
+        this.overlay.classList.add('active');
+
+        setTimeout(() => {
+            this.overlay.classList.remove('active');
+            this.isRunning = false;
+        }, duration);
+    }
 };
 
 const NightOverlay = {
@@ -3816,7 +4001,8 @@ const AudioManager = {
 		phone_vibration: 'assets/sounds/phone_vibration.mp3',
 		phone_notification: 'assets/sounds/phone_notification.mp3',
 		ambience: 'assets/sounds/sfx_ambience_v3_ok.mp3',
-		whistle: 'assets/sounds/sfx_whistle_loop.mp3'
+		whistle: 'assets/sounds/sfx_whistle_loop.mp3',
+		birds: 'assets/sounds/sfx_respiro_uccellini.mp3',
 	},
 
 	//Restituisce il context, creandolo alla prima esecuzione
@@ -5032,11 +5218,17 @@ function sleep(ms){
 function showTextBox(){
 	document.body.classList.add('show-textbox');
 	document.body.classList.remove('hide-textbox');
+	
+	//Blocco i click sull'item wrapper
+	SceneUtility.lockItemWrapper();
 }
 
 function hideTextBox(){
 	document.body.classList.add('hide-textbox')
 	document.body.classList.remove('show-textbox');
+
+	//Sblocco i click sull'item wrapper
+	SceneUtility.unlockItemWrapper();
 }
 
 function pauseTextBox(time=3000){

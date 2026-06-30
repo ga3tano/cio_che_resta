@@ -566,7 +566,7 @@ body.show-textbox .phone-toggle {
 .phone-layer {
     position: fixed;
     inset: 0;
-    z-index: 1000000;
+    z-index: 10;
     display: none;
     align-items: center;
     justify-content: center;
@@ -598,6 +598,47 @@ body.show-textbox .phone-toggle {
 
 .phone-shell.vibrating {
     animation: phone-vibrate 0.22s linear infinite;
+}
+
+.phone-glitch {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 38px;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+}
+
+.phone-glitch.active {
+    opacity: 1;
+}
+
+.phone-glitch .glitch-strip {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    animation-timing-function: linear;
+}
+
+/* Ogni strip mostra una porzione del telefono */
+.phone-glitch .glitch-strip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh; /* Abbastanza alto da coprire */
+    background: inherit;
+    /* La proprietà top negativa viene settata via JS per mostrare 
+       la porzione corretta del telefono */
 }
 
 .phone-speaker {
@@ -778,6 +819,10 @@ body.show-textbox .phone-toggle {
     font-family: 'Helvetica', sans-serif;
 }
 
+.phone-bubble.outgoing.deleted{
+    font-style: italic;
+}
+
 /* Contiene i pulsanti creati dalla custom action PhoneChoice dentro la chat. */
 .phone-choice-container {
     align-items: center;
@@ -821,6 +866,87 @@ body.show-textbox .phone-toggle {
 .phone-choice-button:disabled {
     cursor: default;
     opacity: 0.55;
+    transform: none;
+}
+
+/* Area composizione messaggio */
+.phone-composer {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(5, 7, 11, 0.3);
+    flex-shrink: 0;
+}
+
+.phone-composer.visible {
+    display: flex;
+}
+
+/* Campo di testo finto (simula l'input) */
+.phone-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 8px 14px;
+    min-height: 36px;
+    max-height: 80px;
+    overflow-y: auto;
+    font-family: 'Helvetica', sans-serif;
+    font-size: 0.88rem;
+    color: white;
+    line-height: 1.3;
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.phone-input-text {
+    flex: 1;
+}
+
+/* Cursore lampeggiante */
+.phone-cursor {
+    color: rgba(0, 102, 204, 0.9);
+    font-weight: 400;
+    animation: cursor-blink 0.8s step-end infinite;
+}
+
+.phone-cursor.hidden {
+    visibility: hidden;
+}
+
+/* Pulsante invio */
+.phone-send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 102, 204, 0.8);
+    color: white;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, transform 0.15s ease;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.phone-send-btn:hover {
+    transform: scale(1.05);
+}
+
+.phone-send-btn:active {
+    transform: scale(0.95);
+}
+
+.phone-send-btn:disabled {
+    background: rgba(255, 255, 255, 0.12);
     transform: none;
 }
 
@@ -1022,6 +1148,37 @@ body.show-textbox .phone-toggle {
     z-index: 1000;
 }
 
+/* Overlay glitch sopra tutto il telefono */
+.phone-glitch {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 10;
+    border-radius: 38px;  /* stesso border-radius della shell */
+    overflow: hidden;
+    transition: opacity 0.1s ease;
+}
+
+.phone-glitch.active {
+    opacity: 1;
+}
+
+.phone-glitch .glitch-strip {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    animation-timing-function: linear;
+    pointer-events: none;
+}
+
+
+/* Overlay per tutta la scena */
 .night-overlay{
     position: fixed;
     top: 0;
@@ -1087,7 +1244,7 @@ body.show-textbox .phone-toggle {
 
 /* Blur */
 .blur-overlay {
-    z-index: 10;
+    z-index: 12;
     backdrop-filter: blur(8px);
 }
 
@@ -1100,7 +1257,7 @@ body.show-textbox .phone-toggle {
 
 /* Saturazione */
 .saturation-overlay {
-    z-index: 10;
+    z-index: 11;
     mix-blend-mode: saturation;
     background-color: rgba(255, 0, 0, 0.3);
 }
