@@ -554,7 +554,7 @@ monogatari.script ({
 			await sleep(600);
 			await BlinkOverlay.blink(200);
 			await sleep(400);
-			await BlinkOverlay.blink(200);
+			await BlinkOverlay.closeLid(400);
 			await sleep(800);
 		},
 		
@@ -562,13 +562,11 @@ monogatari.script ({
 		'show scene feet',
 		
 		async () => {
-			await BlinkOverlay.closeLid(400);
-			SceneUtility.removeBlur(1500);
-			await sleep(500);
-			SceneUtility.removeSaturation(2000);
-			await sleep(1800);
 			await BlinkOverlay.openLid(400);
-			await sleep(1500);
+			SceneUtility.removeBlur(3000);
+			await sleep(500);
+			SceneUtility.removeSaturation(2500);
+			await sleep(1800);
 		},
 		
 		// Scelta
