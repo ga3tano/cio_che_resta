@@ -510,7 +510,7 @@ monogatari.script ({
 		// B/N + primo blink
 		async () => {
 			await sleep(1000);
-			await BlinkOverlay.blink(400);
+			await BlinkOverlay.blink(150);
 			await sleep(1500);
 		},
 		
@@ -522,7 +522,7 @@ monogatari.script ({
 		
 		// Secondo blink, poi saturazione graduale
 		async () => {
-			await BlinkOverlay.blink(200);
+			await BlinkOverlay.blink(150);
 			await sleep(800);
 			SceneUtility.addSaturation(6500);
 			await sleep(3500);
@@ -550,11 +550,11 @@ monogatari.script ({
 		
 		// Blink → doppio blink
 		async () => {
-			await BlinkOverlay.blink(300);
+			await BlinkOverlay.blink(150);
 			await sleep(600);
-			await BlinkOverlay.blink(200);
+			await BlinkOverlay.blink(150);
 			await sleep(400);
-			await BlinkOverlay.closeLid(400);
+			await BlinkOverlay.closeLid(150);
 			await sleep(800);
 		},
 		
@@ -562,7 +562,7 @@ monogatari.script ({
 		'show scene feet',
 		
 		async () => {
-			await BlinkOverlay.openLid(400);
+			await BlinkOverlay.openLid(150);
 			SceneUtility.removeBlur(3000);
 			await sleep(500);
 			SceneUtility.removeSaturation(2500);
