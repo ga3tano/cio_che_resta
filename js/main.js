@@ -421,7 +421,7 @@ const PhoneUI = {
         // Chiudendo il telefono disattiviamo anche i click delle scelte telefoniche.
         this.layer.classList.remove('visible', 'choice-active');
         this.layer.setAttribute('aria-hidden', 'true');
-        this.stopVibration();
+        // this.stopVibration();
         this.stopClock();
 
 		if (typeof PhoneToggle !== 'undefined') {
@@ -686,24 +686,24 @@ const PhoneUI = {
 		this.showChatView({ markNotificationsAsRead: true });
 	},
 
-    vibrate(duration = 900) {
-        if (!this.layer) this.init();
+    // vibrate(duration = 900) {
+    //     if (!this.layer) this.init();
 
-        this.shell.classList.add('vibrating');
+    //     this.shell.classList.add('vibrating');
 
-        if (navigator.vibrate) {
-            navigator.vibrate([200, 100, 200]);
-        }
+    //     if (navigator.vibrate) {
+    //         navigator.vibrate([200, 100, 200]);
+    //     }
 
-        setTimeout(() => {
-            this.stopVibration();
-        }, duration);
-    },
+    //     setTimeout(() => {
+    //         this.stopVibration();
+    //     }, duration);
+    // },
 
-    stopVibration() {
-        if (!this.shell) return;
-        this.shell.classList.remove('vibrating');
-    },
+    // stopVibration() {
+    //     if (!this.shell) return;
+    //     this.shell.classList.remove('vibrating');
+    // },
 
     startClock() {
         this.updateClock();
@@ -1108,139 +1108,220 @@ const PhoneToggle = {
 };
 
 //CREDITS TO STANKO: https://codepen.io/stanko/pen/emYEpvP
+// const PhoneGlitch = {
+//     PHONE_SNAPSHOT_URL: '/assets/images/phone-glitch-snapshot.png',
+
+//     colorPresets: [
+//         { c1: 'rgba(255,60,90,0.4)', c2: 'rgba(60,220,220,0.4)', hue: 0 },
+//         { c1: 'rgba(230,80,190,0.35)', c2: 'rgba(90,220,150,0.35)', hue: 35 },
+//         { c1: 'rgba(140,90,230,0.4)', c2: 'rgba(220,210,90,0.35)', hue: -30 },
+//         { c1: 'rgba(80,150,230,0.4)', c2: 'rgba(230,130,70,0.4)', hue: 20 }
+//     ],
+
+//     stripPool: [],
+//     running: false,
+//     timers: [],
+
+//     rand(min, max) {
+//         return Math.round(Math.random() * (max - min)) + min;
+//     },
+
+//     pick(arr) {
+//         return arr[Math.floor(Math.random() * arr.length)];
+//     },
+
+//     randomStripHeight() {
+//         const r = Math.random();
+//         if (r < 0.5) return this.rand(3, 10);
+//         if (r < 0.85) return this.rand(10, 26);
+//         return this.rand(26, 60);
+//     },
+
+//     nextShift() {
+//         const dir = Math.random() < 0.5 ? -1 : 1;
+//         const magnitude = this.rand(16, 48);
+//         return dir * magnitude;
+//     },
+
+//     buildStripPool(shellEl, glitchEl, imageUrl) {
+//         glitchEl.innerHTML = '';
+//         glitchEl.style.setProperty('--phone-snapshot', `url(${imageUrl})`);
+//         this.stripPool = [];
+
+//         const h = shellEl.offsetHeight;
+//         let y = 0;
+
+//         while (y < h) {
+//             let stripH = this.randomStripHeight();
+//             if (y + stripH > h) stripH = h - y;
+
+//             const strip = document.createElement('div');
+//             strip.className = 'phone-glitch-strip';
+//             strip.style.top = `${(y / h) * 100}%`;
+//             strip.style.height = `${(stripH / h) * 100}%`;
+//             strip.style.backgroundPosition = `0 ${(y / h) * 100}%`;
+//             strip.style.backgroundSize = `100% ${(h / stripH) * 100}%`;
+
+//             glitchEl.appendChild(strip);
+//             this.stripPool.push(strip);
+//             y += stripH;
+//         }
+//     },
+
+//     setStripState(strip, on, preset, xShift) {
+//         if (on) {
+//             const dir = xShift >= 0 ? 1 : -1;
+//             strip.style.transition = 'none';
+//             strip.style.transform = `translateX(${xShift}px)`;
+//             strip.style.filter = `saturate(1.7) contrast(1.2) hue-rotate(${preset.hue}deg) drop-shadow(${dir * 5}px 0 0 ${preset.c1}) drop-shadow(${-dir * 5}px 0 0 ${preset.c2})`;
+//         } else {
+//             strip.style.transition = 'transform 40ms linear, filter 40ms linear';
+//             strip.style.transform = 'translateX(0)';
+//             strip.style.filter = 'none';
+//         }
+//     },
+
+//     scheduleStrip(strip) {
+//         if (!this.running) return;
+
+//         const idleDelay = this.rand(30, 500);
+//         const t1 = setTimeout(() => {
+//             if (!this.running) return;
+
+//             const preset = this.pick(this.colorPresets);
+//             const xShift = this.nextShift();
+//             const holdDuration = this.pick([
+//                 this.rand(20, 60),
+//                 this.rand(60, 140),
+//                 this.rand(140, 320)
+//             ]);
+
+//             this.setStripState(strip, true, preset, xShift);
+
+//             const t2 = setTimeout(() => {
+//                 if (!this.running) return;
+//                 this.setStripState(strip, false);
+//                 this.scheduleStrip(strip);
+//             }, holdDuration);
+//             this.timers.push(t2);
+//         }, idleDelay);
+//         this.timers.push(t1);
+//     },
+
+//     trigger(totalDuration = 5000) {
+//         const shell = document.getElementById('phone-shell');
+//         const glitch = document.getElementById('phone-glitch');
+
+//         if (this.stripPool.length === 0) {
+//             this.buildStripPool(shell, glitch, this.PHONE_SNAPSHOT_URL);
+//         }
+
+//         this.running = true;
+//         glitch.classList.add('active');
+
+//         const activeCount = Math.max(5, Math.round(this.stripPool.length * 0.55));
+//         const shuffled = this.stripPool.slice().sort(() => Math.random() - 0.5);
+//         for (let i = 0; i < activeCount; i++) {
+//             this.scheduleStrip(shuffled[i]);
+//         }
+
+//         setTimeout(() => {
+//             this.running = false;
+//             this.timers.forEach(clearTimeout);
+//             this.timers = [];
+//             this.stripPool.forEach(s => this.setStripState(s, false));
+//             glitch.classList.remove('active');
+//         }, totalDuration);
+//     },
+
+//     stop() {
+//         this.running = false;
+//         this.timers.forEach(clearTimeout);
+//         this.timers = [];
+//         this.stripPool.forEach(s => this.setStripState(s, false));
+//         const glitch = document.getElementById('phone-glitch');
+//         if (glitch) glitch.classList.remove('active');
+//     }
+// };
+
 const PhoneGlitch = {
-    PHONE_SNAPSHOT_URL: '/assets/images/phone-glitch-snapshot.png',
+    async glitchText(el, newText, newClass, duration = 800) {
+        const originalText = el.textContent;
+        const chars = '!@#$%&*()_+-=[]{}|;:,.<>?/\\';
+        const endTime = Date.now() + duration;
+        const baseText = originalText.split('');
 
-    colorPresets: [
-        { c1: 'rgba(255,60,90,0.4)', c2: 'rgba(60,220,220,0.4)', hue: 0 },
-        { c1: 'rgba(230,80,190,0.35)', c2: 'rgba(90,220,150,0.35)', hue: 35 },
-        { c1: 'rgba(140,90,230,0.4)', c2: 'rgba(220,210,90,0.35)', hue: -30 },
-        { c1: 'rgba(80,150,230,0.4)', c2: 'rgba(230,130,70,0.4)', hue: 20 }
-    ],
+        await HeartbeatManager.start({ bpm: 75, fadeIn: 0.2, volume: 1 });
+        HeartbeatManager.accelerate(160, duration / 1000);
 
-    stripPool: [],
-    running: false,
-    timers: [],
+        const scramble = () => {
+            const remaining = endTime - Date.now();
 
-    rand(min, max) {
-        return Math.round(Math.random() * (max - min)) + min;
+            if (remaining <= 0) {
+                HeartbeatManager.stop({ fadeOut: 0 });
+                el.innerHTML = newText;
+                el.classList.add(newClass);
+                el.removeAttribute('data-glitch-text');
+                return;
+            }
+
+            const progress = 1 - (remaining / duration);
+
+            const scrambled = baseText.map((char) => {
+                if (char === ' ') return ' ';
+                if (Math.random() < progress) return char;
+                return chars[Math.floor(Math.random() * chars.length)];
+            }).join('');
+
+            el.textContent = scrambled;
+            el.setAttribute('data-glitch-text', scrambled);
+            setTimeout(scramble, 40 + Math.random() * 40);
+        };
+
+        scramble();
     },
 
-    pick(arr) {
-        return arr[Math.floor(Math.random() * arr.length)];
-    },
-
-    randomStripHeight() {
-        const r = Math.random();
-        if (r < 0.5) return this.rand(3, 10);
-        if (r < 0.85) return this.rand(10, 26);
-        return this.rand(26, 60);
-    },
-
-    nextShift() {
-        const dir = Math.random() < 0.5 ? -1 : 1;
-        const magnitude = this.rand(16, 48);
-        return dir * magnitude;
-    },
-
-    buildStripPool(shellEl, glitchEl, imageUrl) {
-        glitchEl.innerHTML = '';
-        glitchEl.style.setProperty('--phone-snapshot', `url(${imageUrl})`);
-        this.stripPool = [];
-
-        const h = shellEl.offsetHeight;
-        let y = 0;
-
-        while (y < h) {
-            let stripH = this.randomStripHeight();
-            if (y + stripH > h) stripH = h - y;
-
-            const strip = document.createElement('div');
-            strip.className = 'phone-glitch-strip';
-            strip.style.top = `${(y / h) * 100}%`;
-            strip.style.height = `${(stripH / h) * 100}%`;
-            strip.style.backgroundPosition = `0 ${(y / h) * 100}%`;
-            strip.style.backgroundSize = `100% ${(h / stripH) * 100}%`;
-
-            glitchEl.appendChild(strip);
-            this.stripPool.push(strip);
-            y += stripH;
-        }
-    },
-
-    setStripState(strip, on, preset, xShift) {
-        if (on) {
-            const dir = xShift >= 0 ? 1 : -1;
-            strip.style.transition = 'none';
-            strip.style.transform = `translateX(${xShift}px)`;
-            strip.style.filter = `saturate(1.7) contrast(1.2) hue-rotate(${preset.hue}deg) drop-shadow(${dir * 5}px 0 0 ${preset.c1}) drop-shadow(${-dir * 5}px 0 0 ${preset.c2})`;
-        } else {
-            strip.style.transition = 'transform 40ms linear, filter 40ms linear';
-            strip.style.transform = 'translateX(0)';
-            strip.style.filter = 'none';
-        }
-    },
-
-    scheduleStrip(strip) {
-        if (!this.running) return;
-
-        const idleDelay = this.rand(30, 500);
-        const t1 = setTimeout(() => {
-            if (!this.running) return;
-
-            const preset = this.pick(this.colorPresets);
-            const xShift = this.nextShift();
-            const holdDuration = this.pick([
-                this.rand(20, 60),
-                this.rand(60, 140),
-                this.rand(140, 320)
-            ]);
-
-            this.setStripState(strip, true, preset, xShift);
-
-            const t2 = setTimeout(() => {
-                if (!this.running) return;
-                this.setStripState(strip, false);
-                this.scheduleStrip(strip);
-            }, holdDuration);
-            this.timers.push(t2);
-        }, idleDelay);
-        this.timers.push(t1);
-    },
-
-    trigger(totalDuration = 5000) {
+    zoomShell(duration = 2000, scale = 1.18) {
         const shell = document.getElementById('phone-shell');
-        const glitch = document.getElementById('phone-glitch');
 
-        if (this.stripPool.length === 0) {
-            this.buildStripPool(shell, glitch, this.PHONE_SNAPSHOT_URL);
-        }
+		// Stato di partenza esplicito
+		shell.style.transition = 'none';
+		shell.style.transform = 'translateY(-4vh) scale(1)';
 
-        this.running = true;
-        glitch.classList.add('active');
+		// Forza il browser a committare questo stato prima di cambiare transition
+		void shell.offsetHeight;
 
-        const activeCount = Math.max(5, Math.round(this.stripPool.length * 0.55));
-        const shuffled = this.stripPool.slice().sort(() => Math.random() - 0.5);
-        for (let i = 0; i < activeCount; i++) {
-            this.scheduleStrip(shuffled[i]);
-        }
+		shell.style.transition = `transform ${duration}ms cubic-bezier(0.19, 1, 0.22, 1)`;
 
-        setTimeout(() => {
-            this.running = false;
-            this.timers.forEach(clearTimeout);
-            this.timers = [];
-            this.stripPool.forEach(s => this.setStripState(s, false));
-            glitch.classList.remove('active');
-        }, totalDuration);
+		requestAnimationFrame(() => {
+			shell.style.transform = `translateY(-4vh) scale(${scale})`;
+		});
     },
 
-    stop() {
-        this.running = false;
-        this.timers.forEach(clearTimeout);
-        this.timers = [];
-        this.stripPool.forEach(s => this.setStripState(s, false));
-        const glitch = document.getElementById('phone-glitch');
-        if (glitch) glitch.classList.remove('active');
+    unzoomShell(duration = 1000) {
+        const shell = document.getElementById('phone-shell');
+        shell.style.transition = `transform ${duration}ms ease-out`;
+        shell.style.transform = 'translateY(-4vh) scale(1)';
+    },
+
+    glitchBubble(el, duration = 2000) {
+        el.classList.add('glitch-active');
+        el.setAttribute('data-glitch-text', el.textContent);
+        setTimeout(() => el.classList.remove('glitch-active'), duration);
+    },
+
+    async sequence(bubbleEl, newText, newClass, duration = 2000) {
+        this.zoomShell(duration, 1.18);
+        this.glitchBubble(bubbleEl, duration);
+
+		const shell = document.getElementById('phone-shell');
+		console.log('subito dopo zoomShell:', getComputedStyle(shell).transform);
+		setTimeout(() => {
+			console.log('a metà scramble:', getComputedStyle(shell).transform);
+		}, duration / 2);
+
+        await this.glitchText(bubbleEl, newText, newClass, duration);
+        this.unzoomShell(1000);
     }
 };
 

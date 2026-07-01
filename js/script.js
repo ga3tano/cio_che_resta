@@ -337,34 +337,34 @@ monogatari.script ({
 
 //NEGAZIONE
 	'Negazione_Cellulare': [
-        async () => {
-			NightOverlay.hide();
+        // async () => {
+		// 	NightOverlay.hide();
 
-			await SceneUtility.loadScene("negazione"); 
-		},
+		// 	await SceneUtility.loadScene("negazione"); 
+		// },
 
-		'show scene room_day_dark',
-		'wait 1500',
-		async () =>  await SceneFade.toHidden(),
+		// 'show scene room_day_dark',
+		// 'wait 1500',
+		// async () =>  await SceneFade.toHidden(),
 
-		async () => {
-			await BlinkOverlay.blink(150);
-			await sleep(2000);
-			await BlinkOverlay.doubleBlink(150);
-			SceneUtility.removeBlur(2000);
-		},
+		// async () => {
+		// 	await BlinkOverlay.blink(150);
+		// 	await sleep(2000);
+		// 	await BlinkOverlay.doubleBlink(150);
+		// 	SceneUtility.removeBlur(2000);
+		// },
 
-		'wait 3500',
+		// 'wait 3500',
 
-        'play sound phone_vibration',
-		'play sound phone_notification',
+        // 'play sound phone_vibration',
+		// 'play sound phone_notification',
 
         () => {
 			PhoneUI.reset();
 			// Imposta il mittente senza aprire il telefono: vedrai solo badge e lockscreen.
 			PhoneUI.setContactName('Giulia');
 			PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
-			PhoneUI.vibrate();
+			// PhoneUI.vibrate();
 		},                
 
         // PhoneChoice mostra questi pulsanti direttamente nella chat del telefono.
@@ -403,15 +403,24 @@ monogatari.script ({
 			// SceneUtility.removeBlur(2000);
 			// SceneUtility.removeSaturation(0);
 			// HeartbeatManager.decelerate(75, 3);
-			PhoneGlitch.trigger(2000);
-			await sleep(2000);
+			// PhoneGlitch.trigger(2000);
+			// await sleep(2000);
 			const bubbles = document.querySelectorAll('.phone-bubble.outgoing');
 			const lastBubble = bubbles[bubbles.length - 1];
 
-			if(lastBubble){
-				lastBubble.innerHTML = `\u2298 Questo messaggio è stato eliminato`;
-				lastBubble.classList.add('deleted');
+			if (lastBubble) {
+				await PhoneGlitch.sequence(
+					lastBubble,
+					'\u2298 Questo messaggio \u00e8 stato eliminato',
+					'deleted',
+					4000
+				);
 			}
+
+			// const shell = document.getElementById('phone-shell');
+			// console.log(getComputedStyle(shell).transform);
+			// PhoneGlitch.zoomShell(2000, 1.18);
+			// setTimeout(() => console.log(getComputedStyle(shell).transform), 500);
 
 			// SceneUtility.removeBlur(1000);
 			// await sleep(3000);
@@ -472,7 +481,7 @@ monogatari.script ({
                 // Nuovo messaggio: telefono chiuso, solo notifica/badge.
                 PhoneUI.setContactName('Giulia');
                 PhoneUI.addIncoming('Sai che può solo farti bene, hai bisogno di aria. Ti aspetto.');
-                PhoneUI.vibrate();
+                // PhoneUI.vibrate();
                 return true;
 		},
 
@@ -505,7 +514,7 @@ monogatari.script ({
 			// Messaggio in arrivo: aggiorna il badge, ma lascia il telefono chiuso.
 			PhoneUI.setContactName('Giulia');
 			PhoneUI.addIncoming('Non lasciarmi aspettare.');
-			PhoneUI.vibrate();
+			// PhoneUI.vibrate();
 		},
 
 		{'PhoneChoice':{
@@ -639,7 +648,7 @@ monogatari.script ({
 			// Prepariamo mittente e notifica; il giocatore aprira' il telefono dal pulsante.
 			PhoneUI.setContactName('Giulia');
 			PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
-			PhoneUI.vibrate();
+			// PhoneUI.vibrate();
 		},
 
 		// Qui la risposta e' parte della conversazione, quindi resta dentro il telefono.
@@ -1226,7 +1235,7 @@ monogatari.script ({
 			// La chat resta visibile e i messaggi gia aggiunti non vengono rimossi.
 			PhoneUI.clearNotifications();
 
-			PhoneUI.vibrate(600);
+			// PhoneUI.vibrate(600);
 		},
 
 		{'PhoneChoice': {
