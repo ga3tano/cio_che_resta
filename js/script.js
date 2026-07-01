@@ -337,27 +337,27 @@ monogatari.script ({
 
 //NEGAZIONE
 	'Negazione_Cellulare': [
-        // async () => {
-		// 	NightOverlay.hide();
+        async () => {
+			NightOverlay.hide();
 
-		// 	await SceneUtility.loadScene("negazione"); 
-		// },
+			await SceneUtility.loadScene("negazione"); 
+		},
 
-		// 'show scene room_day_dark',
-		// 'wait 1500',
-		// async () =>  await SceneFade.toHidden(),
+		'show scene room_day_dark',
+		'wait 1500',
+		async () =>  await SceneFade.toHidden(),
 
-		// async () => {
-		// 	await BlinkOverlay.blink(150);
-		// 	await sleep(2000);
-		// 	await BlinkOverlay.doubleBlink(150);
-		// 	SceneUtility.removeBlur(2000);
-		// },
+		async () => {
+			await BlinkOverlay.blink(150);
+			await sleep(2000);
+			await BlinkOverlay.doubleBlink(150);
+			SceneUtility.removeBlur(2000);
+		},
 
-		// 'wait 3500',
+		'wait 3500',
 
-        // 'play sound phone_vibration',
-		// 'play sound phone_notification',
+        'play sound phone_vibration',
+		'play sound phone_notification',
 
         () => {
 			PhoneUI.reset();

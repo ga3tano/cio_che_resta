@@ -8,7 +8,7 @@
 
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1">
-		<meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self' 'unsafe-eval'">
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self' 'unsafe-eval' https://cdnjs.cloudflare.com;">
 		<meta name="description" content=""> <!--Page description. No longer than 155 characters.-->
 		<meta name="keywords" content="">
 		<meta name="author" content=""> <!--Name of the author.-->
@@ -81,6 +81,7 @@
 		<link rel="stylesheet" href="./style/main.css">
 
 		<!-- Third Party JavaScript Libraries -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 		<!-- Monogatari JavaScript Libraries -->
 		<script src="./engine/debug/debug.js"></script>
@@ -247,6 +248,8 @@
 			<div id="breathing-label" class="breathing-label"></div>
 			<div class="breathing-hint">Tieni premuto il dito</div>
 		</div>
+
+		<!-- <button id="capture-btn" style="position: fixed; bottom: 20px; right: 20px; z-index: 99999; padding: 10px 16px; background: #0066cc; color: white; border: none; border-radius: 8px; cursor: pointer;">Scarica screenshot</button> -->
 
 	</body>
 

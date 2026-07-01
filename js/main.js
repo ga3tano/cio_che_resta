@@ -1109,91 +1109,138 @@ const PhoneToggle = {
 
 //CREDITS TO STANKO: https://codepen.io/stanko/pen/emYEpvP
 const PhoneGlitch = {
-    overlay: null,
-    strips: [],
-    isRunning: false,
+    PHONE_SNAPSHOT_URL: '/assets/images/phone-glitch-snapshot.png',
 
-    KEYFRAMES: `
-        @keyframes g5 {
-            0%,30%,40%,70%,80%,100% { transform:translateX(0); }
-            30.1%,39.9% { transform:translateX(var(--x1)); }
-            70.1%,79.9% { transform:translateX(var(--x2)); }
-        }
-        @keyframes g6 {
-            0%,25%,35%,65%,75%,100% { transform:translateX(0); }
-            25.1%,34.9% { transform:translateX(var(--x1)); }
-            65.1%,74.9% { transform:translateX(var(--x2)); }
-        }
-        @keyframes g7 {
-            0%,35%,45%,75%,85%,100% { transform:translateX(0); }
-            35.1%,44.9% { transform:translateX(var(--x1)); }
-            75.1%,84.9% { transform:translateX(var(--x2)); }
-        }
-        @keyframes g8 {
-            0%,20%,30%,60%,70%,100% { transform:translateX(0); }
-            20.1%,29.9% { transform:translateX(var(--x1)); }
-            60.1%,69.9% { transform:translateX(var(--x2)); }
-        }
-    `,
+    colorPresets: [
+        { c1: 'rgba(255,60,90,0.4)', c2: 'rgba(60,220,220,0.4)', hue: 0 },
+        { c1: 'rgba(230,80,190,0.35)', c2: 'rgba(90,220,150,0.35)', hue: 35 },
+        { c1: 'rgba(140,90,230,0.4)', c2: 'rgba(220,210,90,0.35)', hue: -30 },
+        { c1: 'rgba(80,150,230,0.4)', c2: 'rgba(230,130,70,0.4)', hue: 20 }
+    ],
 
-    init() {
-        if (this.overlay) return;
+    stripPool: [],
+    running: false,
+    timers: [],
 
-        if (!document.getElementById('glitch-keyframes')) {
-            const style = document.createElement('style');
-            style.id = 'glitch-keyframes';
-            style.textContent = this.KEYFRAMES;
-            document.head.appendChild(style);
-        }
+    rand(min, max) {
+        return Math.round(Math.random() * (max - min)) + min;
+    },
 
-        this.overlay = document.getElementById('phone-glitch');
-        if (!this.overlay) return;
+    pick(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    },
 
-        // Ottieni la shell come riferimento per clonare lo sfondo
-        const shell = document.getElementById('phone-shell');
-        const shellStyle = getComputedStyle(shell);
+    randomStripHeight() {
+        const r = Math.random();
+        if (r < 0.5) return this.rand(3, 10);
+        if (r < 0.85) return this.rand(10, 26);
+        return this.rand(26, 60);
+    },
 
-        const animations = ['g5', 'g6', 'g7', 'g8'];
+    nextShift() {
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        const magnitude = this.rand(16, 48);
+        return dir * magnitude;
+    },
 
-        let top = 0;
-        while (top < 100) {
-            const height = 2 + Math.random() * 8;
-            const actualHeight = Math.min(height, 100 - top);
+    buildStripPool(shellEl, glitchEl, imageUrl) {
+        glitchEl.innerHTML = '';
+        glitchEl.style.setProperty('--phone-snapshot', `url(${imageUrl})`);
+        this.stripPool = [];
+
+        const h = shellEl.offsetHeight;
+        let y = 0;
+
+        while (y < h) {
+            let stripH = this.randomStripHeight();
+            if (y + stripH > h) stripH = h - y;
 
             const strip = document.createElement('div');
-            strip.className = 'glitch-strip';
+            strip.className = 'phone-glitch-strip';
+            strip.style.top = `${(y / h) * 100}%`;
+            strip.style.height = `${(stripH / h) * 100}%`;
+            strip.style.backgroundPosition = `0 ${(y / h) * 100}%`;
+            strip.style.backgroundSize = `100% ${(h / stripH) * 100}%`;
 
-            // Clona l'aspetto della shell in questa striscia
-            Object.assign(strip.style, {
-                top: `${top}%`,
-                height: `${actualHeight}%`,
-                background: shellStyle.background,
-                border: shellStyle.border,
-                borderRadius: shellStyle.borderRadius,
-                animationName: animations[Math.floor(Math.random() * animations.length)],
-                animationDuration: `${5 + Math.random() * 5}s`,
-                animationDelay: `${Math.random() * 2}s`,
-                '--x1': `${Math.floor(Math.random() * 16 - 8)}px`,
-                '--x2': `${Math.floor(Math.random() * 16 - 8)}px`
-            });
-
-            this.overlay.appendChild(strip);
-            this.strips.push(strip);
-            top += actualHeight;
+            glitchEl.appendChild(strip);
+            this.stripPool.push(strip);
+            y += stripH;
         }
     },
 
-    trigger(duration = 1000) {
-        if (!this.overlay) this.init();
-        if (this.isRunning) return;
-        this.isRunning = true;
+    setStripState(strip, on, preset, xShift) {
+        if (on) {
+            const dir = xShift >= 0 ? 1 : -1;
+            strip.style.transition = 'none';
+            strip.style.transform = `translateX(${xShift}px)`;
+            strip.style.filter = `saturate(1.7) contrast(1.2) hue-rotate(${preset.hue}deg) drop-shadow(${dir * 5}px 0 0 ${preset.c1}) drop-shadow(${-dir * 5}px 0 0 ${preset.c2})`;
+        } else {
+            strip.style.transition = 'transform 40ms linear, filter 40ms linear';
+            strip.style.transform = 'translateX(0)';
+            strip.style.filter = 'none';
+        }
+    },
 
-        this.overlay.classList.add('active');
+    scheduleStrip(strip) {
+        if (!this.running) return;
+
+        const idleDelay = this.rand(30, 500);
+        const t1 = setTimeout(() => {
+            if (!this.running) return;
+
+            const preset = this.pick(this.colorPresets);
+            const xShift = this.nextShift();
+            const holdDuration = this.pick([
+                this.rand(20, 60),
+                this.rand(60, 140),
+                this.rand(140, 320)
+            ]);
+
+            this.setStripState(strip, true, preset, xShift);
+
+            const t2 = setTimeout(() => {
+                if (!this.running) return;
+                this.setStripState(strip, false);
+                this.scheduleStrip(strip);
+            }, holdDuration);
+            this.timers.push(t2);
+        }, idleDelay);
+        this.timers.push(t1);
+    },
+
+    trigger(totalDuration = 5000) {
+        const shell = document.getElementById('phone-shell');
+        const glitch = document.getElementById('phone-glitch');
+
+        if (this.stripPool.length === 0) {
+            this.buildStripPool(shell, glitch, this.PHONE_SNAPSHOT_URL);
+        }
+
+        this.running = true;
+        glitch.classList.add('active');
+
+        const activeCount = Math.max(5, Math.round(this.stripPool.length * 0.55));
+        const shuffled = this.stripPool.slice().sort(() => Math.random() - 0.5);
+        for (let i = 0; i < activeCount; i++) {
+            this.scheduleStrip(shuffled[i]);
+        }
 
         setTimeout(() => {
-            this.overlay.classList.remove('active');
-            this.isRunning = false;
-        }, duration);
+            this.running = false;
+            this.timers.forEach(clearTimeout);
+            this.timers = [];
+            this.stripPool.forEach(s => this.setStripState(s, false));
+            glitch.classList.remove('active');
+        }, totalDuration);
+    },
+
+    stop() {
+        this.running = false;
+        this.timers.forEach(clearTimeout);
+        this.timers = [];
+        this.stripPool.forEach(s => this.setStripState(s, false));
+        const glitch = document.getElementById('phone-glitch');
+        if (glitch) glitch.classList.remove('active');
     }
 };
 
@@ -5327,5 +5374,43 @@ $_ready (() => {
 			DebugMenu.init();
 		}
 
+		// document.getElementById('capture-btn')?.addEventListener('click', captureBuildAsset);
+
+		// async function captureBuildAsset() {
+
+		//  	if (typeof html2canvas === 'undefined') {
+		// 		await new Promise((resolve, reject) => {
+		// 			const script = document.createElement('script');
+		// 			script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+		// 			script.onload = resolve;
+		// 			script.onerror = reject;
+		// 			document.head.appendChild(script);
+		// 		});
+		// 	}
+
+		// 	const shell = document.getElementById('phone-shell');
+		// 	const layer = document.getElementById('phone-layer');
+
+		// 	layer.style.display = 'flex';
+		// 	shell.style.transform = 'none';
+			
+		// 	await new Promise(r => setTimeout(r, 500));
+
+		// 	const canvas = await html2canvas(shell, {
+		// 		backgroundColor: null,
+		// 		scale: 3,
+		// 		useCORS: true,
+		// 		logging: true
+		// 	});
+
+		// 	canvas.toBlob(blob => {
+		// 		const a = document.createElement('a');
+		// 		a.download = 'phone-glitch-snapshot.png';
+		// 		a.href = URL.createObjectURL(blob);
+		// 		a.click();
+		// 	});
+
+		// 	shell.style.transform = '';
+		// }
 	});
 });
