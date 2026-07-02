@@ -337,27 +337,28 @@ monogatari.script ({
 
 //NEGAZIONE
 	'Negazione_Cellulare': [
-        // async () => {
-		// 	NightOverlay.hide();
+        async () => {
+			NightOverlay.hide();
 
-		// 	await SceneUtility.loadScene("negazione"); 
-		// },
+			await SceneUtility.loadScene("negazione"); 
+			await AudioManager.play('fan', {volume: 0.8, fade: 1.5, loop: true});
+		},
 
-		// 'show scene room_day_dark',
-		// 'wait 1500',
-		// async () =>  await SceneFade.toHidden(),
+		'show scene room_day_dark',
+		'wait 1500',
+		async () =>  await SceneFade.toHidden(),
 
-		// async () => {
-		// 	await BlinkOverlay.blink(150);
-		// 	await sleep(2000);
-		// 	await BlinkOverlay.doubleBlink(150);
-		// 	SceneUtility.removeBlur(2000);
-		// },
+		async () => {
+			await BlinkOverlay.blink(150);
+			await sleep(2000);
+			await BlinkOverlay.doubleBlink(150);
+			SceneUtility.removeBlur(2000);
+		},
 
-		// 'wait 3500',
+		'wait 3500',
 
-        // 'play sound phone_vibration',
-		// 'play sound phone_notification',
+        'play sound phone_vibration',
+		'play sound phone_notification',
 
         () => {
 			PhoneUI.reset();
@@ -384,8 +385,9 @@ monogatari.script ({
         async () => {
 			// await HeartbeatManager.start({bpm: 75, fadeIn: 1.5, volume: 1})
 			// HeartbeatManager.accelerate(120, 6);
+			await HeartbeatManager.start({ bpm: 75, fadeIn: 0.2, volume: 1 });
 			return new Promise(resolve => {
-				PhoneTyping.show('Si dai, perché no...fammi finire un paio di cose e ti aggiorno', 8, resolve);
+				PhoneTyping.show('Si dai, perché no...fammi finire un paio di cose e ti aggiorno', 80, resolve);
 			})
 		},
 
@@ -394,7 +396,6 @@ monogatari.script ({
 			await sleep(300);
 			PhoneUI.addOutgoing('Si dai, perchè no...fammi finire un paio di cose e ti aggiorno');
 			PhoneTyping.hide();
-			await sleep(2000);
 			// SceneUtility.addBlur(2000);
 			// await sleep(1500);
 			// SceneUtility.addSaturation(2500);
@@ -410,10 +411,11 @@ monogatari.script ({
 
 			if (lastBubble) {
 				await PhoneGlitch.sequence(
-					lastBubble,
-					'\u2298 Questo messaggio \u00e8 stato eliminato',
-					'deleted',
-					4000
+					lastBubble,	//object
+					'\u2298 Questo messaggio \u00e8 stato eliminato',	//new text
+					'deleted',	//new text class
+					8000,	//duration
+					1.05	//scale
 				);
 			}
 
@@ -426,7 +428,7 @@ monogatari.script ({
 			// await sleep(3000);
 			// HeartbeatManager.stop();
 			
-			await sleep(4000);
+			await sleep(2000);
 		},
 		
 
@@ -527,6 +529,7 @@ monogatari.script ({
 
 	'Esci_Casa':[
 		async () => {
+			AudioManager.fadeOut('fan', 1.5);
 			PhoneUI.hide();
 			await SceneFade.toVisible({ color: '#fff' });
 			SceneUtility.emptyScene();

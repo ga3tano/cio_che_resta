@@ -860,6 +860,8 @@ const PhoneTyping = {
     charIndex: 0,
     isAnimating: false,
     onComplete: null, // callback quando finisce
+	keySound: null, //reference all'audio del tap su tastiera
+	sendSound: null, //audio dell'invio
 
     /**
      * Inizializza i riferimenti DOM.
@@ -868,6 +870,10 @@ const PhoneTyping = {
         this.composer = document.getElementById('phone-composer');
         this.inputText = document.getElementById('phone-input-text');
         this.sendBtn = document.getElementById('phone-send-btn');
+
+		this.keySound = new Audio('assets/sounds/phone_type.mp3');
+		this.sendSound = new Audio('assets/sounds/phone_send.mp3');
+		this.sendSound.volume = this.keySound.volume = 0.3;
     },
 
     /**
@@ -905,6 +911,11 @@ const PhoneTyping = {
         this.inputText.textContent = this.currentText;
         this.charIndex++;
 
+		if (this.keySound){
+			this.keySound.currentTime = 0;
+			this.keySound.play().catch(() => {});	//catch vuoto per ignorare gli errori 
+		}
+
         // Variazione casuale della velocità per realismo (±30%)
         const variation = speed * (0.7 + Math.random() * 0.6);
         
@@ -933,6 +944,8 @@ const PhoneTyping = {
         this.sendBtn.style.transform = 'scale(0.9)';
         setTimeout(() => {
             this.sendBtn.style.transform = '';
+			this.sendSound.currentTime = 0;
+			this.sendSound.play().catch(() => {});
         }, 100);
     },
 
@@ -1245,83 +1258,126 @@ const PhoneToggle = {
 // };
 
 const PhoneGlitch = {
-    async glitchText(el, newText, newClass, duration = 800) {
-        const originalText = el.textContent;
-        const chars = '!@#$%&*()_+-=[]{}|;:,.<>?/\\';
-        const endTime = Date.now() + duration;
-        const baseText = originalText.split('');
+	async glitchText(el, newText, newClass, duration = 800) {
+		const originalText = el.textContent;
+		const chars = '!@#$%&*()_+-=[]{}|;:,.<>?/\\';
+		const startTime = Date.now();
+		const endTime = startTime + duration;
+		const baseText = originalText.split('');
 
-        await HeartbeatManager.start({ bpm: 75, fadeIn: 0.2, volume: 1 });
-        HeartbeatManager.accelerate(160, duration / 1000);
+		//Heartbeat is already playing from script
+		HeartbeatManager.accelerate(160, duration / 1000);
+		return new Promise((resolve) => {
+			const scramble = () => {
+				const remaining = endTime - Date.now();
 
-        const scramble = () => {
-            const remaining = endTime - Date.now();
+				if (remaining <= 0) {
+					HeartbeatManager.stop({ fadeOut: 0 });
+					el.innerHTML = newText;
+					el.classList.add(newClass);
+					el.classList.remove('glitch-active');
+					el.removeAttribute('data-glitch-text');
+					resolve();
+					return;
+				}
 
-            if (remaining <= 0) {
-                HeartbeatManager.stop({ fadeOut: 0 });
-                el.innerHTML = newText;
-                el.classList.add(newClass);
-                el.removeAttribute('data-glitch-text');
-                return;
-            }
+				// t: 0 at start, 1 at apex (end of duration)
+				const t = 1 - (remaining / duration);
 
-            const progress = 1 - (remaining / duration);
+				// Eased curve: slow ramp early, steep ramp near the apex.
+				// Try t*t (quadratic) first; use t**3 for an even lazier start.
+				const eased = t * t;
 
-            const scrambled = baseText.map((char) => {
-                if (char === ' ') return ' ';
-                if (Math.random() < progress) return char;
-                return chars[Math.floor(Math.random() * chars.length)];
-            }).join('');
+				// Chaos grows with the eased curve: mostly real chars early,
+				// mostly noise near the apex.
+				const chaos = eased; // 0 = calm, 1 = max scramble
 
-            el.textContent = scrambled;
-            el.setAttribute('data-glitch-text', scrambled);
-            setTimeout(scramble, 40 + Math.random() * 40);
-        };
+				const scrambled = baseText.map((char) => {
+					if (char === ' ') return ' ';
+					if (Math.random() < chaos) {
+						return chars[Math.floor(Math.random() * chars.length)];
+					}
+					return char;
+				}).join('');
 
-        scramble();
-    },
+				el.textContent = scrambled;
+				el.setAttribute('data-glitch-text', scrambled);
 
-    zoomShell(duration = 2000, scale = 1.18) {
-        const shell = document.getElementById('phone-shell');
+				// Speed also eases: long delays early (slow), short delays
+				// near the apex (fast). Interpolate between a slow and fast bound.
+				const minDelay = 25;   // fastest tick, near apex
+				const maxDelay = 140;  // slowest tick, at start
+				const delay = maxDelay - (maxDelay - minDelay) * eased;
+				const jitter = delay * (0.3 * Math.random()); // small randomness so it doesn't feel robotic
+
+				setTimeout(scramble, delay + jitter);
+			};
+
+			scramble();
+		});
+	},
+
+    zoomShell(duration = 2000, scale = 1.03) {
+		const shell = document.getElementById('phone-shell');
 
 		// Stato di partenza esplicito
 		shell.style.transition = 'none';
 		shell.style.transform = 'translateY(-4vh) scale(1)';
 
-		// Forza il browser a committare questo stato prima di cambiare transition
+		// Forza il browser a committare questo stato prima di animare
 		void shell.offsetHeight;
 
-		shell.style.transition = `transform ${duration}ms cubic-bezier(0.19, 1, 0.22, 1)`;
+		const startTime = performance.now();
+		const fromScale = 1;
+		const toScale = scale;
 
-		requestAnimationFrame(() => {
-			shell.style.transform = `translateY(-4vh) scale(${scale})`;
-		});
-    },
+		const animate = (now) => {
+			const t = Math.min(1, (now - startTime) / duration);
 
-    unzoomShell(duration = 1000) {
-        const shell = document.getElementById('phone-shell');
-        shell.style.transition = `transform ${duration}ms ease-out`;
-        shell.style.transform = 'translateY(-4vh) scale(1)';
-    },
+			// Stessa curva di glitchText: lento all'inizio, veloce verso la fine
+			const eased = t * t;
 
-    glitchBubble(el, duration = 2000) {
-        el.classList.add('glitch-active');
-        el.setAttribute('data-glitch-text', el.textContent);
-        setTimeout(() => el.classList.remove('glitch-active'), duration);
-    },
+			const currentScale = fromScale + (toScale - fromScale) * eased;
+			shell.style.transform = `translateY(-4vh) scale(${currentScale})`;
 
-    async sequence(bubbleEl, newText, newClass, duration = 2000) {
-        this.zoomShell(duration, 1.18);
-        this.glitchBubble(bubbleEl, duration);
+			if (t < 1) {
+				requestAnimationFrame(animate);
+			}
+		};
 
+		requestAnimationFrame(animate);
+	},
+
+    unzoomShell(duration = 1000, fromScale = null) {
 		const shell = document.getElementById('phone-shell');
-		console.log('subito dopo zoomShell:', getComputedStyle(shell).transform);
-		setTimeout(() => {
-			console.log('a metà scramble:', getComputedStyle(shell).transform);
-		}, duration / 2);
+		shell.style.transition = 'none';
+		void shell.offsetHeight;
 
-        await this.glitchText(bubbleEl, newText, newClass, duration);
-        this.unzoomShell(1000);
+		const startTime = performance.now();
+		const startScale = fromScale ?? (parseFloat(getComputedStyle(shell).transform.match(/[\d.]+/g)?.pop()) || 1.03);	//All of that to cover the case zoom ends earlier and not getting to 1.03, avoiding unwanted pop animation
+
+		const animate = (now) => {
+			const t = Math.min(1, (now - startTime) / duration);
+			const eased = t * t;
+			const currentScale = startScale + (1 - startScale) * eased;
+			shell.style.transform = `translateY(-4vh) scale(${currentScale})`;
+			if (t < 1) requestAnimationFrame(animate);
+		};
+
+		requestAnimationFrame(animate);
+	},
+
+    glitchBubble(el) {
+		el.classList.add('glitch-active');
+		el.setAttribute('data-glitch-text', el.textContent);
+    },
+
+    async sequence(bubbleEl, newText, newClass, duration, scale) {
+		this.zoomShell(duration, scale);
+		this.glitchBubble(bubbleEl);
+
+		await this.glitchText(bubbleEl, newText, newClass, duration);
+		this.unzoomShell(duration/(2*(duration/1000)), scale);	//hard coded to 0.5s
     }
 };
 
@@ -4128,9 +4184,10 @@ const AudioManager = {
 		crash_short: 'assets/sounds/crash.mp3',
 		phone_vibration: 'assets/sounds/phone_vibration.mp3',
 		phone_notification: 'assets/sounds/phone_notification.mp3',
-		ambience: 'assets/sounds/sfx_ambience_v3_ok.mp3',
+		ambience: 'assets/sounds/sfx_ambience.mp3',
 		whistle: 'assets/sounds/sfx_whistle_loop.mp3',
 		birds: 'assets/sounds/sfx_respiro_uccellini.mp3',
+		fan: 'assets/sounds/sfx_ventola_loop.mp3',
 	},
 
 	//Restituisce il context, creandolo alla prima esecuzione
