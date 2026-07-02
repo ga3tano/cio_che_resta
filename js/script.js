@@ -511,15 +511,19 @@ monogatari.script ({
 		'wait 5000',
 		'play sound phone_vibration',
 		'play sound phone_notification',
-		() => {
-			PhoneUI.reset();
+		async () => {
+			// PhoneUI.reset();
 			// Messaggio in arrivo: aggiorna il badge, ma lascia il telefono chiuso.
 			PhoneUI.setContactName('Giulia');
-			PhoneUI.addIncoming('Non lasciarmi aspettare.');
+			await PhoneUI.playMessages({
+				type: 'incoming',
+				text: 'Non lasciarmi aspettare.'
+			})
+			PhoneUI.hide();
 			// PhoneUI.vibrate();
 		},
 
-		{'PhoneChoice':{
+		{'Choice':{
 			'Apri la porta': {
 				'Text': 'APRI LA PORTA',
 				'Do': 'jump Esci_Casa with fadeOut'
