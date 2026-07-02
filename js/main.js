@@ -1267,12 +1267,21 @@ const PhoneGlitch = {
 
 		//Heartbeat is already playing from script
 		HeartbeatManager.accelerate(160, duration / 1000);
+		//Start the glitch audio too
+		await AudioManager.play('glitch', {
+			glitch: true,
+			volume: 0.2,
+			fadeIn: 3,
+			glitchDuration: duration / 1000
+		});
+
 		return new Promise((resolve) => {
 			const scramble = () => {
 				const remaining = endTime - Date.now();
 
 				if (remaining <= 0) {
-					HeartbeatManager.stop({ fadeOut: 0 });
+					HeartbeatManager.stop();
+					AudioManager.stop('glitch');
 					el.innerHTML = newText;
 					el.classList.add(newClass);
 					el.classList.remove('glitch-active');
@@ -4188,6 +4197,7 @@ const AudioManager = {
 		whistle: 'assets/sounds/sfx_whistle_loop.mp3',
 		birds: 'assets/sounds/sfx_respiro_uccellini.mp3',
 		fan: 'assets/sounds/sfx_ventola_loop.mp3',
+		glitch: 'assets/sounds/glitch.mp3',
 	},
 
 	//Restituisce il context, creandolo alla prima esecuzione
@@ -4253,6 +4263,7 @@ const AudioManager = {
 
 		this.tracks[id] = {
 			audio,
+			source,
 			gain,
 			fade: null
 		};
@@ -4287,6 +4298,10 @@ const AudioManager = {
 		// con play(id) senza opzioni preserva il loop impostato in precedenza
 		if ('loop' in options) {
 			track.audio.loop = options.loop;
+		}
+
+		if ('glitch' in options){
+			this.applyGlitch(track, options.glitchDuration ?? 5, options.glitch);
 		}
 
 		if (fade > 0) {
@@ -4397,7 +4412,56 @@ const AudioManager = {
 		filter.frequency.linearRampToValueAtTime(frequency, ctx.currentTime + rampTime);
 		// Debug dopo il set
    		console.log('Frequency set to:', filter.frequency.value);
-	}
+	},
+
+	applyGlitch(track, duration, options = {}){
+		const context = this.context;
+		const startTime = context.currentTime;
+
+		if(!track.glitchGain){
+			track.glitchGain = context.createGain();
+			track.source.disconnect();
+			track.source.connect(track.glitchGain);
+			track.glitchGain.connect(track.gain);
+		}
+
+		const startInterval = options.interval ?? 300;
+		const endInterval = options.endInterval ?? 30;
+		const maxVol = track.glitchGain.gain.value;
+
+		const glitch = () => {
+			const now = context.currentTime;
+			const elapsed = now - startTime;
+			const t = Math.min(1, elapsed / duration);
+			const eased = t * t;
+			
+			const currentInterval = startInterval + (endInterval - startInterval) * eased;
+			
+
+			// Alterna casualmente: silenzio, volume pieno, o volume gracchiante
+			const dice = Math.random();
+			
+			if (dice < 0.4) {
+				// Silenzio (durata random tra 20 e 80ms)
+				const silenceDuration = 0.02 + Math.random() * 0.06;
+				track.glitchGain.gain.linearRampToValueAtTime(0, now + 0.01);
+				track.glitchGain.gain.linearRampToValueAtTime(0, now + silenceDuration);
+			} else if (dice < 0.75) {
+				// Volume pieno ma instabile
+				const vol = maxVol * (0.4 + Math.random() * 0.6);
+				track.glitchGain.gain.linearRampToValueAtTime(vol, now + 0.02);
+				track.glitchGain.gain.linearRampToValueAtTime(vol * (0.5 + Math.random() * 0.5), now + 0.05);
+			} else {
+				// Scoppio breve di volume pieno
+				track.glitchGain.gain.linearRampToValueAtTime(maxVol, now + 0.005);
+				track.glitchGain.gain.linearRampToValueAtTime(maxVol * (0.1 + Math.random() * 0.4), now + 0.03);
+			}
+
+			track._glitchTimer = setTimeout(glitch, Math.max(10, currentInterval));
+		};
+
+		glitch();
+},
 };
 
 const HeartbeatManager = {
