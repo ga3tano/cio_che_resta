@@ -966,13 +966,16 @@ const PhoneToggle = {
 		Controller del pulsante globale.
 		Questo oggetto non gestisce i messaggi: mostra/nasconde solo il bottone,
 		inoltra il click a PhoneUI e aggiorna il badge numerico.
+
+		La visibilita' non e' piu' automatica in base allo screen attivo:
+		va gestita esplicitamente chiamando PhoneToggle.show() / .hide()
+		dagli script della visual novel (es. nei comandi Monogatari delle scene).
 	*/
 	root: null,
 	button: null,
 	badge: null,
 	eventsBound: false,
-	visibilityObserver: null,
-	refreshQueued: false,
+	visible: false,
 
 	init() {
 		this.root = document.getElementById('phone-toggle');
@@ -982,9 +985,10 @@ const PhoneToggle = {
 		if (!this.root || !this.button || !this.badge) return;
 
 		this.bindEvents();
-		this.observeScreenChanges();
 		this.updateBadge(PhoneUI.getUnreadCount());
-		this.refreshVisibility();
+
+		// Stato iniziale: nascosto finche' non viene mostrato esplicitamente.
+		this.applyVisibility();
 	},
 
 	bindEvents() {
@@ -1000,100 +1004,27 @@ const PhoneToggle = {
 		this.eventsBound = true;
 	},
 
-	observeScreenChanges() {
-		if (this.visibilityObserver || !document.body) return;
-
-		/*
-			Monogatari cambia visibilita/classi/attributi sugli screen invece di ricaricare pagina.
-			MutationObserver ci permette di nascondere il pulsante quando torna il menu principale.
-		*/
-		this.visibilityObserver = new MutationObserver(() => {
-			this.queueRefreshVisibility();
-		});
-
-		this.visibilityObserver.observe(document.body, {
-			attributes: true,
-			subtree: true,
-			attributeFilter: ['class', 'style', 'data-screen', 'aria-hidden']
-		});
+	show() {
+		this.visible = true;
+		this.applyVisibility();
 	},
 
-	queueRefreshVisibility() {
-		if (this.refreshQueued) return;
-
-		this.refreshQueued = true;
-
-		requestAnimationFrame(() => {
-			this.refreshQueued = false;
-			this.refreshVisibility();
-		});
+	hide() {
+		this.visible = false;
+		this.applyVisibility();
 	},
 
-	refreshVisibility() {
+	applyVisibility() {
 		if (!this.root || !this.button) return;
 
-		const shouldShow = this.shouldShowInCurrentScreen();
+		this.root.classList.toggle('visible', this.visible);
+		this.root.setAttribute('aria-hidden', String(!this.visible));
+		this.button.disabled = !this.visible;
 
-		this.root.classList.toggle('visible', shouldShow);
-		this.root.setAttribute('aria-hidden', String(!shouldShow));
-		this.button.disabled = !shouldShow;
-
-		// Nel menu principale il telefono non deve restare aperto nemmeno se era visibile prima.
-		if (!shouldShow && PhoneUI.layer && PhoneUI.isVisible()) {
+		// Se nascondiamo il pulsante, il telefono non deve restare aperto.
+		if (!this.visible && PhoneUI.layer && PhoneUI.isVisible()) {
 			PhoneUI.hide();
 		}
-	},
-
-	shouldShowInCurrentScreen() {
-		/*
-			Regola principale: Monogatari mette .active sullo screen corrente.
-			Il pulsante deve comparire solo quando lo screen attivo e' quello di gioco.
-		*/
-		const activeScreen = document.querySelector('[data-screen].active');
-
-		if (activeScreen) {
-			return activeScreen.dataset.screen === 'game';
-		}
-
-		const mainScreen = document.querySelector('[data-screen="main"], main-screen');
-		const gameScreen = document.querySelector('[data-screen="game"], game-screen');
-		const mainIsVisible = this.isElementVisible(mainScreen);
-		const gameIsVisible = this.isElementVisible(gameScreen);
-
-		if (mainIsVisible && !gameIsVisible) {
-			return false;
-		}
-
-		if (gameIsVisible) {
-			return true;
-		}
-
-		/*
-			Fallback difensivo: se Monogatari cambia markup in futuro, il label corrente
-			ci dice comunque che una scena e' partita.
-		*/
-		try {
-			const currentLabel = typeof monogatari.state === 'function'
-				? monogatari.state('label')
-				: null;
-
-			return Boolean(currentLabel) && !mainIsVisible;
-		} catch (error) {
-			return false;
-		}
-	},
-
-	isElementVisible(element) {
-		if (!element) return false;
-
-		const style = window.getComputedStyle(element);
-		const rect = element.getBoundingClientRect();
-
-		return style.display !== 'none' &&
-			style.visibility !== 'hidden' &&
-			style.opacity !== '0' &&
-			rect.width > 0 &&
-			rect.height > 0;
 	},
 
 	updateBadge(count = 0) {
@@ -3345,6 +3276,10 @@ const SceneFade = {
 			this.element.style.opacity = '1';
 		});
 
+		const phoneToggle = document.getElementById('phone-toggle');
+		if(phoneToggle)
+			phoneToggle.classList.remove('.visible');
+
 		await this.wait(duration);
 	},
 
@@ -4764,95 +4699,102 @@ const BWFilter = {
 };
 
 /*OGGETTI CLICKABILI*/
-function showClickableObjects(){
-	const container = document.createElement("div");
-	container.id = "clickable-objects";
-	container.style.position = "absolute";
-	container.style.top = "0";
-	container.style.left = "0";
-	container.style.width = "100%";
-	container.style.height = "100%";
-	container.style.pointerEvents = "none"; //gli oggetti stessi avranno pointerEvents
+// function showClickableObjects(){
+// 	const container = document.createElement("div");
+// 	container.id = "clickable-objects";
+// 	container.style.position = "absolute";
+// 	container.style.top = "0";
+// 	container.style.left = "0";
+// 	container.style.width = "100%";
+// 	container.style.height = "100%";
+// 	container.style.pointerEvents = "none"; //gli oggetti stessi avranno pointerEvents
 
-	const objects = [
-		{ id: "obj1", img: "assets/images/placeholder.png", x:"70%", y:"60%", w:"80px"},
-		{ id: "obj2", img: "assets/images/placeholder.png", x: "20%", y: "50%", w: "100px"}
-	];
+// 	const objects = [
+// 		{ id: "obj1", img: "assets/images/placeholder.png", x:"70%", y:"60%", w:"80px"},
+// 		{ id: "obj2", img: "assets/images/placeholder.png", x: "20%", y: "50%", w: "100px"}
+// 	];
 
-	objects.forEach(o => {
-		const element = document.createElement("img");
-		element.src = o.img;
-		element.id = o.id;
-		element.classList.add('clickable-object');
-		element.style.position = "absolute";
-		element.style.left = o.x;
-		element.style.top = o.y;
-		element.style.width = o.w;
-		element.style.pointerEvents = "auto";
-		element.addEventListener("click", (e) => {
-			e.stopPropagation(); //NON TOGLIERE, necessario per non far mangiare il click dal global listener di monogatari
-			monogatari.storage().lastClickedObject = o.id; //Mantengo in memoria l'ultimo oggetto clickato
-			showDetail(o.id, o.img);
-		});
-		container.appendChild(element);
-	});
+// 	objects.forEach(o => {
+// 		const element = document.createElement("img");
+// 		element.src = o.img;
+// 		element.id = o.id;
+// 		element.classList.add('clickable-object');
+// 		element.style.position = "absolute";
+// 		element.style.left = o.x;
+// 		element.style.top = o.y;
+// 		element.style.width = o.w;
+// 		element.style.pointerEvents = "auto";
+// 		element.addEventListener("click", (e) => {
+// 			e.stopPropagation(); //NON TOGLIERE, necessario per non far mangiare il click dal global listener di monogatari
+// 			monogatari.storage().lastClickedObject = o.id; //Mantengo in memoria l'ultimo oggetto clickato
+// 			showDetail(o.id, o.img);
+// 		});
+// 		container.appendChild(element);
+// 	});
 
-	document.body.appendChild(container);
-}
+// 	document.body.appendChild(container);
+// }
 
-function hideClickableObjects(){
-	document.getElementById("clickable-objects")?.remove();
-}
+// function hideClickableObjects(){
+// 	document.getElementById("clickable-objects")?.remove();
+// }
 
-function showDetail(objectId, imageSrc) {
-	const store = monogatari.storage();
-	NightOverlay.isFrozen = true;
+// function showDetail(objectId, imageSrc) {
+// 	const store = monogatari.storage();
+// 	NightOverlay.isFrozen = true;
 	
-	store.lastClickedObject = objectId;
+// 	store.lastClickedObject = objectId;
 	
-	// Overlay blur
-	const blur = document.createElement("div");
-	blur.id = "detail-blur";
-	blur.className = "detail-blur";
+// 	// Overlay blur
+// 	const blur = document.createElement("div");
+// 	blur.id = "detail-blur";
+// 	blur.className = "detail-blur";
 
-	// Immagine zoommata
-	const zoom = document.createElement("img");
-	zoom.id = "detail-zoom";
-	zoom.className = "detail-zoom";
-	zoom.src = imageSrc;
+// 	// Immagine zoommata
+// 	const zoom = document.createElement("img");
+// 	zoom.id = "detail-zoom";
+// 	zoom.className = "detail-zoom";
+// 	zoom.src = imageSrc;
 
-	// Descrizione
-	const desc = document.createElement("div");
-	desc.id = "detail-desc";
-	desc.className ="detail-desc";
-	desc.textContent = store.objectDescriptions[objectId];
+// 	// Descrizione
+// 	const desc = document.createElement("div");
+// 	desc.id = "detail-desc";
+// 	desc.className ="detail-desc";
+// 	desc.textContent = store.objectDescriptions[objectId];
 
-	// Pulsante indietro
-	const back = document.createElement("div");
-	back.id = "detail-back";
-	back.className = "detail-back";
-	back.innerText = "Chiudi";
-	back.onclick = () => hideDetail(objectId);
+// 	// Pulsante indietro
+// 	const back = document.createElement("div");
+// 	back.id = "detail-back";
+// 	back.className = "detail-back";
+// 	back.innerText = "Chiudi";
+// 	back.onclick = () => hideDetail(objectId);
 
-	document.body.appendChild(blur);
-	document.body.appendChild(zoom);
-	document.body.appendChild(back);
-	document.body.appendChild(desc);
-}
+// 	document.body.appendChild(blur);
+// 	document.body.appendChild(zoom);
+// 	document.body.appendChild(back);
+// 	document.body.appendChild(desc);
+// }
 
-function hideDetail(objectId) {	
-	NightOverlay.isFrozen = false;
-	const store = monogatari.storage();
+// function hideDetail(objectId) {	
+// 	NightOverlay.isFrozen = false;
+// 	const store = monogatari.storage();
 
-	if(!store.clickedObjects.includes(objectId)){
-		store.clickedObjects.push(objectId);
-	}
+// 	if(!store.clickedObjects.includes(objectId)){
+// 		store.clickedObjects.push(objectId);
+// 	}
 
-	document.getElementById("detail-blur")?.remove();
-	document.getElementById("detail-zoom")?.remove();
-	document.getElementById("detail-back")?.remove();
-	document.getElementById("detail-desc")?.remove();
+// 	document.getElementById("detail-blur")?.remove();
+// 	document.getElementById("detail-zoom")?.remove();
+// 	document.getElementById("detail-back")?.remove();
+// 	document.getElementById("detail-desc")?.remove();
 
+// }
+
+function manageAllCLicks(lock){
+	if(lock)
+		document.documentElement.classList.add('block-all');
+	else
+		document.documentElement.classList.remove('block-all');
 }
 
 // Cache delle mappe di trasparenza per ogni id immagine
@@ -5361,7 +5303,7 @@ const DebugMenu = {
 		}
 
 		// Pulisce oggetti cliccabili e pannelli dettaglio della scena torcia.
-		hideClickableObjects();
+		// hideClickableObjects();
 		document.getElementById('detail-blur')?.remove();
 		document.getElementById('detail-zoom')?.remove();
 		document.getElementById('detail-back')?.remove();
@@ -5472,14 +5414,18 @@ function sleep(ms){
 function showTextBox(){
 	document.body.classList.add('show-textbox');
 	document.body.classList.remove('hide-textbox');
+	PhoneToggle.hide();
 	
 	//Blocco i click sull'item wrapper
 	SceneUtility.lockItemWrapper();
 }
 
-function hideTextBox(){
+function hideTextBox(phoneVisible = true){
 	document.body.classList.add('hide-textbox')
 	document.body.classList.remove('show-textbox');
+
+	if(phoneVisible)
+		PhoneToggle.show();
 
 	//Sblocco i click sull'item wrapper
 	SceneUtility.unlockItemWrapper();

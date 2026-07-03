@@ -177,6 +177,11 @@ monogatari.script ({
 	'Torcia': [
 		async () => {
 			await SceneFade.toVisible();
+			await AudioManager.play('fan', {
+				loop: true,
+				fade: 1,
+				volume: 0.2
+			});
 			await SceneUtility.loadScene("torcia");
 		},
 		'show scene room_night with fadeIn',
@@ -193,14 +198,14 @@ monogatari.script ({
 		'dad ...aspetta, respira. Era solo...solo un incubo, ma la stessa scena si ripete ormai tutte le notti.',
 		'dad Succede spesso quando dormo male...può capitare.',
 		
-		() => hideTextBox(),
+		() => hideTextBox(false),
 		
 		'wait 3000',
 
 		() => showTextBox(),
 
 		'dad Questa stanza è troppo buia...ma dove ho messo il telefono?',
-		() => hideTextBox(),
+		() => hideTextBox(false),
 		'wait 3000',
 		() => showTextBox(),
 
@@ -749,7 +754,7 @@ monogatari.script ({
 		'wait 3000',
 
 		() => PhoneUI.hide(),
-		
+
 		'jump Contrattazione'
 	],
 //CONTRATTAZIONE

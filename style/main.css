@@ -435,6 +435,11 @@ html, body {
     height: 100%;
 }
 
+html.block-all,
+html.block-all body {
+    pointer-events: none !important; 
+}
+
 /* --- PULSANTE GLOBALE TELEFONO --- */
 /* Wrapper fisso: resta fuori dal layout Monogatari e viene mostrato/nascosto da PhoneToggle. */
 .phone-toggle {
