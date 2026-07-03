@@ -2302,7 +2302,7 @@ const Glitch={
 			HeartbeatManager.stop({fadeOut: 2});
 		}
 
-		await this.cooldown(500, 0, true);
+		await this.cooldown(500, 0, 0, true);
 	}
 };
 
@@ -2817,9 +2817,13 @@ const SceneUtility = {
 		const sky = document.getElementById("sky");
 		// const overlay = document.getElementById("sceneFadeOverlay");	Adesso gestisco il fade a parte
 
+		//Pulsco il cielo ogni volta da eventuali child (pioggia)
+		sky.innerHTML = '';
+
 		//Imposto l'immagine di background del div
 		const imageSrc = `assets/scenes/cielo_${typeOfSky}.png`;
 
+		//Aggiungo la pioggia
 		if(typeOfSky === 'nuvolo'){
 			const rain = document.createElement('img');
 
@@ -2829,7 +2833,7 @@ const SceneUtility = {
 
 			sky.appendChild(rain);
 		}
-
+			
 		// overlay.classList.add("covering");	Come sopra
 
 		await preloadImage(imageSrc);

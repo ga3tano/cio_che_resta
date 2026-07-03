@@ -631,11 +631,12 @@ monogatari.script ({
 //RABBIA
 	'Rabbia': [
 		async () => {
+			AudioManager.fadeOut('whistle', 0.5);
 			await SceneFade.toVisible();
 			AudioManager.play('rage', {
 				loop: true,
 				volume: 0.50,
-				fade: 6
+				fade: 3
 			});
 			await SceneUtility.loadScene("rabbia");
 		},
@@ -655,7 +656,7 @@ monogatari.script ({
 			PhoneUI.reset();
 			// Prepariamo mittente e notifica; il giocatore aprira' il telefono dal pulsante.
 			PhoneUI.setContactName('Giulia');
-			PhoneUI.addIncoming('So che è difficile, ma sono qui. Andiamo a prendere un caffè?');
+			PhoneUI.addIncoming('Come stai oggi? Ti va di vederci?');
 			// PhoneUI.vibrate();
 		},
 
@@ -730,23 +731,25 @@ monogatari.script ({
 			}
 		}},
 
-		async () => {
+		() => {
 			PhoneUI.reset();
-			PhoneUI.hide();
-
-			await sleep(1000);
-
-			PhoneUI.show('Messaggi');
-			PhoneUI.addNotification(
-				{
-					title: 'Messaggi',
-					body: 'Nessun nuovo messaggio'
-				}, false);		
-								
-			await sleep(3000);
 			PhoneUI.hide();
 		},
 
+		'wait 1000',
+
+		() => {
+			PhoneUI.show('Messaggi');
+			PhoneUI.addNotification({
+				title: 'Messaggi',
+				body: 'Nessun nuovo messaggio'
+			}, false);
+		},
+
+		'wait 3000',
+
+		() => PhoneUI.hide(),
+		
 		'jump Contrattazione'
 	],
 //CONTRATTAZIONE
