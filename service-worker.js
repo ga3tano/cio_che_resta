@@ -1,11 +1,11 @@
 'use strict';
 
 // The name of your game, no spaces or special characters.
-const name = 'Monogatari';
+const name = 'Ciò che resta';
 
 // The version of the cache, changing this will force everything to be cached
 // again.
-const version = '0.1.2';
+const version = '0.1.3';
 
 const files = [
 

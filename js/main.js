@@ -844,7 +844,9 @@ const PhoneUI = {
 	async playMessages(messages = []) {
 		if (!this.layer) this.init();
 
-		for (const message of messages) {
+		const list = Array.isArray(messages) ? messages : [messages];
+
+		for (const message of list) {
 			this.addPhoneMessage(message);
 			await this.waitForMessageAdvance();
 		}
@@ -4226,7 +4228,6 @@ const AudioManager = {
 			
 			// Lo inserisce tra gain e destination
 			this.lowPassFilter.connect(ctx.destination);
-			console.log('Filter connected to destination');
 		}
 		
 		return this.lowPassFilter;

@@ -450,7 +450,7 @@ monogatari.script ({
 	'Negazione_Ignora_2':[
 		async () => {
 			PhoneUI.hide();
-			await AudioManager.play('birds', {fade: 1, volume: 0.5, loop: true});
+			await AudioManager.play('birds', {fade: 1, volume: 0.4, loop: true});
 		},
 
 		() => showTextBox(),
@@ -479,7 +479,6 @@ monogatari.script ({
 		'play sound phone_notification',
 
         () => {
-                PhoneUI.reset();
                 // Nuovo messaggio: telefono chiuso, solo notifica/badge.
                 PhoneUI.setContactName('Giulia');
                 PhoneUI.addIncoming('Sai che può solo farti bene, hai bisogno di aria. Ti aspetto.');
@@ -504,6 +503,7 @@ monogatari.script ({
 			await SceneFade.toVisible();
 			SceneUtility.emptyScene();
 			PhoneUI.hide();
+			AudioManager.setLowPass(250, 1);
 		},
 		'show scene #000000',
 		() => SceneFade.toHidden(),
@@ -533,7 +533,8 @@ monogatari.script ({
 
 	'Esci_Casa':[
 		async () => {
-			AudioManager.fadeOut('fan', 1.5);
+			AudioManager.setLowPass(20000, 1.5);
+			AudioManager.fadeOut('fan', 2.5);
 			PhoneUI.hide();
 			await SceneFade.toVisible({ color: '#fff' });
 			SceneUtility.emptyScene();
