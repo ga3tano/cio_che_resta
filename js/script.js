@@ -747,7 +747,8 @@ monogatari.script ({
 			PhoneUI.show('Messaggi');
 			PhoneUI.addNotification({
 				title: 'Messaggi',
-				body: 'Nessun nuovo messaggio'
+				body: 'Nessun nuovo messaggio',
+				notify: false
 			}, false);
 		},
 

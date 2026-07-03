@@ -470,6 +470,10 @@ const PhoneUI = {
 			PhoneUI.addIncoming('Ciao', { notificationCount: 3 }); // +3 notifiche
 			PhoneUI.addIncoming('Ciao', { notify: false }); // nessuna notifica
 		*/
+
+		if(!PhoneToggle.visible)
+			PhoneToggle.show();
+
 		const notificationCount = this.getIncomingNotificationCount(options);
 
 		for (let index = 0; index < notificationCount; index++) {
@@ -3276,9 +3280,8 @@ const SceneFade = {
 			this.element.style.opacity = '1';
 		});
 
-		const phoneToggle = document.getElementById('phone-toggle');
-		if(phoneToggle)
-			phoneToggle.classList.remove('.visible');
+		if(PhoneToggle.visible)
+			PhoneToggle.hide();
 
 		await this.wait(duration);
 	},
