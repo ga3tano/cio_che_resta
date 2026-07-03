@@ -4159,6 +4159,7 @@ const AudioManager = {
 		rage: 'assets/music/mus_rabbia_loop.mp3',
 		rain: 'assets/music/rain.mp3',
 		depression: 'assets/music/mus_depressione_loop.mp3',
+		acceptance: 'assets/music/mus_accettazione_loop.mp3',
 		crash: 'assets/sounds/sfx_incidente.mp3',
 		crash_short: 'assets/sounds/crash.mp3',
 		phone_vibration: 'assets/sounds/phone_vibration.mp3',

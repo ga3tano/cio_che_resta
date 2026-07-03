@@ -1173,6 +1173,12 @@ monogatari.script ({
 			// interattivi della stanza del bambino nel #details-wrapper
 			await SceneUtility.loadScene("accettazione");
 
+			AudioManager.play('acceptance', {
+				loop: true,
+				volume: 0.35,
+				fade: 3
+			});
+
 			// Inizializza il tracciamento degli oggetti cliccabili.
 			// allObjects contiene solo gli id con 'onClick': tenda, cesta.
 			// La porta non è in scena qui: la fase finale (uscita) è da sviluppare.
