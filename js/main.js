@@ -1370,10 +1370,12 @@ const NightOverlay = {
 	init(){
 		this.element = document.getElementById('night-overlay');
 		
-		//Desktop (capire se serve)
+		//Desktop: aggiorna il target come il touch, altrimenti il loop rAF
+		//riporta la torcia verso il vecchio target a ogni frame.
 		document.addEventListener('mousemove', (e) => {
 			if(!this.element.classList.contains('torch')) return;
-			this.updateTorch(e.clientX, e.clientY);	//Per il mouse non serve il target perchè tanto il movimento è sempre fluido e costante
+			this.targetX = e.clientX;
+			this.targetY = e.clientY;
 		});
 
 		//Mobile
@@ -2571,13 +2573,17 @@ const WordsGame = {
 		let deltaX = 0;
 		let deltaY = 0;
 
-		wrapper.addEventListener("touchstart", (event) => {
+		// Pointer events: un solo set di listener copre touch e mouse.
+		// .word-item ha touch-action: none nel CSS, quindi su mobile il drag
+		// non viene interrotto dallo scroll del browser.
+		wrapper.addEventListener("pointerdown", (event) => {
 			if (!this.isCurrentRun(runId)) return;
 
-			const touch = event.touches[0];
-			if (!touch) return;
-
 			event.preventDefault();
+
+			// Il capture fa arrivare pointermove/pointerup al wrapper anche se
+			// il puntatore esce dai suoi bordi durante il drag.
+			wrapper.setPointerCapture(event.pointerId);
 
 			const rect = wrapper.getBoundingClientRect();
 
@@ -2585,33 +2591,30 @@ const WordsGame = {
 			wrapper.classList.add("dragging");
 			wrapper.style.transition = "";
 
-			startTouchX = touch.clientX;
-			startTouchY = touch.clientY;
+			startTouchX = event.clientX;
+			startTouchY = event.clientY;
 			currentLeft = parseFloat(wrapper.style.left) || 0;
 			currentTop = parseFloat(wrapper.style.top) || 0;
-			offsetX = touch.clientX - rect.left;
-			offsetY = touch.clientY - rect.top;
+			offsetX = event.clientX - rect.left;
+			offsetY = event.clientY - rect.top;
 			deltaX = 0;
 			deltaY = 0;
-		}, { passive: false });
+		});
 
-		wrapper.addEventListener("touchmove", (event) => {
+		wrapper.addEventListener("pointermove", (event) => {
 			if (!dragging || !this.isCurrentRun(runId)) return;
-
-			const touch = event.touches[0];
-			if (!touch) return;
 
 			event.preventDefault();
 
-			deltaX = touch.clientX - startTouchX;
-			deltaY = touch.clientY - startTouchY;
+			deltaX = event.clientX - startTouchX;
+			deltaY = event.clientY - startTouchY;
 
-			const newLeft = touch.clientX - offsetX;
-			const newTop = touch.clientY - offsetY;
+			const newLeft = event.clientX - offsetX;
+			const newTop = event.clientY - offsetY;
 
 			wrapper.style.left = `${newLeft}px`;
 			wrapper.style.top = `${newTop}px`;
-		}, { passive: false });
+		});
 
 		const endDrag = () => {
 			if (!dragging || !this.isCurrentRun(runId)) return;
@@ -2657,8 +2660,8 @@ const WordsGame = {
 			}
 		};
 
-		wrapper.addEventListener("touchend", endDrag, { passive: true });
-		wrapper.addEventListener("touchcancel", endDrag, { passive: true });
+		wrapper.addEventListener("pointerup", endDrag);
+		wrapper.addEventListener("pointercancel", endDrag);
 	},
 
 	clearVisibleWords() {
@@ -2759,6 +2762,54 @@ const SCENE_IMAGES = {
 	]
 }
 
+// Contatore discreto "trovati/totale" per le scene a oggetti interattivi
+// (torcia, contrattazione, accettazione). Solo feedback visivo: il gating
+// vero resta nei loop label che confrontano clickedObjects/allObjects.
+const ObjectCounter = {
+	element: null,
+	total: 0,
+	count: 0,
+
+	ensure() {
+		if (!this.element) {
+			this.element = document.createElement('div');
+			this.element.id = 'object-counter';
+			this.element.className = 'object-counter';
+			document.body.appendChild(this.element);
+		}
+		return this.element;
+	},
+
+	show(total) {
+		if (!total) return;
+		this.total = total;
+		this.count = 0;
+		this.render();
+		this.ensure().classList.add('visible');
+	},
+
+	increment() {
+		if (!this.total) return;
+		this.count = Math.min(this.count + 1, this.total);
+		this.render();
+
+		// A scena completata il contatore non serve più: sparisce da solo.
+		if (this.count >= this.total) {
+			setTimeout(() => this.hide(), 1500);
+		}
+	},
+
+	render() {
+		this.ensure().textContent = `${this.count}/${this.total}`;
+	},
+
+	hide() {
+		this.total = 0;
+		this.count = 0;
+		this.element?.classList.remove('visible');
+	}
+};
+
 const SceneUtility = {
 	clickedItems: false,
 	hoverTimer: null,
@@ -2849,17 +2900,8 @@ const SceneUtility = {
 		}
 		
 		if(typeOfItems === "contrattazione" || typeOfItems === "accettazione" || typeOfItems === "accettazione_porta"){
-			// Aggiungiamo un eventListener unico che gestisce i vari layer di immagini.
-			// Usiamo 'touchend' (non 'click') perché 'click' non ha e.touches.
-			// Su touchend le touches attive sono già vuote: si usa changedTouches.
-			wrapper.addEventListener('touchend', (e) => {
-				e.stopPropagation();
-				e.preventDefault();
-
-				const touch = e.changedTouches[0];
-				if (!touch) return;
-				const point = { clientX: touch.clientX, clientY: touch.clientY };
-
+			// Gestore unico per tap/click sui layer di immagini della scena.
+			const handleTap = (point) => {
 				// Prendiamo tutte le immagini clickabili
 				const clickableImages = wrapper.querySelectorAll('.clickable-object');
 
@@ -2875,6 +2917,25 @@ const SceneUtility = {
 					this.lockContrattazioneObject(img, imgData);
 					break;
 				}
+			};
+
+			// Touch: usiamo 'touchend' (non 'click') perché su mobile serve
+			// preventDefault() per sopprimere il click sintetico successivo.
+			// Su touchend le touches attive sono già vuote: si usa changedTouches.
+			wrapper.addEventListener('touchend', (e) => {
+				e.stopPropagation();
+				e.preventDefault();
+
+				const touch = e.changedTouches[0];
+				if (!touch) return;
+				handleTap({ clientX: touch.clientX, clientY: touch.clientY });
+			});
+
+			// Mouse/desktop: il preventDefault sul touchend sopprime il click
+			// sintetico, quindi questo listener scatta solo con un mouse reale.
+			wrapper.addEventListener('click', (e) => {
+				e.stopPropagation();
+				handleTap({ clientX: e.clientX, clientY: e.clientY });
 			});
 		}
 
@@ -2932,6 +2993,12 @@ const SceneUtility = {
 		// Carica le immagini
 		for (const imgData of images) {
 			await loadImage(imgData, wrapper);
+		}
+
+		// Contatore progresso: solo per le scene con più oggetti da trovare
+		// (accettazione_porta ha un solo elemento di transizione, niente contatore).
+		if (["torcia", "contrattazione", "accettazione"].includes(typeOfItems)) {
+			ObjectCounter.show(images.filter(img => img.dialog).length);
 		}
 
 		//Pre-calcola le mappe alpha per gli oggetti lighted
@@ -3023,9 +3090,11 @@ const SceneUtility = {
 
 		if(wrapper)
 			document.body.removeChild(wrapper);
-		
+
 		if(sky)
 			sky.innerHTML = ``;
+
+		ObjectCounter.hide();
 	},
 
 	addShadow(){
@@ -3100,18 +3169,9 @@ const SceneUtility = {
 			}
 		};
 	
-		wrapper.addEventListener('touchmove', (e) => {
-			//Sempre stesso discorso, solo se torcia attiva
-			if (!NightOverlay.element?.classList.contains('torch')) return;
-			const touch = e.touches[0];
-			if(!touch) return;
-
-			// //Blocca lo scroll
-			// if(e.cancelable){
-			// 	e.preventDefault();
-			// }
-
-			lastPoint = { clientX: touch.clientX, clientY: touch.clientY};
+		// Throttle condiviso touch/mouse: al massimo un processHover per frame.
+		const queueHover = (clientX, clientY) => {
+			lastPoint = { clientX, clientY };
 
 			if(!rafId){
 				rafId = requestAnimationFrame(() => {
@@ -3119,7 +3179,23 @@ const SceneUtility = {
 					if (lastPoint) processHover(lastPoint);
 				});
 			}
+		};
+
+		wrapper.addEventListener('touchmove', (e) => {
+			//Sempre stesso discorso, solo se torcia attiva
+			if (!NightOverlay.element?.classList.contains('torch')) return;
+			const touch = e.touches[0];
+			if(!touch) return;
+
+			queueHover(touch.clientX, touch.clientY);
 		}, {passive: false});
+
+		// Desktop: la torcia segue già il mouse (NightOverlay); qui agganciamo
+		// anche l'apertura dei dialoghi quando il fascio resta su un oggetto.
+		wrapper.addEventListener('mousemove', (e) => {
+			if (!NightOverlay.element?.classList.contains('torch')) return;
+			queueHover(e.clientX, e.clientY);
+		});
 
 		wrapper.addEventListener('touchend', (e) => {
 			if(this.currentHoveredId){
@@ -3175,6 +3251,7 @@ const SceneUtility = {
 		// Aggiunge l'oggetto alla lista dei cliccati
 		if (!store.clickedObjects.includes(imgData.id)) {
 			store.clickedObjects.push(imgData.id);
+			ObjectCounter.increment();
 		}
 
 		// Rimuove highlight e interattività dall'oggetto
@@ -3211,6 +3288,7 @@ const SceneUtility = {
 
 		if (!store.clickedObjects.includes(imgData.id)) {
 			store.clickedObjects.push(imgData.id);
+			ObjectCounter.increment();
 		}
 
 		if (imgData.onClick) {
@@ -4306,6 +4384,14 @@ const AudioManager = {
 	},
 
 	/**
+	 * Ferma tutte le tracce attive. Usato dal debug menu prima di un salto
+	 * di scena per non lasciare musiche/loop della scena precedente.
+	 */
+	stopAll() {
+		Object.keys(this.tracks).forEach((id) => this.stop(id));
+	},
+
+	/**
 	 * Sfuma la traccia fino a 0 in un tempo dato, poi la ferma.
 	 * Restituisce una Promise che si risolve al termine del fade-out.
 	 * Usa setTimeout, non perfettamente sincrono con l'AudioContext,
@@ -5208,14 +5294,17 @@ const DebugMenu = {
 		this.refreshStatus();
 	},
 
-	close() {
+	close(persist = true) {
 		// Rimuove la classe "open" e aggiorna gli attributi aria.
 		this.root.classList.remove('open');
 		this.panel.setAttribute('aria-hidden', 'true');
 		this.toggleButton.setAttribute('aria-expanded', 'false');
 
-		// Ricorda che lo sviluppatore lo ha chiuso.
-		this.setStoredOpenState('0');
+		// Ricorda che lo sviluppatore lo ha chiuso. La chiusura automatica
+		// dopo un salto passa persist=false per non toccare la preferenza.
+		if (persist) {
+			this.setStoredOpenState('0');
+		}
 	},
 
 	getStoredOpenState() {
@@ -5268,6 +5357,9 @@ const DebugMenu = {
 			}
 
 			this.setStatus(`Label corrente: ${label}`);
+
+			// Chiude il pannello per lasciare vedere la scena appena caricata.
+			this.close(false);
 		} catch (error) {
 			this.handleJumpError(error, label);
 		}
@@ -5306,9 +5398,33 @@ const DebugMenu = {
 			WordsGame.reset();
 		}
 
+		// Ferma tutte le tracce audio delle scene (musiche, loop ambientali)
+		// e riporta il filtro passa-basso trasparente, se era stato attivato.
+		AudioManager.stopAll();
+		if (AudioManager.lowPassFilter) {
+			AudioManager.setLowPass(AudioManager.LOWPASS_BYPASS_FREQ, 0);
+		}
+
 		// Pulisce il telefono e gli overlay custom prima del salto.
 		PhoneUI.hide();
 		PhoneUI.reset();
+		PhoneTyping.hide();
+
+		// Alcune scene aspettano un messaggio sul telefono senza mostrare il
+		// pulsante (nel flusso normale e' gia' visibile dalla scena precedente):
+		// saltandoci direttamente va mostrato, altrimenti si resta bloccati.
+		const phoneLabels = ['Negazione_Cellulare', 'Rimani_A_Casa', 'Rabbia', 'Depressione'];
+		if (phoneLabels.includes(targetLabel)) {
+			PhoneToggle.show();
+		} else {
+			PhoneToggle.hide();
+		}
+
+		// Smonta i layer della scena precedente (sky, oggetti) e ripristina lo
+		// sfondo standard: ogni label ricrea i propri layer con loadScene.
+		SceneUtility.emptyScene();
+		SceneUtility.enableBackground();
+
 		this.resetNightRuntime();
 		this.resetVisualOverlays();
 		this.resetStorageFlags(targetLabel);
@@ -5348,6 +5464,26 @@ const DebugMenu = {
 	resetVisualOverlays() {
 		// WordsGame blocca lo scroll del body: qui lo ripristiniamo.
 		document.body.style.overflow = '';
+
+		// Nasconde il contatore oggetti della scena precedente.
+		ObjectCounter.hide();
+
+		// Chiude la textbox se un dialogo era a schermo e annulla un eventuale
+		// pauseTextBox in corso, che la farebbe riapparire nella scena nuova.
+		clearTimeout(pauseTextBoxTimer);
+		hideTextBox(false);
+
+		// Spegne i filtri visivi delle transizioni (blur, B/N, saturazione).
+		['blur-overlay', 'bw-filter-overlay', 'saturation-overlay'].forEach((id) => {
+			document.getElementById(id)?.classList.remove('visible', 'active');
+		});
+
+		// Rimuove lo zoom inline applicato a game-screen (scena orsacchiotto).
+		const gameScreen = document.querySelector('game-screen');
+		if (gameScreen) {
+			gameScreen.style.transition = '';
+			gameScreen.style.transform = '';
+		}
 
 		// Rimuove parole rimaste a schermo e pressione visiva della fase.
 		const wordGame = document.getElementById('word-game-overlay');
@@ -5466,11 +5602,15 @@ function hideTextBox(phoneVisible = true){
 	SceneUtility.unlockItemWrapper();
 }
 
+// Timer tracciato: il debug menu lo annulla saltando scena, altrimenti la
+// textbox riapparirebbe da sola nella scena di destinazione.
+let pauseTextBoxTimer = null;
+
 function pauseTextBox(time=3000){
 	hideTextBox();
-	setTimeout(() => {
+	pauseTextBoxTimer = setTimeout(() => {
 		showTextBox();
-	}, time);	
+	}, time);
 }
 		
 $_ready (() => {
@@ -5482,10 +5622,8 @@ $_ready (() => {
 		if(screens)
 			screens.forEach(s => {s.style.backgroundColor = "transparent";});
 
-		// Quando il giocatore lascia il menu principale e parte una scena, il pulsante telefono puo apparire.
-		if (PhoneToggle.root) {
-			PhoneToggle.queueRefreshVisibility();
-		}
+		// La visibilita' del pulsante telefono e' gestita esplicitamente dalle scene
+		// tramite PhoneToggle.show()/.hide().
 	})
 
 	monogatari.init ('#monogatari').then (() => {

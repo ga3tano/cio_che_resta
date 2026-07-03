@@ -2206,3 +2206,26 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	line-height: 1.5;
 	white-space: pre-wrap;
 }
+
+/* --- CONTATORE OGGETTI INTERATTIVI --- */
+/* Pill discreta in alto a destra, gestita da ObjectCounter in js/main.js. */
+.object-counter {
+	position: fixed;
+	top: max(14px, env(safe-area-inset-top));
+	right: max(14px, env(safe-area-inset-right));
+	z-index: 300; /* sopra night-overlay e scena, sotto debug menu e telefono */
+	padding: 6px 14px;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.55);
+	color: #e5e5e5;
+	font-family: 'Cormorant Garamond', serif;
+	font-size: 19px;
+	letter-spacing: 2px;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.6s ease;
+}
+
+.object-counter.visible {
+	opacity: 1;
+}

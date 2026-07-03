@@ -403,7 +403,7 @@ monogatari.script ({
 		async() => {
 			PhoneTyping.send();
 			await sleep(300);
-			PhoneUI.addOutgoing('Si dai, perchè no...fammi finire un paio di cose e ti aggiorno');
+			PhoneUI.addOutgoing('Si dai, perché no...fammi finire un paio di cose e ti aggiorno');
 			PhoneTyping.hide();
 			// SceneUtility.addBlur(2000);
 			// await sleep(1500);
