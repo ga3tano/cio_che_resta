@@ -726,7 +726,9 @@ monogatari.script ({
 		'wait 3000',
 		() => {
 			PhoneUI.reset();
-			PhoneUI.show();
+			// Apre direttamente la chat: non ci sono notifiche da leggere e lo
+			// sblocco della lockscreen e' disabilitato senza messaggi non letti.
+			PhoneUI.show('Giulia', { mode: 'chat' });
 		},
 
 		// Mostriamo il comando come azione del telefono e poi scriviamo il messaggio scelto.

@@ -673,6 +673,13 @@ const PhoneUI = {
 		if (typeof PhoneToggle !== 'undefined') {
 			PhoneToggle.updateBadge(this.getUnreadCount());
 		}
+
+		// Senza messaggi da leggere lo sblocco e' disabilitato: l'hint
+		// "Tocca per sbloccare" sparisce per non promettere il contrario.
+		const hint = this.lockView?.querySelector('.lock-hint');
+		if (hint) {
+			hint.style.visibility = this.unreadNotifications.length ? 'visible' : 'hidden';
+		}
 	},
 
 	bindLockscreenEvents() {
@@ -711,6 +718,9 @@ const PhoneUI = {
 	unlockFromLockscreen() {
 		// Se la chat e' gia aperta, non facciamo nulla.
 		if (this.mode !== 'lockscreen') return;
+
+		// Nessun messaggio da leggere: la lockscreen resta bloccata.
+		if (this.getUnreadCount() === 0) return;
 
 		this.showChatView({ markNotificationsAsRead: true });
 	},
