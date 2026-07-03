@@ -396,6 +396,31 @@ const PhoneUI = {
 		this.show(nextContactName, { mode: 'lockscreen' });
 	},
 
+	/*
+		Mostra la lockscreen con il pulsante "Accendi la torcia" e attende
+		che venga premuto. La scena resta bloccata sull'await finché il
+		giocatore non tocca il pulsante; poi il telefono si chiude da solo.
+	*/
+	waitForTorchUnlock() {
+		if (!this.layer) this.init();
+
+		this.showLockScreen();
+		this.lockView.classList.add('torch-mode');
+
+		return new Promise((resolve) => {
+			const torchButton = document.getElementById('phone-lock-torch');
+
+			torchButton.addEventListener('click', (event) => {
+				// Il click non deve risalire alla lockscreen e aprire la chat.
+				event.stopPropagation();
+
+				this.lockView.classList.remove('torch-mode');
+				this.hide();
+				resolve();
+			}, { once: true });
+		});
+	},
+
     getContactName() {
         if (!this.contact) this.init();
 
@@ -654,6 +679,10 @@ const PhoneUI = {
 		if (!this.lockView || this.unlockEventsBound) return;
 
 		const unlock = (event) => {
+			// In modalità torcia il tocco non sblocca la chat: niente preventDefault,
+			// così su mobile il click sintetico arriva al pulsante torcia.
+			if (this.lockView.classList.contains('torch-mode')) return;
+
 			event.preventDefault();
 			event.stopPropagation();
 			this.unlockFromLockscreen();
@@ -4979,6 +5008,7 @@ const DebugMenu = {
 		'Start',
 		'Intermezzo_Respira',
 		'Torcia',
+		'Continua_Torcia',
 		'Negazione_Cellulare',
 		'Rimani_A_Casa',
 		'Esci_Casa',
@@ -4986,8 +5016,12 @@ const DebugMenu = {
 		'GlitchRabbia',
 		'ContinuaGlitch',
 		'Contrattazione',
+		'Continua_Contrattazione',
 		'Depressione',
+		'Lascia_Andare',
+		'Non_Pronto',
 		'Accettazione',
+		'Scena_Accettazione',
 		//'Test_telefono'
 	],
 

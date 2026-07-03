@@ -211,9 +211,13 @@ monogatari.script ({
 
 		'dad ...eccolo!',
 
-		() => {
-			hideTextBox();
+		async () => {
+			// Toggle nascosto: il telefono si apre da solo e non deve poter essere chiuso
+			// prima di aver acceso la torcia.
+			hideTextBox(false);
+			await PhoneUI.waitForTorchUnlock();
 			NightOverlay.showTorch();
+			PhoneToggle.show();
 		},
 
 		'jump loop_torcia',
