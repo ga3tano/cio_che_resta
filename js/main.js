@@ -2730,7 +2730,7 @@ const SCENE_IMAGES = {
 		{ id: 'uomo', src: 'assets/images/uomo.png'},
 		{ id: 'ombra', src: 'assets/images/bambino_ombra.png', onClick: 'pipo', isVisible: 'false'}
 	],
-	// Schermata d'ingresso alla fase di accettazione: la stanza buia (room_day_dark)
+	// Schermata d'ingresso alla fase di accettazione: la stanza (room_day_dark)
 	// con la sola porta che lampeggia. Riusa la stessa meccanica .highlight + click
 	// degli oggetti della contrattazione. onClick punta alla stessa immagine (porta.png)
 	// perché non vogliamo cambiare la grafica: al click parte solo il jump della scena.

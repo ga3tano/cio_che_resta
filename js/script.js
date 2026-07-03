@@ -1191,6 +1191,15 @@ monogatari.script ({
 		'show scene room_accettazione',
 		'wait 1500',
 		async () => await SceneFade.toHidden({duration: 2}),
+		// Subito dopo il reveal: porta_2 zooma leggermente e sparisce, come se si fosse appena entrati nella stanza. 'wait 3000' che segue copre i 1400ms della transizione CSS.
+		() => {
+			const porta = document.getElementById('porta_2');
+			if (!porta) return;
+
+			porta.classList.add('door-enter');
+			void porta.offsetWidth; // forza il reflow prima di applicare i valori finali della transizione
+			porta.classList.add('door-enter-active');
+		},
 		'wait 3000',
 		'jump loop_accettazione'
 	],
