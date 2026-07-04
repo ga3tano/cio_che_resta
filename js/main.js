@@ -3043,7 +3043,7 @@ const SceneUtility = {
 				await this.loadSky("giorno_2");
 				break;
 			case "rabbia":
-				await this.loadSky("nuvolo");
+				await this.loadSky("giorno_2");
 				break;
 			case "contrattazione":
 				await this.loadSky("giorno_2")
@@ -4191,42 +4191,112 @@ const BlinkOverlay = {
 	} 
 }
 
-// Orologio che accelera in modo esponenziale (scena #clock-display).
-// Ritorna una funzione stop() per fermarlo.
-function startAcceleratingClock(elementId) {
-	const display = document.getElementById(elementId);
-	const now = new Date();
+// Salto temporale cinematografico su lock-time + lock-date: rampa quadratica -> plateau (scramble) -> cooldown quadratico
+function startAcceleratingClock(options = {}) {
+	// Overlay + cielo notte: un solo punto di controllo per entrambi
+	const DayCycle = (() => {
+		let overlayEl = null;
+		let skyEl = null;
 
-	let hours = now.getHours();
-	let minutes = now.getMinutes();
-	let delay = 800;
-	let timeoutId;
-	let tickCount = 0;
+		function init() {
+			overlayEl = document.createElement('div');
+			overlayEl.className = 'daycycle-layer';
+			document.body.appendChild(overlayEl);
 
-	function updateClock() {
-		display.textContent = [
-			hours.toString().padStart(2, '0'),
-			minutes.toString().padStart(2, '0')
-		].join(':');
-
-		tickCount++;
-		minutes += Math.pow(2, tickCount); // l'aggiunta dei minuti è esponenziale
-
-		while (minutes >= 60) {
-			minutes -= 60;
-			hours++;
-		}
-		while (hours >= 24) {
-			hours -= 24;
+			skyEl = document.createElement('div');
+			skyEl.className = 'sky-night';
+			skyEl.style.backgroundImage = 'url("assets/scenes/cielo_notte.png")'; // path fisso, impostato una volta sola
+			document.body.appendChild(skyEl);
 		}
 
-		delay = Math.max(30, delay * 0.85);
-		timeoutId = setTimeout(updateClock, delay);
+		// nightSrc: path cielo notte, hardcoded per scena a chi chiama
+		function set(isNight) {
+			if (!overlayEl) init();
+			overlayEl.classList.toggle('active', isNight);
+			skyEl.classList.toggle('active', isNight);
+		}
+
+		return { set };
+	})();
+	
+	const {
+		rampMs = 5000,
+		plateauMs = 5000,
+		cooldownMs = 5000,
+		totalMinutes = 10080 // default: 1 settimana
+	} = options;
+
+	const timeEl = document.getElementById('lock-time');
+	const dateEl = document.getElementById('phone-lock-date');
+
+	// Sospende il clock reale di PhoneUI: altrimenti il suo setInterval sovrascrive
+	// ogni secondo lock-time/lock-date con l'orario reale, rendendo i giorni incoerenti
+	PhoneUI.stopClock();	//Momentaneo, clock sarà hard coded fisso per ogni scena
+
+	// Il plateau assorbe metà del salto senza calcolarlo (solo scramble visivo)
+	const rampMin = totalMinutes * 0.3;
+	const plateauMin = totalMinutes * 0.5;
+	const cooldownMin = totalMinutes - rampMin - plateauMin;
+
+	const start = new Date();
+	let frameId, intervalId, dayCycleIntervalId;
+
+	// Mappa ora -> fascia del ciclo giorno/notte
+	// const phaseFor = (h) => (h >= 5 && h < 8) ? 'dawn' : (h >= 8 && h < 18) ? 'day' : (h >= 18 && h < 21) ? 'dusk' : 'night';
+	const isNight = (h) => h < 7 || h > 20;
+
+	// Aggiorna sia ora che data, stesso formato usato da PhoneUI.updateClock
+	const render = (d, daycycle = true) => {
+		timeEl.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+		dateEl.textContent = d.toLocaleDateString('it-IT', { weekday: 'long'});
+		if(daycycle) DayCycle.set(isNight(d.getHours()));
+	};
+
+	// Fase 1: ease-in quadratico, data/ora reali
+	(function ramp(t0 = performance.now()) {
+		frameId = requestAnimationFrame((now) => {
+			const t = Math.min(1, (now - t0) / rampMs);
+			render(new Date(start.getTime() + t * t * rampMin * 60000));
+			if (t < 1) ramp(t0); else plateau(new Date(start.getTime() + rampMin * 60000));
+		});
+	})();
+
+	// Fase 2: scramble sia di ora che di data, dentro il range effettivo di minuti
+	// da "consumare" in questa fase — così il caos visivo resta cronologicamente credibile
+	function plateau(rampEnd) {
+		timeEl.classList.add('clock-glitch');
+		intervalId = setInterval(() => {
+			const d = new Date(rampEnd.getTime() + Math.random() * plateauMin * 60000);
+			render(d, false);
+		}, 45);	//old: 45
+
+		dayCycleIntervalId = setInterval(() => {
+			const d = new Date(rampEnd.getTime() + Math.random() * plateauMin * 60000);
+			DayCycle.set(isNight(d.getHours()));
+		}, 270);
+
+		setTimeout(() => {
+			clearInterval(intervalId);
+			clearInterval(dayCycleIntervalId);
+			timeEl.classList.remove('clock-glitch');
+			cooldown(new Date(rampEnd.getTime() + plateauMin * 60000));
+		}, plateauMs);
 	}
 
-	updateClock();
+	// Fase 3: ease-out quadratico, atterra su data/ora finali esatte
+	function cooldown(plateauEnd) {
+		(function tick(t0 = performance.now()) {
+			frameId = requestAnimationFrame((now) => {
+				const t = Math.min(1, (now - t0) / cooldownMs);
+				const eased = 1 - (1 - t) * (1 - t);
+				render(new Date(plateauEnd.getTime() + eased * cooldownMin * 60000));
+				if (t < 1) tick(t0);
+			});
+		})();
+	}
 
-	return () => clearTimeout(timeoutId);
+	// Per stop esterno (debug menu, cambio scena)
+	return () => { cancelAnimationFrame(frameId); clearInterval(intervalId); clearInterval(dayCycleIntervalId); };
 }
 
 const AudioManager = {
@@ -5119,6 +5189,7 @@ const DebugMenu = {
 		'Non_Pronto',
 		'Accettazione',
 		'Scena_Accettazione',
+		'TestClock'
 		//'Test_telefono'
 	],
 

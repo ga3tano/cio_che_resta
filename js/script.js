@@ -1255,6 +1255,15 @@ monogatari.script ({
 		'jump loop_accettazione'
 	],
 
+	'TestClock': [
+		async () => await SceneUtility.loadScene("rabbia"),
+		'show scene room_rage',
+		() => {
+			PhoneUI.show();
+			startAcceleratingClock();
+		}
+	],
+
 	// Scena isolata: non viene richiamata dal flow narrativo, solo dal menu di debug.
 	'Test_telefono': [
 		'show scene #000000 with fadeIn',

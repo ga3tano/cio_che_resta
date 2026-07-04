@@ -1231,6 +1231,7 @@ body.show-textbox .phone-toggle {
     100% { transform: scale(0); opacity: 0; }
 }
 
+/* Stile dell'orologio del telefono */
 .clock-display{
 	display: none;
     position: fixed;
@@ -1245,6 +1246,61 @@ body.show-textbox .phone-toggle {
     border-radius: 10px;
     z-index: 1000;
 }
+
+/* Effetto scramble del plateau: leggero flicker/blur, nessun impatto sulle performance. */
+.clock-glitch {
+	filter: blur(1px);
+	animation: clock-flicker 90ms steps(2) infinite;
+}
+@keyframes clock-flicker {
+	0%, 100% { opacity: 1; transform: translateY(0); }
+	50%      { opacity: 0.7; transform: translateY(-2px); }
+}
+
+/* Base comune ai 4 layer del ciclo giorno/notte, impilati e sempre in DOM */
+.daycycle-layer {
+	position: fixed;
+	inset: 0;
+	z-index: 5;
+	pointer-events: none;
+	opacity: 0;
+    background-color: rgba(5,10,35,0.88);
+	mix-blend-mode: hue;
+	transition: opacity 0.8s ease; /* solo opacity anima: blend-mode resta fisso per layer */
+}
+
+.daycycle-layer.active { opacity: 1; }
+
+/* Secondo layer cielo per il crossfade notte, sovrapposto a #sky */
+.sky-night {
+	position: fixed;
+	inset: 0;
+	z-index: -999; /* sopra #sky (-1000), sotto la scena */
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	opacity: 0;
+	transition: opacity 0.8s ease; /* stessa durata di .daycycle-overlay */
+	pointer-events: none;
+}
+
+.sky-night.active { opacity: 1; }
+
+/* Dawn: rinforza i toni caldi già presenti (color-6/color-8) invece di virare al rosa
+/* .daycycle-dawn { 
+	background: linear-gradient(180deg, rgba(230,140,58,0.4), rgba(230,123,49,0.25));
+	mix-blend-mode: hard-light;  
+} */
+
+/* Dusk: intensifica verso i rossi più scuri della palette (color-5/color-11) */
+/* .daycycle-dusk {
+	background: linear-gradient(180deg, rgba(173,58,41,0.55), rgba(173,49,33,0.5));
+	mix-blend-mode: multiply; 
+} */
+/* .daycycle-night {
+	background-color: rgba(5,10,35,0.88);
+	mix-blend-mode: hue;
+} */
 
 /* Overlay glitch sopra tutto il telefono */
 .phone-glitch {
