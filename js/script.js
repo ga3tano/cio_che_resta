@@ -225,7 +225,7 @@ monogatari.script ({
 
 	'DialogoTorcia_Pianta': [
 		() => showTextBox(),
-		'<div style="color: #000000;">dad .</div>',
+		'dad <div style="color: #000000;">.</div>',
     	'dad Dovrei annaffiarla, ha bisogno di luce, sta perdendo tutte le foglie.',
 		'dad Oggi lo faccio, devo solo organizzarmi meglio, non voglio che si secchi del tutto.',
 		'dad Si...si...lo farò dopo, dopo che mi sarò alzato.',
@@ -238,7 +238,7 @@ monogatari.script ({
 
 	'DialogoTorcia_Cornice': [
 		() => showTextBox(),
-		'<div style="color: #000000;">dad .</div>',
+		'dad <div style="color: #000000;">.</div>',
     	'dad Quanta polvere...non si vede neanche più la fotografia.',
 		'dad Sei così felice lì, quel giorno al parco ci siamo divertiti molto, abbiamo preso un gelato, passeggiato e cantato le tue canzoni preferite.',
 		'dad Dovremmo rifarlo!',
@@ -318,6 +318,7 @@ monogatari.script ({
 			SceneUtility.addBlur(2000);
 			await BlinkOverlay.doubleBlink(400);
 			await SceneFade.toVisible({duration: 5});
+			await AudioManager.fadeOut('fan', 5);
 		},
 		'jump Negazione_Cellulare'
 
@@ -350,7 +351,7 @@ monogatari.script ({
 			NightOverlay.hide();
 
 			await SceneUtility.loadScene("negazione"); 
-			await AudioManager.play('fan', {volume: 0.8, fade: 1.5, loop: true});
+			await AudioManager.play('fan', {volume: 0.2, fade: 1, loop: true});
 		},
 
 		'show scene room_day_dark',

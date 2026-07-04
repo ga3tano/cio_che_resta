@@ -4191,9 +4191,8 @@ const BlinkOverlay = {
 	} 
 }
 
-// Salto temporale cinematografico su lock-time + lock-date: rampa quadratica -> plateau (scramble) -> cooldown quadratico
 function startAcceleratingClock(options = {}) {
-	// Overlay + cielo notte: un solo punto di controllo per entrambi
+	// Overlay + cielo notte: singolo punto di controllo per entrambi i layer
 	const DayCycle = (() => {
 		let overlayEl = null;
 		let skyEl = null;
@@ -4205,11 +4204,10 @@ function startAcceleratingClock(options = {}) {
 
 			skyEl = document.createElement('div');
 			skyEl.className = 'sky-night';
-			skyEl.style.backgroundImage = 'url("assets/scenes/cielo_notte.png")'; // path fisso, impostato una volta sola
+			skyEl.style.backgroundImage = 'url("assets/scenes/cielo_notte.png")'; // path fisso, una volta sola
 			document.body.appendChild(skyEl);
 		}
 
-		// nightSrc: path cielo notte, hardcoded per scena a chi chiama
 		function set(isNight) {
 			if (!overlayEl) init();
 			overlayEl.classList.toggle('active', isNight);
@@ -4218,22 +4216,21 @@ function startAcceleratingClock(options = {}) {
 
 		return { set };
 	})();
-	
+
 	const {
-		rampMs = 5000,
-		plateauMs = 5000,
-		cooldownMs = 5000,
-		totalMinutes = 10080 // default: 1 settimana
+		rampMs = 3000,
+		plateauMs = 6000,
+		cooldownMs = 2000,
+		totalMinutes = 10080 // 1 settimana
 	} = options;
 
 	const timeEl = document.getElementById('lock-time');
 	const dateEl = document.getElementById('phone-lock-date');
 
-	// Sospende il clock reale di PhoneUI: altrimenti il suo setInterval sovrascrive
-	// ogni secondo lock-time/lock-date con l'orario reale, rendendo i giorni incoerenti
-	PhoneUI.stopClock();	//Momentaneo, clock sarà hard coded fisso per ogni scena
+	// Sospende il clock reale del telefono: eviterebbe che sovrascriva i display ogni secondo
+	PhoneUI.stopClock();
 
-	// Il plateau assorbe metà del salto senza calcolarlo (solo scramble visivo)
+	// Split minuti tra le 3 fasi: il plateau ne assorbe metà senza calcolarli in modo random-puro
 	const rampMin = totalMinutes * 0.3;
 	const plateauMin = totalMinutes * 0.5;
 	const cooldownMin = totalMinutes - rampMin - plateauMin;
@@ -4241,18 +4238,32 @@ function startAcceleratingClock(options = {}) {
 	const start = new Date();
 	let frameId, intervalId, dayCycleIntervalId;
 
-	// Mappa ora -> fascia del ciclo giorno/notte
-	// const phaseFor = (h) => (h >= 5 && h < 8) ? 'dawn' : (h >= 8 && h < 18) ? 'day' : (h >= 18 && h < 21) ? 'dusk' : 'night';
+	// Notte = fascia oraria, non mezzanotte: serve per la transizione visiva dello sfondo
 	const isNight = (h) => h < 7 || h > 20;
 
-	// Aggiorna sia ora che data, stesso formato usato da PhoneUI.updateClock
+	// Il "giorno visualizzato" NON segue la mezzanotte, ma avanza solo quando
+	// lo sfondo passa da notte a giorno: così testo e scena cambiano insieme.
+	const WEEKDAYS = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+	let dayIndex = start.getDay();
+	let wasNight = isNight(start.getHours());
+
+	// Aggiorna ora sempre; data+daycycle solo se richiesto (disaccoppiati durante il plateau)
 	const render = (d, daycycle = true) => {
 		timeEl.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-		dateEl.textContent = d.toLocaleDateString('it-IT', { weekday: 'long'});
-		if(daycycle) DayCycle.set(isNight(d.getHours()));
+
+		if (daycycle) {
+			const nightNow = isNight(d.getHours());
+
+			// Avanza il giorno SOLO al varco notte->giorno, non a ogni mezzanotte calcolata
+			if (wasNight && !nightNow) dayIndex = (dayIndex + 1) % 7;
+			wasNight = nightNow;
+
+			dateEl.textContent = WEEKDAYS[dayIndex];
+			DayCycle.set(nightNow);
+		}
 	};
 
-	// Fase 1: ease-in quadratico, data/ora reali
+	// Fase 1: ease-in quadratico, tempo reale (ogni frame aggiorna anche il daycycle)
 	(function ramp(t0 = performance.now()) {
 		frameId = requestAnimationFrame((now) => {
 			const t = Math.min(1, (now - t0) / rampMs);
@@ -4261,19 +4272,26 @@ function startAcceleratingClock(options = {}) {
 		});
 	})();
 
-	// Fase 2: scramble sia di ora che di data, dentro il range effettivo di minuti
-	// da "consumare" in questa fase — così il caos visivo resta cronologicamente credibile
+	// Fase 2: due interval separati e intenzionali
+	// - intervalId (45ms): scramble testo/ora, random puro, solo effetto slot machine
+	// - dayCycleIntervalId (90ms): avanza LINEARMENTE nel plateau -> giorno/notte resta coerente col tempo che passa
 	function plateau(rampEnd) {
 		timeEl.classList.add('clock-glitch');
+
 		intervalId = setInterval(() => {
 			const d = new Date(rampEnd.getTime() + Math.random() * plateauMin * 60000);
-			render(d, false);
-		}, 45);	//old: 45
+			render(d, false); // false: non tocca data/daycycle, ci pensa l'altro interval
+		}, 45);
+
+		const dayCycleSteps = Math.ceil(plateauMs / 90);
+		let dayCycleStep = 0;
 
 		dayCycleIntervalId = setInterval(() => {
-			const d = new Date(rampEnd.getTime() + Math.random() * plateauMin * 60000);
-			DayCycle.set(isNight(d.getHours()));
-		}, 270);
+			dayCycleStep++;
+			const progress = dayCycleStep / dayCycleSteps; // 0 -> 1 lineare, mai random: garantisce monotonia
+			const d = new Date(rampEnd.getTime() + progress * plateauMin * 60000);
+			render(d); // daycycle=true: aggiorna sia weekday che overlay, sempre insieme
+		}, 90);
 
 		setTimeout(() => {
 			clearInterval(intervalId);
@@ -4283,7 +4301,7 @@ function startAcceleratingClock(options = {}) {
 		}, plateauMs);
 	}
 
-	// Fase 3: ease-out quadratico, atterra su data/ora finali esatte
+	// Fase 3: ease-out quadratico, atterra sull'orario finale esatto
 	function cooldown(plateauEnd) {
 		(function tick(t0 = performance.now()) {
 			frameId = requestAnimationFrame((now) => {
@@ -4295,7 +4313,7 @@ function startAcceleratingClock(options = {}) {
 		})();
 	}
 
-	// Per stop esterno (debug menu, cambio scena)
+	// Stop esterno (debug menu, cambio scena)
 	return () => { cancelAnimationFrame(frameId); clearInterval(intervalId); clearInterval(dayCycleIntervalId); };
 }
 
