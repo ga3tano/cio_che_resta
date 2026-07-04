@@ -5559,12 +5559,24 @@ const DebugMenu = {
 			document.getElementById(id)?.classList.remove('visible', 'active');
 		});
 
+		// Rimuove il layer porta della transizione d'ingresso accettazione.
+		document.getElementById('door-layer')?.remove();
+
 		// Rimuove lo zoom inline applicato a game-screen (scena orsacchiotto).
 		const gameScreen = document.querySelector('game-screen');
 		if (gameScreen) {
 			gameScreen.style.transition = '';
 			gameScreen.style.transform = '';
 		}
+
+		// Rimuove lo zoom d'ingresso accettazione da #sky (elemento persistente,
+		// a differenza di #details-wrapper che viene ricreato a ogni loadScene).
+		const sky = document.getElementById('sky');
+		if (sky) {
+			sky.style.transition = '';
+			sky.style.transform = '';
+		}
+		document.body.style.background = '';
 
 		// Rimuove parole rimaste a schermo e pressione visiva della fase.
 		const wordGame = document.getElementById('word-game-overlay');
