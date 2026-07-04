@@ -644,7 +644,17 @@ const PhoneUI = {
 			Ogni notifica mostrata qui corrisponde a 1 numero nel badge.
 			Se vuoi raggruppare piu messaggi in una sola card, questo e' il punto da modificare.
 		*/
-		this.unreadNotifications.forEach((notification) => {
+		// Raggruppa per titolo (mittente): se una chat ha 3+ notifiche, mostra 1 card cumulativa
+		const groups = new Map();
+		this.unreadNotifications.forEach((n) => {
+			if (!groups.has(n.title)) groups.set(n.title, []);
+			groups.get(n.title).push(n);
+		});
+
+		groups.forEach((items) => {
+			const isGrouped = items.length >= 3;
+			const last = items[items.length - 1]; // card mostra sempre l'ultimo messaggio ricevuto
+
 			const item = document.createElement('div');
 			item.className = 'lock-notification';
 
@@ -657,11 +667,12 @@ const PhoneUI = {
 
 			const title = document.createElement('div');
 			title.className = 'lock-notification-title';
-			title.textContent = notification.title;
+			// Badge conteggio nel titolo, es. "Giulia (4)", solo se raggruppato
+			title.textContent = isGrouped ? `${last.title} (${items.length})` : last.title;
 
 			const subtitle = document.createElement('div');
 			subtitle.className = 'lock-notification-subtitle';
-			subtitle.textContent = notification.body;
+			subtitle.textContent = last.body;
 
 			text.appendChild(title);
 			text.appendChild(subtitle);
@@ -3332,40 +3343,55 @@ const SceneUtility = {
     el.classList.add('visible');
 },
 
-removeBlur(duration = 0) {
-    const el = document.getElementById('blur-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.remove('visible');
-},
+	removeBlur(duration = 0) {
+		const el = document.getElementById('blur-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.remove('visible');
+	},
 
-addBW(duration = 0) {
-    const el = document.getElementById('bw-filter-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.add('visible');
-},
+	addBW(duration = 0) {
+		const el = document.getElementById('bw-filter-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.add('visible');
+	},
 
-removeBW(duration = 0) {
-    const el = document.getElementById('bw-filter-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.remove('visible');
-},
+	removeBW(duration = 0) {
+		const el = document.getElementById('bw-filter-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.remove('visible');
+	},
 
-addSaturation(duration = 0) {
-    const el = document.getElementById('saturation-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.add('visible');
-},
+	addSaturation(duration = 0) {
+		const el = document.getElementById('saturation-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.add('visible');
+	},
 
-removeSaturation(duration = 0) {
-    const el = document.getElementById('saturation-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.remove('visible');
-}
+	removeSaturation(duration = 0) {
+		const el = document.getElementById('saturation-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.remove('visible');
+	},
+
+	addDim(duration = 0){
+		const el = document.getElementById('dim-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.add('visible');
+	},
+
+	removeDim(duration = 0){
+		const el = document.getElementById('dim-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.remove('visible');
+	}
+
 }
 
 const SceneFade = {
@@ -4968,7 +4994,7 @@ const BWFilter = {
 
 // }
 
-function manageAllCLicks(lock){
+function manageAllClicks(lock){
 	if(lock)
 		document.documentElement.classList.add('block-all');
 	else
@@ -5155,6 +5181,7 @@ const DebugMenu = {
 	// Ogni stringa e' sia il testo mostrato nel bottone sia il label usato da jump.
 	labels: [
 		'Start',
+		'Rimani',
 		'Intermezzo_Respira',
 		'Torcia',
 		'Continua_Torcia',
@@ -5171,7 +5198,6 @@ const DebugMenu = {
 		'Non_Pronto',
 		'Accettazione',
 		'Scena_Accettazione',
-		'TestClock'
 		//'Test_telefono'
 	],
 

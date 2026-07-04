@@ -450,7 +450,6 @@ monogatari.script ({
 			
 			await sleep(2000);
 		},
-		
 
 		{'PhoneChoice':{ 
 			'Rispondi': {
@@ -513,15 +512,84 @@ monogatari.script ({
             },
             'Rimani': {
                 'Text': 'RIMANI A CASA',
-                'Do': 'jump Rimani_A_Casa'
+                'Do': 'jump Rimani'
             }
         }}
     ],
+
+	'Rimani':[
+		async () => {
+			PhoneToggle.show();
+			PhoneUI.hide();
+			SceneUtility.addDim(3000);
+			const el = document.getElementById('phone-toggle');
+			if (el) el.classList.add('disabled');
+			await sleep(5000);
+		},
+
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Sei per strada?'),
+
+		'wait 2100',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Sei ancora sotto la doccia, vero? Ahahahah...'),
+		
+		'wait 1600',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Ti aspetto dentro, comincio a sentir freddo fuori'),
+
+		'wait 1300',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Ehi, tutto bene?'),
+
+		'wait 900',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Io ho già ordinato'),
+
+		'wait 750',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => {
+			PhoneUI.addIncoming('Fra poco vado via...');
+			const el = document.getElementById('phone-toggle');
+			if (el) el.classList.remove('disabled');
+		},
+
+		'wait 500',
+
+		async () => {
+			await PhoneUI.waitUntilAllNotificationsRead();
+		},
+
+		{'PhoneChoice': {
+            'Esci': {
+                'Text': 'ESCI',
+                'Do': 'jump Esci_Casa'
+            },
+            'Rimani': {
+                'Text': 'RIMANI A CASA',
+                'Do': 'jump Rimani_A_Casa'
+            }
+        }}
+
+	],
 
 	'Rimani_A_Casa':[
 		async () => {
 			await SceneFade.toVisible();
 			SceneUtility.emptyScene();
+			SceneUtility.removeDim();
 			PhoneUI.hide();
 			AudioManager.setLowPass(250, 1);
 		},
@@ -531,6 +599,7 @@ monogatari.script ({
 		'wait 5000',
 		'play sound phone_vibration',
 		'play sound phone_notification',
+		
 		async () => {
 			// PhoneUI.reset();
 			// Messaggio in arrivo: aggiorna il badge, ma lascia il telefono chiuso.
@@ -555,6 +624,7 @@ monogatari.script ({
 		async () => {
 			AudioManager.setLowPass(20000, 1.5);
 			AudioManager.fadeOut('fan', 2.5);
+			SceneUtility.removeDim();
 			PhoneUI.hide();
 			await SceneFade.toVisible({ color: '#fff' });
 			SceneUtility.emptyScene();
