@@ -2080,12 +2080,13 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	z-index: 1;
 }
 
-/* Effetto "si e' appena entrati nella stanza": porta_2 si ingrandisce leggermente e sparisce. */
-#porta_2.door-enter {
+/* Effetto "si sta attraversando la porta": l'immagine si ingrandisce leggermente e sparisce.
+   Usato su porta_2 (ingresso stanza accettazione) e porta_acc (uscita da accettazione_porta). */
+.door-enter {
 	transition: transform 1400ms ease-out, opacity 1400ms ease-out;
 }
 
-#porta_2.door-enter.door-enter-active {
+.door-enter.door-enter-active {
 	transform: scale(1.15);
 	opacity: 0;
 }

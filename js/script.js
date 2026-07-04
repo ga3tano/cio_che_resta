@@ -1,5 +1,15 @@
 /* global monogatari */
 
+// Layer che compongono la "stanza" nelle scene composite (sfondo Monogatari,
+// cielo, oggetti). Usato per lo zoom d'ingresso della scena accettazione.
+function roomLayers() {
+	return [
+		document.querySelector('game-screen'),
+		document.getElementById('sky'),
+		document.getElementById('details-wrapper')
+	].filter(Boolean);
+}
+
 // Define the messages used in the game.
 monogatari.action ('message').messages ({
 	'Help': {
@@ -1164,6 +1174,13 @@ monogatari.script ({
 			// Svuota la scena precedente (rimuove la pioggia della depressione dal #sky)
 			SceneUtility.emptyScene();
 
+			// La musica dell'accettazione parte gia' qui, con la porta che lampeggia
+			AudioManager.play('acceptance', {
+				loop: true,
+				volume: 0.35,
+				fade: 3
+			});
+
 			// Stanza buia + sola porta lampeggiante
 			await SceneUtility.loadScene("accettazione_porta");
 		},
@@ -1176,18 +1193,24 @@ monogatari.script ({
 
 	'Scena_Accettazione': [
 		async () => {
-			// Torna al nero prima di passare dalla stanza buia alla stanza luminosa
-			await SceneFade.toVisible({duration: 2});
+			// La porta cliccata si ingrandisce e svanisce: si sta entrando.
+			// Riusa la stessa classe .door-enter di porta_2 (vedi main.css).
+			const porta = document.getElementById('porta_acc');
+			if (porta) {
+				porta.classList.add('door-enter');
+				void porta.offsetWidth;
+				porta.classList.add('door-enter-active');
+				await new Promise(r => setTimeout(r, 1400));
+			}
+
+			// Fade a BIANCO, non a nero: e' la luce oltre la porta.
+			// Prima transizione luminosa del gioco, coerente col tema dell'accettazione.
+			await SceneFade.toVisible({duration: 2, color: '#fff'});
 
 			// Carica cielo giorno_1 (soleggiato) + immagini degli oggetti
 			// interattivi della stanza del bambino nel #details-wrapper
+			// (la musica 'acceptance' e' gia' partita nel label Accettazione)
 			await SceneUtility.loadScene("accettazione");
-
-			AudioManager.play('acceptance', {
-				loop: true,
-				volume: 0.35,
-				fade: 3
-			});
 
 			// Inizializza il tracciamento degli oggetti cliccabili.
 			// allObjects contiene solo gli id con 'onClick': tenda, cesta.
@@ -1200,17 +1223,68 @@ monogatari.script ({
 		},
 		'show scene room_accettazione',
 		'wait 1500',
-		async () => await SceneFade.toHidden({duration: 2}),
-		// Subito dopo il reveal: porta_2 zooma leggermente e sparisce, come se si fosse appena entrati nella stanza. 'wait 3000' che segue copre i 1400ms della transizione CSS.
+		// Sotto l'overlay bianco: la stanza (sfondo + cielo + oggetti) parte
+		// leggermente rimpicciolita al centro dello schermo.
 		() => {
-			const porta = document.getElementById('porta_2');
-			if (!porta) return;
+			// Bordo bianco (non lo sfondo scuro del tema) intorno alla stanza rimpicciolita
+			document.body.style.background = '#fff';
+			// Ancorata in basso: il bordo inferiore resta attaccato al fondo
+			// dello schermo, lo zoom "cresce" verso l'alto e i lati.
+			for (const el of roomLayers()) {
+				el.style.transition = 'none';
+				el.style.transformOrigin = 'center bottom';
+				el.style.transform = 'scale(0.97)';
+			}
 
-			porta.classList.add('door-enter');
-			void porta.offsetWidth; // forza il reflow prima di applicare i valori finali della transizione
-			porta.classList.add('door-enter-active');
+			// La porta NON si rimpicciolisce con la stanza: dentro al wrapper
+			// (overflow:hidden + scale) verrebbe clippata, quindi si nasconde
+			// quella in scena e si crea un layer gemello full-screen su body,
+			// che copre il bordo bianco.
+			const porta = document.getElementById('porta_2');
+			if (porta) porta.style.opacity = '0';
+
+			const doorLayer = document.createElement('img');
+			doorLayer.id = 'door-layer';
+			doorLayer.src = 'assets/images/porta_2.png';
+			doorLayer.className = 'wrapper-item'; // stesso sizing cover/center dei layer di scena
+			doorLayer.style.position = 'fixed';
+			doorLayer.style.zIndex = '10';
+			document.body.appendChild(doorLayer);
 		},
-		'wait 3000',
+		async () => await SceneFade.toHidden({duration: 2}),
+		// Al reveal: zoom-in della stanza fino a riempire lo schermo, mentre
+		// porta_2 si ingrandisce e svanisce (si e' appena entrati).
+		// Il 'wait 4000' che segue copre la transizione piu' lunga (4s).
+		() => {
+			for (const el of roomLayers()) {
+				void el.offsetWidth; // committa lo stato scale(0.94) prima di animare
+				el.style.transition = 'transform 4000ms ease-out';
+				el.style.transform = 'scale(1)';
+			}
+
+			// Il layer porta full-screen si ingrandisce e svanisce
+			const doorLayer = document.getElementById('door-layer');
+			if (!doorLayer) return;
+
+			void doorLayer.offsetWidth; // committa lo stato iniziale prima di animare
+			doorLayer.style.transformOrigin = 'center center';
+			// Stessa durata/easing dello zoom stanza: i due movimenti sono sincroni
+			doorLayer.style.transition = 'transform 4000ms ease-out, opacity 4000ms ease-out';
+			doorLayer.style.transform = 'scale(1.15)';
+			doorLayer.style.opacity = '0';
+		},
+		'wait 4000',
+		// Rimuove gli inline transform: game-screen e #sky sopravvivono a questa
+		// scena e non devono restare "toccati" nelle scene successive.
+		() => {
+			document.body.style.background = '';
+			document.getElementById('door-layer')?.remove();
+			for (const el of roomLayers()) {
+				el.style.transition = '';
+				el.style.transform = '';
+				el.style.transformOrigin = '';
+			}
+		},
 		'jump loop_accettazione'
 	],
 
