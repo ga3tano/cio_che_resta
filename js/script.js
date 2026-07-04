@@ -725,40 +725,47 @@ monogatari.script ({
 		// },
 
 		'wait 3000',
-		() => {
+		// () => {
+		// 	PhoneUI.reset();
+		// 	// Apre direttamente la chat: non ci sono notifiche da leggere e lo
+		// 	// sblocco della lockscreen e' disabilitato senza messaggi non letti.
+		// 	PhoneUI.show('Giulia', { mode: 'chat' });
+		// },
+
+		async () => {
+			PhoneUI.show('Messaggi');
+			PhoneUI.addNotification({
+				title: 'Messaggi',
+				body: 'Nessun nuovo messaggio',
+				notify: false
+			}, false);
+
+			await startAcceleratingClock();
+			await sleep (2000);
 			PhoneUI.reset();
-			// Apre direttamente la chat: non ci sono notifiche da leggere e lo
-			// sblocco della lockscreen e' disabilitato senza messaggi non letti.
 			PhoneUI.show('Giulia', { mode: 'chat' });
 		},
 
 		// Mostriamo il comando come azione del telefono e poi scriviamo il messaggio scelto.
 		{'PhoneChoice':{
 			'Nuovo messaggio': {
-				'Text': 'NUOVO MESSAGGIO',
+				'Text': 'Scrivi un nuovo messaggio',
 				'Do': 'wait 2000',
 				'onChosen': function() {
-					PhoneUI.addOutgoing('Ehi');
+					return new Promise(resolve => {
+						PhoneTyping.show('Ehi', 180, resolve);
+					});
 				}
 			}
 		}},
 
 		() => {
-			PhoneUI.reset();
-			PhoneUI.hide();
+			PhoneTyping.send();
+			PhoneUI.addOutgoing('Ehi');
+			PhoneTyping.hide();
 		},
 
-		'wait 1000',
-
-		() => {
-			PhoneUI.show('Messaggi');
-			PhoneUI.addNotification({
-				title: 'Messaggi',
-				body: 'Nessun nuovo messaggio'
-			}, false);
-		},
-
-		'wait 3000',
+		'wait 5000',
 
 		() => PhoneUI.hide(),
 
@@ -767,8 +774,8 @@ monogatari.script ({
 //CONTRATTAZIONE
 	'Contrattazione': [
 		async () => {
-			await SceneFade.toVisible();
-			await AudioManager.fadeOut('rage', 2);
+			await SceneFade.toVisible({duration: 5});
+			await AudioManager.fadeOut('rage', 5);
 			await SceneUtility.loadScene("contrattazione");
 	
 			//Pulisco i precedenti clickedObjects e ripopolo allObjects

@@ -4192,130 +4192,94 @@ const BlinkOverlay = {
 }
 
 function startAcceleratingClock(options = {}) {
-	// Overlay + cielo notte: singolo punto di controllo per entrambi i layer
-	const DayCycle = (() => {
-		let overlayEl = null;
-		let skyEl = null;
+	return new Promise((resolve) => {
+		// Overlay + cielo notte: singolo punto di controllo per entrambi i layer
+		const DayCycle = (() => {
+			let overlayEl = null;
+			let skyEl = null;
 
-		function init() {
-			overlayEl = document.createElement('div');
-			overlayEl.className = 'daycycle-layer';
-			document.body.appendChild(overlayEl);
+			function init() {
+				overlayEl = document.createElement('div');
+				overlayEl.className = 'daycycle-layer';
+				document.body.appendChild(overlayEl);
 
-			skyEl = document.createElement('div');
-			skyEl.className = 'sky-night';
-			skyEl.style.backgroundImage = 'url("assets/scenes/cielo_notte.png")'; // path fisso, una volta sola
-			document.body.appendChild(skyEl);
-		}
+				skyEl = document.createElement('div');
+				skyEl.className = 'sky-night';
+				skyEl.style.backgroundImage = 'url("assets/scenes/cielo_notte.png")'; // path fisso, una volta sola
+				document.body.appendChild(skyEl);
+			}
 
-		function set(isNight) {
-			if (!overlayEl) init();
-			overlayEl.classList.toggle('active', isNight);
-			skyEl.classList.toggle('active', isNight);
-		}
+			function set(isNight) {
+				if (!overlayEl) init();
+				overlayEl.classList.toggle('active', isNight);
+				skyEl.classList.toggle('active', isNight);
+			}
 
-		return { set };
-	})();
+			return { set };
+		})();
 
-	const {
-		rampMs = 3000,
-		plateauMs = 6000,
-		cooldownMs = 2000,
-		totalMinutes = 10080 // 1 settimana
-	} = options;
+		// rampMs: durata dell'accelerazione iniziale. plateauMs: durata nominale a velocità costante.
+		// speedPerMs: minuti simulati per ms reale a regime (hardcoded, unica fonte di velocità).
+		const { rampMs = 3000, plateauMs = 6000 } = options;
+		const speedPerMs = 1.3;
 
-	const timeEl = document.getElementById('lock-time');
-	const dateEl = document.getElementById('phone-lock-date');
+		const timeEl = document.getElementById('lock-time');
+		const dateEl = document.getElementById('phone-lock-date');
 
-	// Sospende il clock reale del telefono: eviterebbe che sovrascriva i display ogni secondo
-	PhoneUI.stopClock();
+		PhoneUI.stopClock(); // sospende il clock reale per non farlo litigare col nostro rendering
 
-	// Split minuti tra le 3 fasi: il plateau ne assorbe metà senza calcolarli in modo random-puro
-	const rampMin = totalMinutes * 0.3;
-	const plateauMin = totalMinutes * 0.5;
-	const cooldownMin = totalMinutes - rampMin - plateauMin;
+		const WEEKDAYS = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+		const isNight = (h) => h < 7 || h > 20;
 
-	const start = new Date();
-	let frameId, intervalId, dayCycleIntervalId;
+		let current = new Date();
+		let dayIndex = current.getDay();
+		let wasNight = isNight(current.getHours());
+		let frameId, lastTs, elapsed = 0, stopping = false;
 
-	// Notte = fascia oraria, non mezzanotte: serve per la transizione visiva dello sfondo
-	const isNight = (h) => h < 7 || h > 20;
+		function render() {
+			timeEl.textContent = `${String(current.getHours()).padStart(2,'0')}:${String(current.getMinutes()).padStart(2,'0')}`;
 
-	// Il "giorno visualizzato" NON segue la mezzanotte, ma avanza solo quando
-	// lo sfondo passa da notte a giorno: così testo e scena cambiano insieme.
-	const WEEKDAYS = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
-	let dayIndex = start.getDay();
-	let wasNight = isNight(start.getHours());
-
-	// Aggiorna ora sempre; data+daycycle solo se richiesto (disaccoppiati durante il plateau)
-	const render = (d, daycycle = true) => {
-		timeEl.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-
-		if (daycycle) {
-			const nightNow = isNight(d.getHours());
-
-			// Avanza il giorno SOLO al varco notte->giorno, non a ogni mezzanotte calcolata
-			if (wasNight && !nightNow) dayIndex = (dayIndex + 1) % 7;
+			const nightNow = isNight(current.getHours());
+			if (wasNight && !nightNow) dayIndex = (dayIndex + 1) % 7; // avanza il giorno solo al varco notte->giorno
 			wasNight = nightNow;
 
 			dateEl.textContent = WEEKDAYS[dayIndex];
 			DayCycle.set(nightNow);
 		}
-	};
 
-	// Fase 1: ease-in quadratico, tempo reale (ogni frame aggiorna anche il daycycle)
-	(function ramp(t0 = performance.now()) {
-		frameId = requestAnimationFrame((now) => {
-			const t = Math.min(1, (now - t0) / rampMs);
-			render(new Date(start.getTime() + t * t * rampMin * 60000));
-			if (t < 1) ramp(t0); else plateau(new Date(start.getTime() + rampMin * 60000));
-		});
-	})();
+		timeEl.classList.add('clock-glitch'); // solo effetto CSS (blur/flicker): il tempo resta lineare, niente salti random
 
-	// Fase 2: due interval separati e intenzionali
-	// - intervalId (45ms): scramble testo/ora, random puro, solo effetto slot machine
-	// - dayCycleIntervalId (90ms): avanza LINEARMENTE nel plateau -> giorno/notte resta coerente col tempo che passa
-	function plateau(rampEnd) {
-		timeEl.classList.add('clock-glitch');
+		function loop(ts) {
+			if (lastTs === undefined) lastTs = ts;
+			const dt = ts - lastTs;
+			lastTs = ts;
+			elapsed += dt;
 
-		intervalId = setInterval(() => {
-			const d = new Date(rampEnd.getTime() + Math.random() * plateauMin * 60000);
-			render(d, false); // false: non tocca data/daycycle, ci pensa l'altro interval
-		}, 45);
+			// Velocità: ease-in quadratico durante il ramp, poi costante (plateau + eventuale extra)
+			const rampProgress = Math.min(1, elapsed / rampMs);
+			const speed = speedPerMs * rampProgress * rampProgress;
 
-		const dayCycleSteps = Math.ceil(plateauMs / 90);
-		let dayCycleStep = 0;
+			current = new Date(current.getTime() + speed * dt * 60000);
+			render();
 
-		dayCycleIntervalId = setInterval(() => {
-			dayCycleStep++;
-			const progress = dayCycleStep / dayCycleSteps; // 0 -> 1 lineare, mai random: garantisce monotonia
-			const d = new Date(rampEnd.getTime() + progress * plateauMin * 60000);
-			render(d); // daycycle=true: aggiorna sia weekday che overlay, sempre insieme
-		}, 90);
+			// Oltre il plateau nominale: si ferma solo se è giorno, altrimenti continua un altro giro
+			const pastPlateau = elapsed >= rampMs + plateauMs;
+			if (pastPlateau && !isNight(current.getHours())) {
+				stopping = true;
+				timeEl.classList.remove('clock-glitch');
+				PhoneUI.startClock();
+				resolve(); // taglio secco, nessun cooldown
+				return;
+			}
 
-		setTimeout(() => {
-			clearInterval(intervalId);
-			clearInterval(dayCycleIntervalId);
-			timeEl.classList.remove('clock-glitch');
-			cooldown(new Date(rampEnd.getTime() + plateauMin * 60000));
-		}, plateauMs);
-	}
+			frameId = requestAnimationFrame(loop);
+		};
 
-	// Fase 3: ease-out quadratico, atterra sull'orario finale esatto
-	function cooldown(plateauEnd) {
-		(function tick(t0 = performance.now()) {
-			frameId = requestAnimationFrame((now) => {
-				const t = Math.min(1, (now - t0) / cooldownMs);
-				const eased = 1 - (1 - t) * (1 - t);
-				render(new Date(plateauEnd.getTime() + eased * cooldownMin * 60000));
-				if (t < 1) tick(t0);
-			});
-		})();
-	}
-
-	// Stop esterno (debug menu, cambio scena)
-	return () => { cancelAnimationFrame(frameId); clearInterval(intervalId); clearInterval(dayCycleIntervalId); };
+		frameId = requestAnimationFrame(loop);
+	});
 }
+	
+
 
 const AudioManager = {
 	//Dizionario delle tracce audio già create, indicizzato per ID
