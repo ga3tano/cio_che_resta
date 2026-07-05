@@ -2765,7 +2765,6 @@ const SCENE_IMAGES = {
 		{ id: 'cornice',  src: 'assets/images/cornice.png' }
 	],
 	'accettazione': [
-		// TODO: sostituire con gli asset definitivi (attualmente i file non esistono)
 		// onClick: immagine sostituita dopo il click (stato "sistemato")
 		// dialog: label Monogatari lanciato dopo il click tramite lockContrattazioneObject
 		{ id: 'tenda',            src: 'assets/images/tenda_chiusa.png',      onClick: 'assets/images/tenda_aperta.png',      dialog: 'jump DialogoAccettazione_Tenda' },
