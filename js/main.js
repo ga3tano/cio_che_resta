@@ -5951,9 +5951,3 @@ $_ready (() => {
 	});
 });
 
-// Registrazione service worker con path RELATIVO (funziona anche su GitHub
-// Pages in sottocartella). Quella del motore ('ServiceWorkers' in options.js,
-// ora spenta) usa location.origin e sulla project page fa 404.
-// Non e' in <script> inline in index.html perche' la CSP (script-src 'self')
-// blocca gli script inline.
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js');
