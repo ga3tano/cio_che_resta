@@ -2298,3 +2298,86 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 .object-counter.visible {
 	opacity: 1;
 }
+
+/* ============ TITOLI DI CODA (EndCredits, main.js) ============ */
+
+#end-credits {
+	position: fixed;
+	inset: 0;
+	background: #000;
+	/* Sopra tutto il gioco e il phone toggle, sotto il debug menu */
+	z-index: 1000000;
+	overflow: hidden;
+	opacity: 0;
+	transition: opacity 1.5s ease;
+	color: #e5e5e5;
+	font-family: 'Cormorant Garamond', Georgia, serif;
+	text-align: center;
+}
+
+#end-credits.visible {
+	opacity: 1;
+}
+
+.credits-roll {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	will-change: transform;
+}
+
+.credits-title {
+	font-size: 34px;
+	letter-spacing: 4px;
+	margin-bottom: 70px;
+}
+
+.credit {
+	margin-bottom: 46px;
+}
+
+.credit-role {
+	font-size: 15px;
+	text-transform: uppercase;
+	letter-spacing: 4px;
+	opacity: 0.55;
+	margin-bottom: 6px;
+}
+
+.credit-names {
+	font-size: 24px;
+	letter-spacing: 1px;
+}
+
+.credits-fine {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 40px;
+	letter-spacing: 8px;
+	opacity: 0;
+	transition: opacity 2.5s ease;
+}
+
+.credits-fine.visible {
+	opacity: 1;
+}
+
+.credits-hint {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: max(40px, env(safe-area-inset-bottom));
+	text-align: center;
+	font-size: 16px;
+	letter-spacing: 3px;
+	opacity: 0;
+	transition: opacity 1.5s ease;
+}
+
+.credits-hint.visible {
+	opacity: 0.5;
+}

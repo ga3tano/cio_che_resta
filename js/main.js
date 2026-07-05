@@ -5150,6 +5150,83 @@ function isClickOnVisiblePixel(imgElement, point) {
 }
 
 /*
+TITOLI DI CODA
+Overlay nero a schermo intero con scorrimento verticale stile film.
+Lanciato dal label 'TitoliDiCoda' a fine accettazione; play() risolve al
+click del giocatore dopo la scritta "Fine" (il label passa poi a 'end' → menu),
+mentre il nero resta a coprire la transizione e si dissolve da solo.
+*/
+const EndCredits = {
+	// Ruoli e nomi del team: aggiungere/modificare qui.
+	roles: [
+		{ role: 'Lead', names: 'Gaia Campo' },
+		{ role: 'Game Design', names: 'Davide Sarti' },
+		{ role: 'Developers', names: 'Gabriele Milano, Gaetano Politi' },
+		{ role: 'Illustrazioni', names: 'Sofia Donisi' },
+		{ role: 'Sound Designer', names: 'Claudio Bianchi' }
+	],
+
+	async play() {
+		const overlay = document.createElement('div');
+		overlay.id = 'end-credits';
+
+		const roll = document.createElement('div');
+		roll.className = 'credits-roll';
+		roll.innerHTML =
+			'<div class="credits-title">Ciò che resta</div>' +
+			this.roles.map(r =>
+				`<div class="credit"><div class="credit-role">${r.role}</div><div class="credit-names">${r.names}</div></div>`
+			).join('');
+		overlay.appendChild(roll);
+		document.body.appendChild(overlay);
+
+		const wait = (ms) => new Promise(r => setTimeout(r, ms));
+		// Doppio rAF: committa lo stato iniziale prima di animare (stessa
+		// tecnica del reveal di scena).
+		const nextFrames = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+		// Fade a nero
+		await nextFrames();
+		overlay.classList.add('visible');
+		await wait(1500);
+
+		// Scorrimento: il blocco parte sotto lo schermo ed esce dall'alto, velocità fissa ~28ms/px, regolare qui se il rullo è lento/veloce
+		const distance = window.innerHeight + roll.offsetHeight;
+		const duration = distance * 28;
+		roll.style.transition = `transform ${duration}ms linear`;
+		roll.style.transform = `translateY(-${distance}px)`;
+		await wait(duration + 500);
+		roll.remove();
+
+		// "Fine" resta a schermo 10 secondi, poi serve un click per uscire
+		const fine = document.createElement('div');
+		fine.className = 'credits-fine';
+		fine.textContent = 'Fine';
+		overlay.appendChild(fine);
+		await nextFrames();
+		fine.classList.add('visible');
+		await wait(10000);
+
+		const hint = document.createElement('div');
+		hint.className = 'credits-hint';
+		hint.textContent = 'tocca per continuare';
+		overlay.appendChild(hint);
+		await nextFrames();
+		hint.classList.add('visible');
+		await new Promise(resolve => {
+			overlay.addEventListener('click', resolve, { once: true });
+		});
+
+		// Si risolve subito ('end' riporta al menu sotto il nero); l'overlay
+		// si dissolve da solo poco dopo, rivelando il menu principale.
+		setTimeout(() => {
+			overlay.classList.remove('visible');
+			setTimeout(() => overlay.remove(), 1600);
+		}, 800);
+	}
+};
+
+/*
 DEBUG MENU
 Toggle globale del menu di debug.
 Mettere a false per disattivarlo completamente: non viene creato il DOM,
@@ -5197,6 +5274,7 @@ const DebugMenu = {
 		'Non_Pronto',
 		'Accettazione',
 		'Scena_Accettazione',
+		'TitoliDiCoda',
 		//'Test_telefono'
 	],
 

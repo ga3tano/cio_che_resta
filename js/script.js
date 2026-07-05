@@ -1222,14 +1222,12 @@ monogatari.script ({
 	//      il click sulla porta conduce a Scena_Accettazione
 	//   1. Scena_Accettazione: setup scena (fade, audio, oggetti interattivi)
 	//   2. loop_accettazione: polling ogni 300ms finche' tutti gli oggetti sono stati cliccati
-	//   3. (da sviluppare) dialogo finale + uscita dalla porta: per ora il flusso
-	//      termina ('end') quando tutti gli oggetti sono stati cliccati.
+	//   3. TitoliDiCoda: titoli di coda + "Fine", poi 'end' → menu principale.
+	//      (da sviluppare: dialogo finale + uscita dalla porta prima dei titoli)
 
 	// Ingresso alla fase: la stanza e' ancora buia, l'unica cosa che attira
 	// l'attenzione e' la porta che lampeggia (stessa meccanica .highlight degli
-	// oggetti della contrattazione). Il click sulla porta \u2014 gestito da
-	// lockContrattazioneObject \u2014 lancia 'jump Scena_Accettazione' tramite il
-	// campo dialog dell'oggetto porta_acc in SCENE_IMAGES.accettazione_porta.
+	// oggetti della contrattazione).
 	'Accettazione': [
 		async () => {
 			// Nero prima di staccare dalla scena precedente
@@ -1371,9 +1369,81 @@ monogatari.script ({
 				const store = monogatari.storage();
 				return store.clickedObjects.length === store.allObjects.length;
 			},
-			'True': 'end',
+			'True': 'jump TitoliDiCoda',
 			'False': 'jump wait_accettazione'
 		}},
+	],
+
+	// Titoli di coda stile film (vedi EndCredits in main.js): fade a nero,
+	// rullo con ruoli e nomi del team, poi "Fine" per 10 secondi.
+	// play() risolve dopo i 10 secondi; 'end' riporta al menu principale
+	// mentre il nero copre la transizione e si dissolve da solo.
+	'TitoliDiCoda': [
+		// Uscita dalla stanza: inversa esatta dell'ingresso in Scena_Accettazione.
+		// La stanza si rimpicciolisce sul bordo bianco mentre il layer porta
+		// full-screen riappare (da scale 1.15 trasparente a scale 1 visibile).
+		() => {
+			PhoneToggle.hide();
+			ObjectCounter.hide();
+
+			document.body.style.background = '#fff';
+
+			// Stato di partenza = stato finale dell'ingresso
+			for (const el of roomLayers()) {
+				el.style.transition = 'none';
+				el.style.transformOrigin = 'center bottom';
+				el.style.transform = 'scale(1)';
+			}
+
+			const doorLayer = document.createElement('img');
+			doorLayer.id = 'door-layer';
+			doorLayer.src = 'assets/images/porta_2.png';
+			doorLayer.className = 'wrapper-item';
+			doorLayer.style.position = 'fixed';
+			doorLayer.style.zIndex = '10';
+			doorLayer.style.transformOrigin = 'center center';
+			doorLayer.style.transform = 'scale(1.15)';
+			doorLayer.style.opacity = '0';
+			document.body.appendChild(doorLayer);
+		},
+		() => {
+			for (const el of roomLayers()) {
+				void el.offsetWidth; // committa lo stato scale(1) prima di animare
+				el.style.transition = 'transform 4000ms ease-out';
+				el.style.transform = 'scale(0.97)';
+			}
+
+			const doorLayer = document.getElementById('door-layer');
+			if (!doorLayer) return;
+
+			void doorLayer.offsetWidth;
+			doorLayer.style.transition = 'transform 4000ms ease-out, opacity 4000ms ease-out';
+			doorLayer.style.transform = 'scale(1)';
+			doorLayer.style.opacity = '1';
+		},
+		'wait 4000',
+		async () => {
+			await EndCredits.play(); // risolve al click del giocatore dopo "Fine"
+
+			// Sotto il nero: ferma tutte le musiche/loop custom e riporta il
+			// gioco allo stato pulito prima del ritorno al menu. Riusa i reset
+			// del debug menu (audio, overlay, torcia, flag di storage): sono
+			// gli stessi necessari per un "torna al menu e ricomincia".
+			AudioManager.stopAll();
+			DebugMenu.resetNightRuntime();
+			DebugMenu.resetVisualOverlays();
+			DebugMenu.resetStorageFlags();
+
+			document.body.style.background = '';
+			for (const el of roomLayers()) {
+				el.style.transition = '';
+				el.style.transform = '';
+				el.style.transformOrigin = '';
+			}
+			SceneUtility.emptyScene();
+			SceneUtility.enableBackground();
+		},
+		'end'
 	],
 
 	// Ogni dialogo:
