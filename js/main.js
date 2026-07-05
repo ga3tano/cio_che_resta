@@ -1457,6 +1457,9 @@ const NightOverlay = {
 
     	this.updateTorch(x, y);
 
+		// Hint "esplora la stanza" solo la prima volta, finché non evidenzia qualcosa
+		if (!monogatari.storage().clickedObjects.length) TorchHint.arm();
+
 		// Debug sui click
 		// document.addEventListener("click", (e) => {
    		// 	console.log("CLICK SU ELEMENTO:", e.target);
@@ -1472,6 +1475,8 @@ const NightOverlay = {
 	hideTorch(){
 		this.isFrozen = true;
 		if(!this.element) this.init();
+
+		TorchHint.dismiss();
 
 		this.playTorchSound();
 		this.element.classList.remove('torch');
@@ -1534,6 +1539,32 @@ const NightOverlay = {
 			else
 				obj.classList.remove('highlight');
 		})
+	}
+};
+
+// Scritta lampeggiante nella scena torcia: appare se dopo 3 secondi
+// il giocatore non ha ancora evidenziato nessun oggetto con dialogo.
+const TorchHint = {
+	el: null,
+	timer: null,
+
+	arm(){
+		this.dismiss();
+		this.timer = setTimeout(() => {
+			if (!this.el) {
+				this.el = document.createElement('div');
+				this.el.id = 'torch-hint';
+				this.el.textContent = 'Esplora i vari elementi della stanza';
+				document.body.appendChild(this.el);
+			}
+			this.el.classList.add('visible');
+		}, 3000);
+	},
+
+	dismiss(){
+		clearTimeout(this.timer);
+		this.timer = null;
+		this.el?.classList.remove('visible');
 	}
 };
 
@@ -3180,6 +3211,7 @@ const SceneUtility = {
 			if (this.currentHoveredId !== found.data.id) {
 				this.clearHover();
 				this.currentHoveredId = found.data.id;
+				TorchHint.dismiss();
 
 				// Dopo 600ms di permanenza sullo stesso oggetto, apri il dettaglio
 				this.hoverTimer = setTimeout(() => {

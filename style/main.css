@@ -1364,6 +1364,33 @@ body.show-textbox .phone-toggle {
     pointer-events: none;
 }
 
+/* Hint lampeggiante della scena torcia */
+#torch-hint{
+    position: fixed;
+    bottom: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 90vw;
+    font-family: 'Pangolin', sans-serif;
+    color: #fff;
+    font-size: 1.2em;
+    text-align: center;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+    z-index: 2; /* sopra .night-overlay (1), sotto i dialoghi */
+    pointer-events: none;
+    opacity: 0;
+}
+
+#torch-hint.visible{
+    animation: torch-hint-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes torch-hint-blink{
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
 .torch-hole{
     position: absolute;
     width: 180px;
