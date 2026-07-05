@@ -1391,7 +1391,7 @@ monogatari.script ({
 		},
 		// Monologo a zoom/porta finiti, prima che gli oggetti lampeggino
 		() => showTextBox(),
-		'dad Un finale già scritto, insopportabile delle volte, viene tracciato come linea del nostro destino, nero su bianco, come copione di eventi già scritti.',
+		'dad Un finale prevedibile, insopportabile delle volte, viene tracciato come linea del nostro destino, nero su bianco, come copione di eventi già scritti.',
 		'dad Poi quel fatidico giorno arriva, il giorno in cui accetti che la tua storia ha una conclusione, smetti di aver paura della parola “fine” e inizi a vivere.',
 		'dad Leggi quelle pagine che prima non erano altro che un mucchio di pensieri confusi e aggrovigliati, rovi di parole, spine e rose dai petali caduti.',
 		'dad Arriverà il giorno in cui quelle spine smetteranno di fare così male, resteranno i segni sulle dita, il ricordo del dolore.',
@@ -1528,7 +1528,7 @@ monogatari.script ({
 		// --- PARTE 1: tenda ancora chiusa (lo swap e' rimandato: deferSwap
 		//     nella entry di SCENE_IMAGES, vedi lockContrattazioneObject) ---
 		'dad La stessa oscurità che avvolgeva la stanza sembrava essere cresciuta come edera avvolta attorno ai miei polmoni, non mi lasciava respirare più.',
-		'dad Passavo davanti la tua porta fingendo tu fossi lì dentro a giocare con i tuoi trenini e le tue bambole, fermandomi sempre dietro la porta, ma non avendo mai il coraggio di entrare…',
+		'dad Passavo davanti la tua porta fingendo tu fossi lì dentro a giocare con i tuoi trenini e le tue bambole, ma non avendo mai il coraggio di entrare…',
 		'dad …non potevo rendere reale la mia paura più grande, ma era arrivato il momento di riportare un po’ di luce, dentro e fuori me.',
 
 		// --- Apertura: swap tenda_chiusa -> tenda_aperta, poi la luce entra ---

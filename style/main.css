@@ -238,7 +238,7 @@ text-box [data-content="name"] {
 	opacity: 0;                         /* nascosta di default */
 	pointer-events: none;               /* non deve intercettare i click */
 	transition: opacity 0.2s ease;
-	z-index: 12;                        /* sopra text-box, sotto blink-overlay */
+	z-index: 101;                        /* sopra text-box, sotto blink-overlay */
 }
 
 #dialog-waiting-icon.visible { 
