@@ -2348,6 +2348,8 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 .credit-names {
 	font-size: 24px;
 	letter-spacing: 1px;
+	/* Gli \n nei names di EndCredits.roles diventano a-capo */
+	white-space: pre-line;
 }
 
 .credits-fine {

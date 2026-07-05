@@ -5161,8 +5161,8 @@ const EndCredits = {
 	roles: [
 		{ role: 'Lead', names: 'Gaia Campo' },
 		{ role: 'Game Design', names: 'Davide Sarti' },
-		{ role: 'Developers', names: 'Gabriele Milano, Gaetano Politi' },
 		{ role: 'Illustrazioni', names: 'Sofia Donisi' },
+		{ role: 'Developers', names: 'Gabriele Milano\nGaetano Politi' },
 		{ role: 'Sound Designer', names: 'Claudio Bianchi' }
 	],
 
