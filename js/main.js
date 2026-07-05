@@ -2798,8 +2798,8 @@ const SCENE_IMAGES = {
 	'accettazione': [
 		// onClick: immagine sostituita dopo il click (stato "sistemato")
 		// dialog: label Monogatari lanciato dopo il click tramite lockContrattazioneObject
-		{ id: 'tenda',            src: 'assets/images/tenda_chiusa.png',      onClick: 'assets/images/tenda_aperta.png',      dialog: 'jump DialogoAccettazione_Tenda' },
-		{ id: 'cesta',            src: 'assets/images/cesta_vuota.png',        onClick: 'assets/images/cesta_piena.png',        dialog: 'jump DialogoAccettazione_Cesta' },
+		{ id: 'tenda',            src: 'assets/images/tenda_chiusa.png',      onClick: 'assets/images/tenda_aperta.png',      dialog: 'jump DialogoAccettazione_Tenda', deferSwap: true },
+		{ id: 'cesta',            src: 'assets/images/cesta_vuota.png',        onClick: 'assets/images/cesta_piena.png',        dialog: 'jump DialogoAccettazione_Cesta', deferSwap: true },
 		// Oggetto statico, già al suo posto (non interattivo)
 		{ id: 'porta_2', src: 'assets/images/porta_2.png' }
 		// La porta NON fa parte della stanza durante il riordino: la fase finale
@@ -3343,7 +3343,9 @@ const SceneUtility = {
 			ObjectCounter.increment();
 		}
 
-		if (imgData.onClick) {
+		// deferSwap: lo swap dell'immagine non avviene al click ma viene fatto
+		// a mano dal label di dialogo (serve per mostrare battute PRIMA del cambio)
+		if (imgData.onClick && !imgData.deferSwap) {
 			element.src = imgData.onClick;
 		}
 

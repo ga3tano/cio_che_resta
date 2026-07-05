@@ -200,7 +200,9 @@ text-box {
 	max-height: 12% !important;
 	background: rgba(6, 10, 16, 0.50) !important;
 	color: #f3f7ff !important;
-	z-index: 10 !important;
+	/* Sopra tutti i layer di scena (dim 9, door-layer 10, filtri 12-13, rage-border 20),
+	   sotto phone-toggle (150) e debug menu */
+	z-index: 100 !important;
 }
 
 /* Reposition character name as a simple translucent label */
