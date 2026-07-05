@@ -53,8 +53,10 @@ monogatari.settings({
 	// Time interval between autosaves (In Minutes). Default: 0 (Off)
 	'AutoSave': 0,
 
-	// Enable service workers; Default: true *
-	'ServiceWorkers': true,
+	// Registrazione SW del motore DISATTIVATA: usa location.origin, che su
+	// GitHub Pages (project page, sottocartella) punta alla radice del dominio
+	// e fa 404. La registrazione corretta, con path relativo, e' in index.html.
+	'ServiceWorkers': false,
 
 	// The Aspect Ratio your background images are on. This only has effect on
 	// web deployed novels if forceAspectRatio flag is on.
