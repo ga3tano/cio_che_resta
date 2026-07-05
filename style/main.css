@@ -230,6 +230,26 @@ text-box [data-content="name"] {
     text-align: right;
 }
 
+/* Icona "prosegui": indipendente da text-box, nascosta finché non riceve .visible */
+#dialog-waiting-icon {
+	position: fixed;
+	font-size: 0.9rem;
+	color: #f3f7ff;
+	opacity: 0;                         /* nascosta di default */
+	pointer-events: none;               /* non deve intercettare i click */
+	transition: opacity 0.2s ease;
+	z-index: 12;                        /* sopra text-box, sotto blink-overlay */
+}
+
+#dialog-waiting-icon.visible { 
+    opacity: 0.8;
+	animation: unread-bounce 1s ease-in-out infinite;   /* animazione solo se visibiile, altrimenti copre le regole di opacity della classe */ }
+
+@keyframes unread-bounce {
+	0%, 100% { transform: translateY(0); opacity: 0.5; }
+	50%      { transform: translateY(4px); opacity: 1; }
+}
+
 body.show-textbox [data-component="text-box"] [data-content="name"] {
 	transform: translateY(-1px);
 	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
@@ -242,7 +262,8 @@ body.speaker-shadow text-box {
 
 body.speaker-shadow text-box [data-content="name"] {
 	color: #7b5eb0 !important;
-	background: rgba(255, 255, 255, 0.06);
+	background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(24px);
 }
 
 body.speaker-shadow text-box [data-content="text"],
@@ -258,7 +279,8 @@ body.speaker-dad text-box {
 
 body.speaker-dad text-box [data-content="name"] {
 	color: #66bdda !important;
-	background: rgba(255, 255, 255, 0.06);
+	background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(24px);
 }
 
 body.speaker-dad text-box [data-content="text"],
