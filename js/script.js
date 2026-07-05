@@ -4,7 +4,10 @@
 // cielo, oggetti). Usato per lo zoom d'ingresso della scena accettazione.
 function roomLayers() {
 	return [
-		document.querySelector('game-screen'),
+		// Lo sfondo DENTRO game-screen, non game-screen stesso: un transform su
+		// game-screen creerebbe uno stacking context che intrappola la text-box
+		// sotto #details-wrapper (il suo z-index non sarebbe piu' a livello root).
+		document.querySelector('game-screen [data-ui="background"]'),
 		document.getElementById('sky'),
 		document.getElementById('details-wrapper')
 	].filter(Boolean);
@@ -1252,6 +1255,9 @@ monogatari.script ({
 			// Stanza buia + sola porta lampeggiante
 			await SceneUtility.loadScene("accettazione_porta");
 
+			// Il lampeggio parte solo dopo il dialogo (vedi blocco piu' sotto)
+			document.getElementById('porta_acc')?.classList.remove('highlight');
+
 			// Porta bloccata finche' il label non ha finito: un tap durante il
 			// nero/fade farebbe partire il jump con statement ancora pendenti
 			// (wait/fade), che al risolversi farebbero avanzare il nuovo label
@@ -1260,9 +1266,16 @@ monogatari.script ({
 		},
 		'show scene room_day_dark',
 		'wait 1500',
-		async () => {
-			await SceneFade.toHidden({duration: 2});
-			// Solo ora il giocatore puo' cliccare la porta
+		async () => await SceneFade.toHidden({duration: 2}),
+		// La text box era stata nascosta in Lascia_Andare
+		() => showTextBox(),
+		'dad Ho passato tutta la vita a stringere i pugni pensando di dover tenere il più stretto possibile tutto ciò che di più prezioso avessi, trattenendo il respiro, soffocando la voce.',
+		'dad Poi un giorno ho aperto le mani…ed è lì che ho capito.',
+		'dad Pensiamo che il tempo ci appartenga, ma siamo noi ad appartenergli.',
+		// Solo ora il giocatore puo' cliccare la porta, e la porta inizia a lampeggiare
+		() => {
+			hideTextBox();
+			document.getElementById('porta_acc')?.classList.add('highlight');
 			SceneUtility.unlockItemWrapper();
 		},
 		// Nessun jump qui: il flusso prosegue solo quando il giocatore clicca
@@ -1290,6 +1303,14 @@ monogatari.script ({
 			// (la musica 'acceptance' e' gia' partita nel label Accettazione)
 			await SceneUtility.loadScene("accettazione");
 
+			// Il lampeggio degli oggetti parte solo a zoom d'ingresso finito
+			// (riaggiunto nel blocco dopo il 'wait 4000')
+			document.querySelectorAll('#details-wrapper .clickable-object')
+				.forEach(el => el.classList.remove('highlight'));
+
+			// La stanza parte scurita
+			SceneUtility.addDim(0);
+
 			// Oggetti bloccati durante fade e zoom d'ingresso: un tap anticipato
 			// farebbe partire un dialogo con wait/fade ancora pendenti (stesso
 			// race della porta in Accettazione). Sblocco a transizione finita.
@@ -1309,8 +1330,8 @@ monogatari.script ({
 		// Sotto l'overlay bianco: la stanza (sfondo + cielo + oggetti) parte
 		// leggermente rimpicciolita al centro dello schermo.
 		() => {
-			// Bordo bianco (non lo sfondo scuro del tema) intorno alla stanza rimpicciolita
-			document.body.style.background = '#fff';
+			// Bordo nero intorno alla stanza rimpicciolita
+			document.body.style.background = '#000';
 			// Ancorata in basso: il bordo inferiore resta attaccato al fondo
 			// dello schermo, lo zoom "cresce" verso l'alto e i lati.
 			for (const el of roomLayers()) {
@@ -1367,7 +1388,20 @@ monogatari.script ({
 				el.style.transform = '';
 				el.style.transformOrigin = '';
 			}
-			// Transizione finita: ora gli oggetti sono cliccabili
+		},
+		// Monologo a zoom/porta finiti, prima che gli oggetti lampeggino
+		() => showTextBox(),
+		'dad Un finale già scritto, insopportabile delle volte, viene tracciato come linea del nostro destino, nero su bianco, come copione di eventi già scritti.',
+		'dad Poi quel fatidico giorno arriva, il giorno in cui accetti che la tua storia ha una conclusione, smetti di aver paura della parola “fine” e inizi a vivere.',
+		'dad Leggi quelle pagine che prima non erano altro che un mucchio di pensieri confusi e aggrovigliati, rovi di parole, spine e rose dai petali caduti.',
+		'dad Arriverà il giorno in cui quelle spine smetteranno di fare così male, resteranno i segni sulle dita, il ricordo del dolore.',
+		'dad Il cielo sembrerà più luminoso, la musica avrà ancora una sua melodia, forse dolceamara.',
+		'dad Arriverà il giorno in cui la luce in fondo al tunnel non sarà più così lontana, non abbiate paura di raggiungerla. La vita non aspetta.',
+		() => {
+			hideTextBox();
+			// Solo ora gli oggetti lampeggiano e sono cliccabili
+			document.querySelectorAll('#details-wrapper .clickable-object')
+				.forEach(el => el.classList.add('highlight'));
 			SceneUtility.unlockItemWrapper();
 		},
 		'jump loop_accettazione'
@@ -1490,9 +1524,28 @@ monogatari.script ({
 
 	'DialogoAccettazione_Tenda': [
 		() => showTextBox(),
-		'<div style="color: #000000;">.</div>',
-		'dad La luce...',
-		'dad Da quanto non la lasciavo entrare.',
+
+		// --- PARTE 1: tenda ancora chiusa (lo swap e' rimandato: deferSwap
+		//     nella entry di SCENE_IMAGES, vedi lockContrattazioneObject) ---
+		'dad La stessa oscurità che avvolgeva la stanza sembrava essere cresciuta come edera avvolta attorno ai miei polmoni, non mi lasciava respirare più.',
+		'dad Passavo davanti la tua porta fingendo tu fossi lì dentro a giocare con i tuoi trenini e le tue bambole, fermandomi sempre dietro la porta, ma non avendo mai il coraggio di entrare…',
+		'dad …non potevo rendere reale la mia paura più grande, ma era arrivato il momento di riportare un po’ di luce, dentro e fuori me.',
+
+		// --- Apertura: swap tenda_chiusa -> tenda_aperta, poi la luce entra ---
+		async () => {
+			const tenda = document.getElementById('tenda');
+			if (tenda) {
+				tenda.src = 'assets/images/tenda_aperta.png';
+				if (!tenda.complete) await new Promise(r => { tenda.onload = r; });
+			}
+			SceneUtility.removeDim(3000);
+		},
+
+		// --- PARTE 2: tenda aperta, stanza che si schiarisce ---
+		'dad La luce… da quanto non la lasciavo entrare!',
+		'dad La stanza è rimasta intatta, ferma nel tempo, ma tu non ci sei più, non qua dentro, almeno.',
+		'dad Non sei qui, ma sei e sarai in ogni cosa che farò, ogni suono, profumo, gesto e canzone che farà parte delle mie giornate.',
+		'dad Non voglio più rinunciare alla vita, troverò la forza! Per me…per te.',
 		() => {
 			hideTextBox();
 			SceneUtility.unlockItemWrapper();
@@ -1502,9 +1555,26 @@ monogatari.script ({
 
 	'DialogoAccettazione_Cesta': [
 		() => showTextBox(),
-		'<div style="color: #000000;">.</div>',
-		'dad Uno alla volta.',
-		'dad Proprio come mi hai detto tu.',
+
+		// --- PARTE 1: giochi ancora sparsi (swap rimandato: deferSwap
+		//     nella entry di SCENE_IMAGES, vedi lockContrattazioneObject) ---
+		"dad All'inizio, ogni oggetto era un colpo al cuore. Il trenino di legno riverso sul pavimento, i supereroi pronti a salvare un mondo che per me era crollato, i mattoncini colorati ancora incastrati tra loro, impolverati.",
+		'dad Per tanto, troppo tempo ho pensato che riordinare questa cesta significasse cancellare la tua presenza, la tua memoria.',
+		'dad Mi ero convinto che rimettere a posto le tue cose volesse dire accettare la tua scomparsa, dimenticare il suono della tua risata che riempiva i corridoi di questa casa, mi sembrava un tradimento.',
+
+		// --- Riordino: swap cesta_vuota -> cesta_piena ---
+		async () => {
+			const cesta = document.getElementById('cesta');
+			if (cesta) {
+				cesta.src = 'assets/images/cesta_piena.png';
+				if (!cesta.complete) await new Promise(r => { cesta.onload = r; });
+			}
+		},
+
+		// --- PARTE 2: giochi sistemati ---
+		"dad Ma oggi, mentre riponevo il tuo orsacchiotto, non ho sentito il peso del vuoto che mi ha attanagliato la gola e lo stomaco in queste settimane, ho sentito solo un senso di profonda, dolorosa gratitudine.",
+		'dad Sistemare i tuoi giochi ha dato un nuovo posto ai ricordi, ha sciolto il groviglio di pensieri e ha dato un ordine alle cose….',
+		'dad Mi manchi.',
 		() => {
 			hideTextBox();
 			SceneUtility.unlockItemWrapper();

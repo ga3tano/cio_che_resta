@@ -5,7 +5,7 @@ const name = 'Ciò che resta';
 
 // The version of the cache, changing this will force everything to be cached
 // again.
-const version = '0.1.18';
+const version = '0.1.35';
 
 const files = [
 
@@ -29,6 +29,7 @@ const files = [
 	'js/storage.js',
 	'js/script.js',
 	'js/main.js',
+	'js/debug-config.js',
 
 	// App Images
 	'favicon.ico',
