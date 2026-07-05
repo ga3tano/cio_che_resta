@@ -5905,6 +5905,46 @@ $_ready (() => {
 
 		waitForNameNode();
 
+		// L'icona appare quando il typewriter finisce (skip incluso) e sparisce
+		// appena riparte una nuova riga: eventi nativi, niente polling/observer.
+		(() => {
+			let icon = null;
+
+			const getIcon = () => {
+				if (icon) return icon;
+				icon = document.createElement('div');
+				icon.id = 'dialog-waiting-icon';
+				icon.textContent = '▼';
+				document.body.appendChild(icon);
+				return icon;
+			};
+
+			const positionIcon = (textBox) => {
+				const rect = textBox.getBoundingClientRect();
+				const el = getIcon();
+				el.style.left = `${rect.right - 32}px`;
+				el.style.top = `${rect.bottom - 30}px`;
+			};
+
+			monogatari.on('didFinishTyping', () => {
+				const textBox = document.querySelector('text-box');
+				if (!textBox) return;
+				positionIcon(textBox);
+				getIcon().classList.add('visible');
+			});
+
+			monogatari.on('didStartTyping', () => {
+				getIcon().classList.remove('visible');
+			});
+
+			// Nasconde subito l'icona quando la textbox sparisce (classe hide-textbox sul body)
+			new MutationObserver(() => {
+				if (document.body.classList.contains('hide-textbox')) {
+					document.getElementById('dialog-waiting-icon')?.classList.remove('visible');
+				}
+			}).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+})();
+
 		// Il toggle globale evita di creare il menu quando DEBUG_MENU_ENABLED e' false.
 		if (DEBUG_MENU_ENABLED) {
 			DebugMenu.init();
