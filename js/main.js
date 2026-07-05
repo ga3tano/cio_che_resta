@@ -5260,11 +5260,11 @@ const EndCredits = {
 
 /*
 DEBUG MENU
-Toggle globale del menu di debug.
-Mettere a false per disattivarlo completamente: non viene creato il DOM,
-non vengono registrati eventi e non funziona la scorciatoia Ctrl/Cmd + Shift + D.
+Toggle globale del menu di debug, letto da js/debug-config.js (file locale,
+in .gitignore). Se il file manca — es. in produzione — il menu resta
+disattivato: niente DOM, niente eventi, niente scorciatoia Ctrl/Cmd + Shift + D.
 */
-const DEBUG_MENU_ENABLED = true;
+const DEBUG_MENU_ENABLED = window.DEBUG_MENU_ENABLED ?? false;
 
 const DebugMenu = {
 	// Elemento radice che contiene sia il bottone "Debug" sia il pannello.
