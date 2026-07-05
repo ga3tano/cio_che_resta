@@ -1290,6 +1290,9 @@ monogatari.script ({
 			// (la musica 'acceptance' e' gia' partita nel label Accettazione)
 			await SceneUtility.loadScene("accettazione");
 
+			// La stanza parte scurita
+			SceneUtility.addDim(0);
+
 			// Oggetti bloccati durante fade e zoom d'ingresso: un tap anticipato
 			// farebbe partire un dialogo con wait/fade ancora pendenti (stesso
 			// race della porta in Accettazione). Sblocco a transizione finita.
@@ -1489,7 +1492,14 @@ monogatari.script ({
 	//   4. torna al loop per controllare se ci sono altri oggetti da cliccare
 
 	'DialogoAccettazione_Tenda': [
-		() => showTextBox(),
+		() => {
+			showTextBox();
+			// La luce entra: schiarisce la stanza appena tenda_aperta e' caricata
+			// (lockContrattazioneObject ha gia' fatto lo swap di img.src).
+			const tenda = document.getElementById('tenda');
+			if (tenda && !tenda.complete) tenda.onload = () => SceneUtility.removeDim(3000);
+			else SceneUtility.removeDim(3000);
+		},
 		'<div style="color: #000000;">.</div>',
 		'dad La luce...',
 		'dad Da quanto non la lasciavo entrare.',
