@@ -1251,10 +1251,20 @@ monogatari.script ({
 
 			// Stanza buia + sola porta lampeggiante
 			await SceneUtility.loadScene("accettazione_porta");
+
+			// Porta bloccata finche' il label non ha finito: un tap durante il
+			// nero/fade farebbe partire il jump con statement ancora pendenti
+			// (wait/fade), che al risolversi farebbero avanzare il nuovo label
+			// fuori ordine (transizione che parte a meta').
+			SceneUtility.lockItemWrapper();
 		},
 		'show scene room_day_dark',
 		'wait 1500',
-		async () => await SceneFade.toHidden({duration: 2}),
+		async () => {
+			await SceneFade.toHidden({duration: 2});
+			// Solo ora il giocatore puo' cliccare la porta
+			SceneUtility.unlockItemWrapper();
+		},
 		// Nessun jump qui: il flusso prosegue solo quando il giocatore clicca
 		// la porta (vedi commento sopra al label).
 	],
@@ -1279,6 +1289,11 @@ monogatari.script ({
 			// interattivi della stanza del bambino nel #details-wrapper
 			// (la musica 'acceptance' e' gia' partita nel label Accettazione)
 			await SceneUtility.loadScene("accettazione");
+
+			// Oggetti bloccati durante fade e zoom d'ingresso: un tap anticipato
+			// farebbe partire un dialogo con wait/fade ancora pendenti (stesso
+			// race della porta in Accettazione). Sblocco a transizione finita.
+			SceneUtility.lockItemWrapper();
 
 			// Inizializza il tracciamento degli oggetti cliccabili.
 			// allObjects contiene solo gli id con 'onClick': tenda, cesta.
@@ -1352,6 +1367,8 @@ monogatari.script ({
 				el.style.transform = '';
 				el.style.transformOrigin = '';
 			}
+			// Transizione finita: ora gli oggetti sono cliccabili
+			SceneUtility.unlockItemWrapper();
 		},
 		'jump loop_accettazione'
 	],
