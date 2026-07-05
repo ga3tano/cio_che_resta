@@ -1439,6 +1439,24 @@ monogatari.script ({
 			doorLayer.style.opacity = '1';
 		},
 		'wait 4000',
+		// Zoom-out finito: la porta lampeggia (stessa meccanica .highlight degli
+		// oggetti di scena) e i titoli partono solo al click sulla porta.
+		async () => {
+			const doorLayer = document.getElementById('door-layer');
+			if (!doorLayer) return;
+
+			doorLayer.classList.add('clickable-object', 'highlight');
+			doorLayer.style.cursor = 'pointer';
+
+			await new Promise(resolve => {
+				doorLayer.addEventListener('click', (e) => {
+					// Il layer è full-screen: contano solo i pixel visibili della porta
+					if (!isClickOnVisiblePixel(doorLayer, e)) return;
+					doorLayer.classList.remove('highlight');
+					resolve();
+				});
+			});
+		},
 		async () => {
 			await EndCredits.play(); // risolve al click del giocatore dopo "Fine"
 
