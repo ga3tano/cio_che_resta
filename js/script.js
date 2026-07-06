@@ -1026,7 +1026,7 @@ monogatari.script ({
 
 			await AudioManager.play('depression', {
 				loop: true,
-				volume: 0.35,
+				volume: 0.5,
 				fade: 6
 			});
 		},
@@ -1072,8 +1072,7 @@ monogatari.script ({
 		'wait 10000',
 		async() =>{
 			await SceneFade.toVisible({duration: 0.25});
-			AudioManager.pause('rain');
-			AudioManager.pause('depression');
+			AudioManager.setLowPass(400, 1.5);
 		}, 
 		'show scene teddybear',
 		async () => {
@@ -1091,11 +1090,13 @@ monogatari.script ({
 		async () =>{
 			await SceneFade.toVisible({duration: 1});
 			
-			//Qui uso solo 'play' perchè voglio che il loop della musica riparta da dove si è interrotto con l'orsacchiotto
-			await AudioManager.play('rain');
+			// //Qui uso solo 'play' perchè voglio che il loop della musica riparta da dove si è interrotto con l'orsacchiotto
+			// await AudioManager.play('rain', {volume: 0.05});
 			
-			AudioManager.setVolume('depression', 0.35);
-			await AudioManager.play('depression');
+			// AudioManager.setVolume('depression', 0.5);
+			// await AudioManager.play('depression');
+
+			AudioManager.setLowPass(20000, 3);
 			//Ritorno alle dimensioni normali in maniera trasparente mentre lo schermo è nero
 			//>>>
 			const gameScreen = document.querySelector('game-screen');
@@ -1127,7 +1128,18 @@ monogatari.script ({
 		'dad Ieri sono tornato dove tutto è successo ed io...{pause:500} io...',
 		
 		//Inserire pianto quando pronto
-		() => pauseTextBox(),
+		async () =>{
+				hideTextBox();
+				await AudioManager.play('cry', {
+					volume: 0.7,
+					fade: 0.5
+				});
+				await AudioManager.waitEnded('cry');
+				await sleep(2000);
+				showTextBox();
+		}, 
+
+		// () => pauseTextBox(),
 		'shadow Papà, ho avuto paura, faceva così freddo',
 
 		'dad Lo so... ricordo tutto adesso. Lo ricordo fin troppo chiaramente.',

@@ -4449,6 +4449,7 @@ const AudioManager = {
 		birds: 'assets/sounds/sfx_respiro_uccellini.mp3',
 		fan: 'assets/sounds/sfx_ventola_loop.mp3',
 		glitch: 'assets/sounds/glitch.mp3',
+		cry: 'assets/sounds/cry.mp3',
 	},
 
 	//Restituisce il context, creandolo alla prima esecuzione
@@ -4620,6 +4621,15 @@ const AudioManager = {
 		});
 	},
 
+	waitEnded(id){
+		const track = this.tracks[id];
+		if(!track) return Promise.resolve();
+
+		return new Promise(resolve => {
+			track.audio.addEventListener('ended', resolve, {once: true});
+		});
+	},
+
 	/**
 	 * Imposta il volume di una traccia, istantaneamente o con una rampa lineare.
 	 * @param {string} id - Identificativo della traccia.
@@ -4719,7 +4729,7 @@ const AudioManager = {
 		};
 
 		glitch();
-},
+	},
 };
 
 const HeartbeatManager = {
