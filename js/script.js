@@ -982,42 +982,66 @@ monogatari.script ({
 			// await sleep(4000);
 
 			//New
-			await PhoneUI.playMessages([
-				{
-					type: 'incoming',
-					text: "Ehi, come va oggi?"
-				},
-				{
-					type: 'outgoing',
-					text: "Va...alti e bassi, ma un giorno alla volta, giusto?",
-					options: { notify: false }
-				},
-				{
-					type: 'incoming',
-					text: "Un giorno alla volta.",
-					options: { notify: false }
-				},
-				{
-					type: 'incoming',
-					text: "Usciamo a fare una passeggiata? Ti vengo a prendere.",
-					options: { notify: false }
-				},
-				{
-					type: 'outgoing',
-					text: "D'accordo. Ti aspetto, grazie."
-				}
-			]);
+			// await PhoneUI.playMessages([
+			// 	{
+			// 		type: 'incoming',
+			// 		text: "Ehi, come va oggi?"
+			// 	},
+			// 	{
+			// 		type: 'outgoing',
+			// 		text: "Va...alti e bassi, ma un giorno alla volta, giusto?",
+			// 		options: { notify: false }
+			// 	},
+			// 	{
+			// 		type: 'incoming',
+			// 		text: "Un giorno alla volta.",
+			// 		options: { notify: false }
+			// 	},
+			// 	{
+			// 		type: 'incoming',
+			// 		text: "Usciamo a fare una passeggiata? Ti vengo a prendere.",
+			// 		options: { notify: false }
+			// 	},
+			// 	{
+			// 		type: 'outgoing',
+			// 		text: "D'accordo. Ti aspetto, grazie."
+			// 	}
+			// ]);
 
-			PhoneUI.reset();
-			PhoneUI.hide();
+			PhoneUI.addIncoming("Ehi, come va oggi?", {notify: false});
+			await sleep (2000);
+
+			await new Promise(resolve => PhoneTyping.show("Va... alti e bassi, ma un giorno alla volta, giusto?", 80, resolve));
+			PhoneTyping.send();
+			PhoneUI.addOutgoing("Va... alti e bassi, ma un giorno alla volta, giusto?", {notify: false});
+			PhoneTyping.hide();
+			await sleep (2000);
+
+			PhoneUI.addIncoming("Un giorno alla volta. Usciamo a fare una passeggiata? Ti vengo a prendere.", {notify: false});
+			await sleep (4000);
+
+			await new Promise(resolve => PhoneTyping.show("D'accordo. Ti aspetto, grazie.", 80, resolve));
+			PhoneTyping.send();
+			PhoneUI.addOutgoing("D'accordo. Ti aspetto, grazie.", {notify: false});
+			PhoneTyping.hide();
+			await sleep (2000);
+			
 		},
 
-		'jump Depressione'
+		{'PhoneChoice': {
+			'Blocca': {
+				'Text': 'Blocca telefono',
+				'Do': 'jump Depressione'
+			}	
+		}}
+
 	],
 
 //DEPRESSIONE
 	'Depressione': [
 		async () => {
+			PhoneUI.reset();
+			PhoneUI.hide();
 			await SceneFade.toVisible({duration: 3.5});
 			await SceneUtility.loadScene("depressione");
 			await AudioManager.play('rain', {
