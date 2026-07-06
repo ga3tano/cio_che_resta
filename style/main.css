@@ -1915,6 +1915,104 @@ body.show-textbox .phone-toggle {
 	width: 50vw;
 }
 
+/* Farfalle nel finale (TitoliDiCoda): tra il cielo (#sky, -1000) e la stanza,
+   visibili dalla finestra. Tre farfalle indipendenti (A rossa, B blu, C
+   gialla), ognuna con due frame full-screen 1440x2560 in crossfade = battito
+   d'ali con ritmo "sbatti-sbatti-plana", piu' una deriva propria. Durate e
+   delay tutti diversi e mai multipli tra loro: non battono e non si muovono
+   mai in sincrono. Dura finché non si clicca la porta. */
+.butterflies-layer {
+	position: fixed;
+	top: 0;
+	left: 0;
+	/* svw/svh come .sky, per combaciare col box dello sfondo dell'engine */
+	width: 100svw;
+	height: 100svh;
+	z-index: -998;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 4000ms ease-out;
+}
+
+.butterflies-layer.visible { opacity: 1; }
+
+.butterfly {
+	position: absolute;
+	inset: 0;
+}
+
+.butterfly img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* I due frame di ogni farfalla animano su timeline complementari (il frame 1
+   e' visibile quando il 2 non lo e'): due battiti rapidi, poi planata lunga.
+   I delay negativi fanno partire ogni farfalla a meta' del proprio ciclo. */
+.butterfly img:first-child { animation: butterflies-flap-a 2.4s ease-in-out infinite; }
+.butterfly img:last-child  { animation: butterflies-flap-b 2.4s ease-in-out infinite; }
+
+/* scale() rimpicciolisce la farfalla sul posto: il transform-origin e' il
+   centro del suo ingombro nel frame 1440x2560 (il canvas e' 9:16 come il
+   viewport portrait, quindi le percentuali dell'immagine valgono anche per
+   l'elemento). */
+.butterfly-a img { animation-duration: 2.1s; transform: scale(0.7); transform-origin: 78.8% 36.6%; }
+.butterfly-b img { animation-duration: 2.4s; animation-delay: -0.9s; transform: scale(0.7); transform-origin: 71.3% 40%; }
+.butterfly-c img { animation-duration: 2.8s; animation-delay: -1.7s; transform: scale(0.7); transform-origin: 75.8% 44.1%; }
+
+@keyframes butterflies-flap-a {
+	0%   { opacity: 1; }
+	8%   { opacity: 0; }
+	16%  { opacity: 1; }
+	24%  { opacity: 0; }
+	32%  { opacity: 1; }
+	100% { opacity: 1; }
+}
+
+@keyframes butterflies-flap-b {
+	0%   { opacity: 0; }
+	8%   { opacity: 1; }
+	16%  { opacity: 0; }
+	24%  { opacity: 1; }
+	32%  { opacity: 0; }
+	100% { opacity: 0; }
+}
+
+/* Deriva individuale: traiettorie irregolari e diverse per forma, ampiezza e
+   durata (11/17/13s) — una sale mentre un'altra scende. La rotazione e' sul
+   centro dello schermo, quindi sulle farfalle (off-center) diventa un piccolo
+   arco: voluto. */
+.butterfly-a { animation: butterfly-drift-a 11s ease-in-out infinite; }
+.butterfly-b { animation: butterfly-drift-b 17s ease-in-out infinite; }
+.butterfly-c { animation: butterfly-drift-c 13s ease-in-out infinite; }
+
+@keyframes butterfly-drift-a {
+	0%   { transform: translate(0, 0) rotate(0deg); }
+	28%  { transform: translate(9px, -18px) rotate(0.6deg); }
+	52%  { transform: translate(-4px, -30px) rotate(-0.4deg); }
+	76%  { transform: translate(-12px, -10px) rotate(-0.8deg); }
+	100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes butterfly-drift-b {
+	0%   { transform: translate(0, 0) rotate(0deg); }
+	22%  { transform: translate(-14px, 8px) rotate(-0.7deg); }
+	48%  { transform: translate(-22px, -12px) rotate(0.3deg); }
+	72%  { transform: translate(-6px, -24px) rotate(0.8deg); }
+	100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes butterfly-drift-c {
+	0%   { transform: translate(0, 0) rotate(0deg); }
+	35%  { transform: translate(12px, 14px) rotate(0.5deg); }
+	60%  { transform: translate(18px, -6px) rotate(-0.5deg); }
+	85%  { transform: translate(4px, 10px) rotate(-0.9deg); }
+	100% { transform: translate(0, 0) rotate(0deg); }
+}
+
 .scene-fade-overlay {
     position: fixed;
 	inset: 0;

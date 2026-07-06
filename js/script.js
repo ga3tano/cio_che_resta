@@ -1497,7 +1497,7 @@ monogatari.script ({
 			PhoneToggle.hide();
 			ObjectCounter.hide();
 
-			document.body.style.background = '#fff';
+			document.body.style.background = '#000';
 
 			// Stato di partenza = stato finale dell'ingresso
 			for (const el of roomLayers()) {
@@ -1516,6 +1516,25 @@ monogatari.script ({
 			doorLayer.style.transform = 'scale(1.15)';
 			doorLayer.style.opacity = '0';
 			document.body.appendChild(doorLayer);
+
+			// Farfalle dietro la stanza ma sopra il cielo (z-index -998, vedi
+			// .butterflies-layer): tre farfalle indipendenti, ognuna con due
+			// pose in crossfade e una deriva propria (durate diverse, mai in
+			// sincrono), visibili dalla finestra finché non si clicca la porta.
+			const farfalle = document.createElement('div');
+			farfalle.id = 'butterflies-layer';
+			farfalle.className = 'butterflies-layer';
+			for (const n of ['a', 'b', 'c']) {
+				const farfalla = document.createElement('div');
+				farfalla.className = `butterfly butterfly-${n}`;
+				for (const frame of [1, 2]) {
+					const img = document.createElement('img');
+					img.src = `assets/images/farfalla_${n.toUpperCase()}_${frame}.png`;
+					farfalla.appendChild(img);
+				}
+				farfalle.appendChild(farfalla);
+			}
+			document.body.appendChild(farfalle);
 		},
 		() => {
 			for (const el of roomLayers()) {
@@ -1531,6 +1550,9 @@ monogatari.script ({
 			doorLayer.style.transition = 'transform 4000ms ease-out, opacity 4000ms ease-out';
 			doorLayer.style.transform = 'scale(1)';
 			doorLayer.style.opacity = '1';
+
+			// Le farfalle sfumano dentro insieme alla porta (transition 4000ms)
+			document.getElementById('butterflies-layer')?.classList.add('visible');
 		},
 		'wait 4000',
 		// Zoom-out finito: la porta lampeggia (stessa meccanica .highlight degli
@@ -1562,6 +1584,8 @@ monogatari.script ({
 			DebugMenu.resetNightRuntime();
 			DebugMenu.resetVisualOverlays();
 			DebugMenu.resetStorageFlags();
+
+			document.getElementById('butterflies-layer')?.remove();
 
 			document.body.style.background = '';
 			for (const el of roomLayers()) {
