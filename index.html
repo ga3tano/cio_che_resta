@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en" itemscope itemtype="http://schema.org/WebPage"> <!--Change the lang property to your web"s language-->
+<html lang="it" itemscope itemtype="http://schema.org/WebPage">
 
 	<head prefix="og: http://ogp.me/ns#">
 
@@ -8,7 +8,7 @@
 
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1">
-		<meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self' 'unsafe-eval' https://cdnjs.cloudflare.com;">
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; script-src 'self' 'unsafe-eval';">
 		<meta name="description" content=""> <!--Page description. No longer than 155 characters.-->
 		<meta name="keywords" content="">
 		<meta name="author" content=""> <!--Name of the author.-->
@@ -80,15 +80,14 @@
 		<link rel="stylesheet" href="./engine/core/monogatari.css">
 		<link rel="stylesheet" href="./style/main.css">
 
-		<!-- Third Party JavaScript Libraries -->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
 		<!-- Monogatari JavaScript Libraries -->
 		<script src="./engine/debug/debug.js"></script>
 		<script src="./engine/core/monogatari.js"></script>
 		<script src="./js/options.js"></script>
 		<script src="./js/storage.js"></script>
 		<script src="./js/script.js"></script>
+		<!-- Config debug: committato e in precache SW (se togliamo, rmuovere anche da service-worker.js) -->
+		<script src="./js/debug-config.js"></script>
 		<script src="./js/main.js"></script>
 	</head>
 
@@ -206,24 +205,42 @@
 								Se PhoneUI non trova messaggi non letti, resta vuoto e la lockscreen rimane pulita.
 							-->
 							<div id="phone-lock-notifications" class="lock-notifications" aria-live="polite"></div>
+							<!--
+								Pulsante torcia: nascosto di default, appare solo quando la scena
+								attiva la modalità torcia (PhoneUI.waitForTorchUnlock in js/main.js).
+							-->
+							<button id="phone-lock-torch" class="lock-torch-btn" type="button">
+								<svg class="lock-torch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M8 3h8v3l-2 3v11a2 2 0 0 1-4 0V9L8 6V3z"/>
+									<line x1="12" y1="11" x2="12" y2="13"/>
+								</svg>
+								Accendi la torcia
+							</button>
 							<div class="lock-hint">Tocca per sbloccare</div>
 						</div>
 					</div>
 				</div>
 			</div>
-
+			
 			<div id="phone-glitch" class="phone-glitch"></div>
 		</div>
 
-		<div id="night-overlay" class="night-overlay"></div>
+		<!-- Overlay per minigioco della rabbia -->
 		<div id="rage-border" class="rage-border"></div>
 		<div id="word-game-overlay" class="word-game"></div>
+
+		<!-- Cielo fuori la finestra -->
 		<div id="sky" class="sky"></div>
+
+		<!-- Overlay filtri per le varie scene -->
+		 <div id="night-overlay" class="night-overlay"></div>
 		<div id="sceneFadeOverlay" class="scene-fade-overlay"></div>
 		<div id='blur-overlay' class='blur-overlay'></div>
 		<div id="bw-filter-overlay" class='bw-filter-overlay'></div>
 		<div id="saturation-overlay" class="saturation-overlay"></div>
+		<div id="dim-overlay" class="dim-overlay"></div>
 
+		<!-- Battito di ciglia -->
 		<div id="blink-overlay" class="blink-overlay">
 			<div class="eyelid-shadow top"></div>
 			<div class="eyelid-shadow bottom"></div>

@@ -1,5 +1,18 @@
 /* global monogatari */
 
+// Layer che compongono la "stanza" nelle scene composite (sfondo Monogatari,
+// cielo, oggetti). Usato per lo zoom d'ingresso della scena accettazione.
+function roomLayers() {
+	return [
+		// Lo sfondo DENTRO game-screen, non game-screen stesso: un transform su
+		// game-screen creerebbe uno stacking context che intrappola la text-box
+		// sotto #details-wrapper (il suo z-index non sarebbe piu' a livello root).
+		document.querySelector('game-screen [data-ui="background"]'),
+		document.getElementById('sky'),
+		document.getElementById('details-wrapper')
+	].filter(Boolean);
+}
+
 // Define the messages used in the game.
 monogatari.action ('message').messages ({
 	'Help': {
@@ -211,9 +224,13 @@ monogatari.script ({
 
 		'dad ...eccolo!',
 
-		() => {
-			hideTextBox();
+		async () => {
+			// Toggle nascosto: il telefono si apre da solo e non deve poter essere chiuso
+			// prima di aver acceso la torcia.
+			hideTextBox(false);
+			await PhoneUI.waitForTorchUnlock();
 			NightOverlay.showTorch();
+			PhoneToggle.show();
 		},
 
 		'jump loop_torcia',
@@ -221,7 +238,7 @@ monogatari.script ({
 
 	'DialogoTorcia_Pianta': [
 		() => showTextBox(),
-		'<div style="color: #000000;">dad .</div>',
+		'dad <div style="color: #000000;">.</div>',
     	'dad Dovrei annaffiarla, ha bisogno di luce, sta perdendo tutte le foglie.',
 		'dad Oggi lo faccio, devo solo organizzarmi meglio, non voglio che si secchi del tutto.',
 		'dad Si...si...lo farò dopo, dopo che mi sarò alzato.',
@@ -234,7 +251,7 @@ monogatari.script ({
 
 	'DialogoTorcia_Cornice': [
 		() => showTextBox(),
-		'<div style="color: #000000;">dad .</div>',
+		'dad <div style="color: #000000;">.</div>',
     	'dad Quanta polvere...non si vede neanche più la fotografia.',
 		'dad Sei così felice lì, quel giorno al parco ci siamo divertiti molto, abbiamo preso un gelato, passeggiato e cantato le tue canzoni preferite.',
 		'dad Dovremmo rifarlo!',
@@ -314,6 +331,7 @@ monogatari.script ({
 			SceneUtility.addBlur(2000);
 			await BlinkOverlay.doubleBlink(400);
 			await SceneFade.toVisible({duration: 5});
+			await AudioManager.fadeOut('fan', 5);
 		},
 		'jump Negazione_Cellulare'
 
@@ -346,7 +364,7 @@ monogatari.script ({
 			NightOverlay.hide();
 
 			await SceneUtility.loadScene("negazione"); 
-			await AudioManager.play('fan', {volume: 0.8, fade: 1.5, loop: true});
+			await AudioManager.play('fan', {volume: 0.2, fade: 1, loop: true});
 		},
 
 		'show scene room_day_dark',
@@ -399,7 +417,7 @@ monogatari.script ({
 		async() => {
 			PhoneTyping.send();
 			await sleep(300);
-			PhoneUI.addOutgoing('Si dai, perchè no...fammi finire un paio di cose e ti aggiorno');
+			PhoneUI.addOutgoing('Si dai, perché no...fammi finire un paio di cose e ti aggiorno');
 			PhoneTyping.hide();
 			// SceneUtility.addBlur(2000);
 			// await sleep(1500);
@@ -435,7 +453,6 @@ monogatari.script ({
 			
 			await sleep(2000);
 		},
-		
 
 		{'PhoneChoice':{ 
 			'Rispondi': {
@@ -498,15 +515,84 @@ monogatari.script ({
             },
             'Rimani': {
                 'Text': 'RIMANI A CASA',
-                'Do': 'jump Rimani_A_Casa'
+                'Do': 'jump Rimani'
             }
         }}
     ],
+
+	'Rimani':[
+		async () => {
+			PhoneToggle.show();
+			PhoneUI.hide();
+			SceneUtility.addDim(3000);
+			const el = document.getElementById('phone-toggle');
+			if (el) el.classList.add('disabled');
+			await sleep(5000);
+		},
+
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Sei per strada?'),
+
+		'wait 2100',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Sei ancora sotto la doccia, vero? Ahahahah...'),
+		
+		'wait 1600',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Ti aspetto dentro, comincio a sentir freddo fuori'),
+
+		'wait 1300',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Ehi, tutto bene?'),
+
+		'wait 900',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => PhoneUI.addIncoming('Io ho già ordinato'),
+
+		'wait 750',
+		'play sound phone_vibration',
+		'play sound phone_notification',
+
+		() => {
+			PhoneUI.addIncoming('Fra poco vado via...');
+			const el = document.getElementById('phone-toggle');
+			if (el) el.classList.remove('disabled');
+		},
+
+		'wait 500',
+
+		async () => {
+			await PhoneUI.waitUntilAllNotificationsRead();
+		},
+
+		{'PhoneChoice': {
+            'Esci': {
+                'Text': 'ESCI',
+                'Do': 'jump Esci_Casa'
+            },
+            'Rimani': {
+                'Text': 'RIMANI A CASA',
+                'Do': 'jump Rimani_A_Casa'
+            }
+        }}
+
+	],
 
 	'Rimani_A_Casa':[
 		async () => {
 			await SceneFade.toVisible();
 			SceneUtility.emptyScene();
+			SceneUtility.removeDim();
 			PhoneUI.hide();
 			AudioManager.setLowPass(250, 1);
 		},
@@ -516,6 +602,7 @@ monogatari.script ({
 		'wait 5000',
 		'play sound phone_vibration',
 		'play sound phone_notification',
+		
 		async () => {
 			// PhoneUI.reset();
 			// Messaggio in arrivo: aggiorna il badge, ma lascia il telefono chiuso.
@@ -540,6 +627,7 @@ monogatari.script ({
 		async () => {
 			AudioManager.setLowPass(20000, 1.5);
 			AudioManager.fadeOut('fan', 2.5);
+			SceneUtility.removeDim();
 			PhoneUI.hide();
 			await SceneFade.toVisible({ color: '#fff' });
 			SceneUtility.emptyScene();
@@ -720,39 +808,47 @@ monogatari.script ({
 		// },
 
 		'wait 3000',
-		() => {
-			PhoneUI.reset();
-			PhoneUI.show();
-		},
+		// () => {
+		// 	PhoneUI.reset();
+		// 	// Apre direttamente la chat: non ci sono notifiche da leggere e lo
+		// 	// sblocco della lockscreen e' disabilitato senza messaggi non letti.
+		// 	PhoneUI.show('Giulia', { mode: 'chat' });
+		// },
 
-		// Mostriamo il comando come azione del telefono e poi scriviamo il messaggio scelto.
-		{'PhoneChoice':{
-			'Nuovo messaggio': {
-				'Text': 'NUOVO MESSAGGIO',
-				'Do': 'wait 2000',
-				'onChosen': function() {
-					PhoneUI.addOutgoing('Ehi');
-				}
-			}
-		}},
-
-		() => {
-			PhoneUI.reset();
-			PhoneUI.hide();
-		},
-
-		'wait 1000',
-
-		() => {
+		async () => {
 			PhoneUI.show('Messaggi');
 			PhoneUI.addNotification({
 				title: 'Messaggi',
 				body: 'Nessun nuovo messaggio',
 				notify: false
 			}, false);
+
+			await startAcceleratingClock();
+			await sleep (2000);
+			PhoneUI.reset();
+			PhoneUI.show('Giulia', { mode: 'chat' });
 		},
 
-		'wait 3000',
+		// Mostriamo il comando come azione del telefono e poi scriviamo il messaggio scelto.
+		{'PhoneChoice':{
+			'Nuovo messaggio': {
+				'Text': 'Scrivi un nuovo messaggio',
+				'Do': 'wait 2000',
+				'onChosen': function() {
+					return new Promise(resolve => {
+						PhoneTyping.show('Ehi', 180, resolve);
+					});
+				}
+			}
+		}},
+
+		() => {
+			PhoneTyping.send();
+			PhoneUI.addOutgoing('Ehi');
+			PhoneTyping.hide();
+		},
+
+		'wait 5000',
 
 		() => PhoneUI.hide(),
 
@@ -761,8 +857,8 @@ monogatari.script ({
 //CONTRATTAZIONE
 	'Contrattazione': [
 		async () => {
-			await SceneFade.toVisible();
-			await AudioManager.fadeOut('rage', 2);
+			await SceneFade.toVisible({duration: 5});
+			await AudioManager.fadeOut('rage', 5);
 			await SceneUtility.loadScene("contrattazione");
 	
 			//Pulisco i precedenti clickedObjects e ripopolo allObjects
@@ -1129,14 +1225,12 @@ monogatari.script ({
 	//      il click sulla porta conduce a Scena_Accettazione
 	//   1. Scena_Accettazione: setup scena (fade, audio, oggetti interattivi)
 	//   2. loop_accettazione: polling ogni 300ms finche' tutti gli oggetti sono stati cliccati
-	//   3. (da sviluppare) dialogo finale + uscita dalla porta: per ora il flusso
-	//      termina ('end') quando tutti gli oggetti sono stati cliccati.
+	//   3. TitoliDiCoda: titoli di coda + "Fine", poi 'end' → menu principale.
+	//      (da sviluppare: dialogo finale + uscita dalla porta prima dei titoli)
 
 	// Ingresso alla fase: la stanza e' ancora buia, l'unica cosa che attira
 	// l'attenzione e' la porta che lampeggia (stessa meccanica .highlight degli
-	// oggetti della contrattazione). Il click sulla porta \u2014 gestito da
-	// lockContrattazioneObject \u2014 lancia 'jump Scena_Accettazione' tramite il
-	// campo dialog dell'oggetto porta_acc in SCENE_IMAGES.accettazione_porta.
+	// oggetti della contrattazione).
 	'Accettazione': [
 		async () => {
 			// Nero prima di staccare dalla scena precedente
@@ -1151,24 +1245,76 @@ monogatari.script ({
 			// Svuota la scena precedente (rimuove la pioggia della depressione dal #sky)
 			SceneUtility.emptyScene();
 
+			// La musica dell'accettazione parte gia' qui, con la porta che lampeggia
+			AudioManager.play('acceptance', {
+				loop: true,
+				volume: 0.35,
+				fade: 3
+			});
+
 			// Stanza buia + sola porta lampeggiante
 			await SceneUtility.loadScene("accettazione_porta");
+
+			// Il lampeggio parte solo dopo il dialogo (vedi blocco piu' sotto)
+			document.getElementById('porta_acc')?.classList.remove('highlight');
+
+			// Porta bloccata finche' il label non ha finito: un tap durante il
+			// nero/fade farebbe partire il jump con statement ancora pendenti
+			// (wait/fade), che al risolversi farebbero avanzare il nuovo label
+			// fuori ordine (transizione che parte a meta').
+			SceneUtility.lockItemWrapper();
 		},
 		'show scene room_day_dark',
 		'wait 1500',
 		async () => await SceneFade.toHidden({duration: 2}),
+		// La text box era stata nascosta in Lascia_Andare
+		() => showTextBox(),
+		'dad Ho passato tutta la vita a stringere i pugni pensando di dover tenere il più stretto possibile tutto ciò che di più prezioso avessi, trattenendo il respiro, soffocando la voce.',
+		'dad Poi un giorno ho aperto le mani…ed è lì che ho capito.',
+		'dad Pensiamo che il tempo ci appartenga, ma siamo noi ad appartenergli.',
+		// Solo ora il giocatore puo' cliccare la porta, e la porta inizia a lampeggiare
+		() => {
+			hideTextBox();
+			document.getElementById('porta_acc')?.classList.add('highlight');
+			SceneUtility.unlockItemWrapper();
+		},
 		// Nessun jump qui: il flusso prosegue solo quando il giocatore clicca
 		// la porta (vedi commento sopra al label).
 	],
 
 	'Scena_Accettazione': [
 		async () => {
-			// Torna al nero prima di passare dalla stanza buia alla stanza luminosa
-			await SceneFade.toVisible({duration: 2});
+			// La porta cliccata si ingrandisce e svanisce: si sta entrando.
+			// Riusa la stessa classe .door-enter di porta_2 (vedi main.css).
+			const porta = document.getElementById('porta_acc');
+			if (porta) {
+				porta.classList.add('door-enter');
+				void porta.offsetWidth;
+				porta.classList.add('door-enter-active');
+				await new Promise(r => setTimeout(r, 1400));
+			}
+
+			// Fade a BIANCO, non a nero: e' la luce oltre la porta.
+			// Prima transizione luminosa del gioco, coerente col tema dell'accettazione.
+			await SceneFade.toVisible({duration: 2, color: '#fff'});
 
 			// Carica cielo giorno_1 (soleggiato) + immagini degli oggetti
 			// interattivi della stanza del bambino nel #details-wrapper
+			// (la musica 'acceptance' e' gia' partita nel label Accettazione)
 			await SceneUtility.loadScene("accettazione");
+
+			// Il lampeggio degli oggetti parte solo a zoom d'ingresso finito
+			// (riaggiunto nel blocco dopo il 'wait 4000')
+			document.querySelectorAll('#details-wrapper .clickable-object')
+				.forEach(el => el.classList.remove('highlight'));
+
+			// La stanza parte scurita
+			SceneUtility.addDim(0);
+
+			// Oggetti bloccati durante fade e zoom d'ingresso: un tap anticipato
+			// farebbe partire un dialogo con wait/fade ancora pendenti (stesso
+			// race della porta in Accettazione). Sblocco a transizione finita.
+			SceneUtility.lockItemWrapper();
 
 			// Inizializza il tracciamento degli oggetti cliccabili.
 			// allObjects contiene solo gli id con 'onClick': tenda, cesta.
@@ -1181,8 +1327,83 @@ monogatari.script ({
 		},
 		'show scene room_accettazione',
 		'wait 1500',
+		// Sotto l'overlay bianco: la stanza (sfondo + cielo + oggetti) parte
+		// leggermente rimpicciolita al centro dello schermo.
+		() => {
+			// Bordo nero intorno alla stanza rimpicciolita
+			document.body.style.background = '#000';
+			// Ancorata in basso: il bordo inferiore resta attaccato al fondo
+			// dello schermo, lo zoom "cresce" verso l'alto e i lati.
+			for (const el of roomLayers()) {
+				el.style.transition = 'none';
+				el.style.transformOrigin = 'center bottom';
+				el.style.transform = 'scale(0.97)';
+			}
+
+			// La porta NON si rimpicciolisce con la stanza: dentro al wrapper
+			// (overflow:hidden + scale) verrebbe clippata, quindi si nasconde
+			// quella in scena e si crea un layer gemello full-screen su body,
+			// che copre il bordo bianco.
+			const porta = document.getElementById('porta_2');
+			if (porta) porta.style.opacity = '0';
+
+			const doorLayer = document.createElement('img');
+			doorLayer.id = 'door-layer';
+			doorLayer.src = 'assets/images/porta_2.png';
+			doorLayer.className = 'wrapper-item'; // stesso sizing cover/center dei layer di scena
+			doorLayer.style.position = 'fixed';
+			doorLayer.style.zIndex = '10';
+			document.body.appendChild(doorLayer);
+		},
 		async () => await SceneFade.toHidden({duration: 2}),
-		'wait 3000',
+		// Al reveal: zoom-in della stanza fino a riempire lo schermo, mentre
+		// porta_2 si ingrandisce e svanisce (si e' appena entrati).
+		// Il 'wait 4000' che segue copre la transizione piu' lunga (4s).
+		() => {
+			for (const el of roomLayers()) {
+				void el.offsetWidth; // committa lo stato scale(0.94) prima di animare
+				el.style.transition = 'transform 4000ms ease-out';
+				el.style.transform = 'scale(1)';
+			}
+
+			// Il layer porta full-screen si ingrandisce e svanisce
+			const doorLayer = document.getElementById('door-layer');
+			if (!doorLayer) return;
+
+			void doorLayer.offsetWidth; // committa lo stato iniziale prima di animare
+			doorLayer.style.transformOrigin = 'center center';
+			// Stessa durata/easing dello zoom stanza: i due movimenti sono sincroni
+			doorLayer.style.transition = 'transform 4000ms ease-out, opacity 4000ms ease-out';
+			doorLayer.style.transform = 'scale(1.15)';
+			doorLayer.style.opacity = '0';
+		},
+		'wait 4000',
+		// Rimuove gli inline transform: game-screen e #sky sopravvivono a questa
+		// scena e non devono restare "toccati" nelle scene successive.
+		() => {
+			document.body.style.background = '';
+			document.getElementById('door-layer')?.remove();
+			for (const el of roomLayers()) {
+				el.style.transition = '';
+				el.style.transform = '';
+				el.style.transformOrigin = '';
+			}
+		},
+		// Monologo a zoom/porta finiti, prima che gli oggetti lampeggino
+		() => showTextBox(),
+		'dad Un finale prevedibile, insopportabile delle volte, viene tracciato come linea del nostro destino, nero su bianco, come copione di eventi già scritti.',
+		'dad Poi quel fatidico giorno arriva, il giorno in cui accetti che la tua storia ha una conclusione, smetti di aver paura della parola “fine” e inizi a vivere.',
+		'dad Leggi quelle pagine che prima non erano altro che un mucchio di pensieri confusi e aggrovigliati, rovi di parole, spine e rose dai petali caduti.',
+		'dad Arriverà il giorno in cui quelle spine smetteranno di fare così male, resteranno i segni sulle dita, il ricordo del dolore.',
+		'dad Il cielo sembrerà più luminoso, la musica avrà ancora una sua melodia, forse dolceamara.',
+		'dad Arriverà il giorno in cui la luce in fondo al tunnel non sarà più così lontana, non abbiate paura di raggiungerla. La vita non aspetta.',
+		() => {
+			hideTextBox();
+			// Solo ora gli oggetti lampeggiano e sono cliccabili
+			document.querySelectorAll('#details-wrapper .clickable-object')
+				.forEach(el => el.classList.add('highlight'));
+			SceneUtility.unlockItemWrapper();
+		},
 		'jump loop_accettazione'
 	],
 
@@ -1199,9 +1420,99 @@ monogatari.script ({
 				const store = monogatari.storage();
 				return store.clickedObjects.length === store.allObjects.length;
 			},
-			'True': 'end',
+			'True': 'jump TitoliDiCoda',
 			'False': 'jump wait_accettazione'
 		}},
+	],
+
+	// Titoli di coda stile film (vedi EndCredits in main.js): fade a nero,
+	// rullo con ruoli e nomi del team, poi "Fine" per 10 secondi.
+	// play() risolve dopo i 10 secondi; 'end' riporta al menu principale
+	// mentre il nero copre la transizione e si dissolve da solo.
+	'TitoliDiCoda': [
+		// Uscita dalla stanza: inversa esatta dell'ingresso in Scena_Accettazione.
+		// La stanza si rimpicciolisce sul bordo bianco mentre il layer porta
+		// full-screen riappare (da scale 1.15 trasparente a scale 1 visibile).
+		() => {
+			PhoneToggle.hide();
+			ObjectCounter.hide();
+
+			document.body.style.background = '#fff';
+
+			// Stato di partenza = stato finale dell'ingresso
+			for (const el of roomLayers()) {
+				el.style.transition = 'none';
+				el.style.transformOrigin = 'center bottom';
+				el.style.transform = 'scale(1)';
+			}
+
+			const doorLayer = document.createElement('img');
+			doorLayer.id = 'door-layer';
+			doorLayer.src = 'assets/images/porta_2.png';
+			doorLayer.className = 'wrapper-item';
+			doorLayer.style.position = 'fixed';
+			doorLayer.style.zIndex = '10';
+			doorLayer.style.transformOrigin = 'center center';
+			doorLayer.style.transform = 'scale(1.15)';
+			doorLayer.style.opacity = '0';
+			document.body.appendChild(doorLayer);
+		},
+		() => {
+			for (const el of roomLayers()) {
+				void el.offsetWidth; // committa lo stato scale(1) prima di animare
+				el.style.transition = 'transform 4000ms ease-out';
+				el.style.transform = 'scale(0.97)';
+			}
+
+			const doorLayer = document.getElementById('door-layer');
+			if (!doorLayer) return;
+
+			void doorLayer.offsetWidth;
+			doorLayer.style.transition = 'transform 4000ms ease-out, opacity 4000ms ease-out';
+			doorLayer.style.transform = 'scale(1)';
+			doorLayer.style.opacity = '1';
+		},
+		'wait 4000',
+		// Zoom-out finito: la porta lampeggia (stessa meccanica .highlight degli
+		// oggetti di scena) e i titoli partono solo al click sulla porta.
+		async () => {
+			const doorLayer = document.getElementById('door-layer');
+			if (!doorLayer) return;
+
+			doorLayer.classList.add('clickable-object', 'highlight');
+			doorLayer.style.cursor = 'pointer';
+
+			await new Promise(resolve => {
+				doorLayer.addEventListener('click', (e) => {
+					// Il layer è full-screen: contano solo i pixel visibili della porta
+					if (!isClickOnVisiblePixel(doorLayer, e)) return;
+					doorLayer.classList.remove('highlight');
+					resolve();
+				});
+			});
+		},
+		async () => {
+			await EndCredits.play(); // risolve al click del giocatore dopo "Fine"
+
+			// Sotto il nero: ferma tutte le musiche/loop custom e riporta il
+			// gioco allo stato pulito prima del ritorno al menu. Riusa i reset
+			// del debug menu (audio, overlay, torcia, flag di storage): sono
+			// gli stessi necessari per un "torna al menu e ricomincia".
+			AudioManager.stopAll();
+			DebugMenu.resetNightRuntime();
+			DebugMenu.resetVisualOverlays();
+			DebugMenu.resetStorageFlags();
+
+			document.body.style.background = '';
+			for (const el of roomLayers()) {
+				el.style.transition = '';
+				el.style.transform = '';
+				el.style.transformOrigin = '';
+			}
+			SceneUtility.emptyScene();
+			SceneUtility.enableBackground();
+		},
+		'end'
 	],
 
 	// Ogni dialogo:
@@ -1213,9 +1524,28 @@ monogatari.script ({
 
 	'DialogoAccettazione_Tenda': [
 		() => showTextBox(),
-		'<div style="color: #000000;">.</div>',
-		'dad La luce...',
-		'dad Da quanto non la lasciavo entrare.',
+
+		// --- PARTE 1: tenda ancora chiusa (lo swap e' rimandato: deferSwap
+		//     nella entry di SCENE_IMAGES, vedi lockContrattazioneObject) ---
+		'dad La stessa oscurità che avvolgeva la stanza sembrava essere cresciuta come edera avvolta attorno ai miei polmoni, non mi lasciava respirare più.',
+		'dad Passavo davanti la tua porta fingendo tu fossi lì dentro a giocare con i tuoi trenini e le tue bambole, ma non avendo mai il coraggio di entrare…',
+		'dad …non potevo rendere reale la mia paura più grande, ma era arrivato il momento di riportare un po’ di luce, dentro e fuori me.',
+
+		// --- Apertura: swap tenda_chiusa -> tenda_aperta, poi la luce entra ---
+		async () => {
+			const tenda = document.getElementById('tenda');
+			if (tenda) {
+				tenda.src = 'assets/images/tenda_aperta.png';
+				if (!tenda.complete) await new Promise(r => { tenda.onload = r; });
+			}
+			SceneUtility.removeDim(3000);
+		},
+
+		// --- PARTE 2: tenda aperta, stanza che si schiarisce ---
+		'dad La luce… da quanto non la lasciavo entrare!',
+		'dad La stanza è rimasta intatta, ferma nel tempo, ma tu non ci sei più, non qua dentro, almeno.',
+		'dad Non sei qui, ma sei e sarai in ogni cosa che farò, ogni suono, profumo, gesto e canzone che farà parte delle mie giornate.',
+		'dad Non voglio più rinunciare alla vita, troverò la forza! Per me…per te.',
 		() => {
 			hideTextBox();
 			SceneUtility.unlockItemWrapper();
@@ -1225,14 +1555,40 @@ monogatari.script ({
 
 	'DialogoAccettazione_Cesta': [
 		() => showTextBox(),
-		'<div style="color: #000000;">.</div>',
-		'dad Uno alla volta.',
-		'dad Proprio come mi hai detto tu.',
+
+		// --- PARTE 1: giochi ancora sparsi (swap rimandato: deferSwap
+		//     nella entry di SCENE_IMAGES, vedi lockContrattazioneObject) ---
+		"dad All'inizio, ogni oggetto era un colpo al cuore. Il trenino di legno riverso sul pavimento, i supereroi pronti a salvare un mondo che per me era crollato, i mattoncini colorati ancora incastrati tra loro, impolverati.",
+		'dad Per tanto, troppo tempo ho pensato che riordinare questa cesta significasse cancellare la tua presenza, la tua memoria.',
+		'dad Mi ero convinto che rimettere a posto le tue cose volesse dire accettare la tua scomparsa, dimenticare il suono della tua risata che riempiva i corridoi di questa casa, mi sembrava un tradimento.',
+
+		// --- Riordino: swap cesta_vuota -> cesta_piena ---
+		async () => {
+			const cesta = document.getElementById('cesta');
+			if (cesta) {
+				cesta.src = 'assets/images/cesta_piena.png';
+				if (!cesta.complete) await new Promise(r => { cesta.onload = r; });
+			}
+		},
+
+		// --- PARTE 2: giochi sistemati ---
+		"dad Ma oggi, mentre riponevo il tuo orsacchiotto, non ho sentito il peso del vuoto che mi ha attanagliato la gola e lo stomaco in queste settimane, ho sentito solo un senso di profonda, dolorosa gratitudine.",
+		'dad Sistemare i tuoi giochi ha dato un nuovo posto ai ricordi, ha sciolto il groviglio di pensieri e ha dato un ordine alle cose….',
+		'dad Mi manchi.',
 		() => {
 			hideTextBox();
 			SceneUtility.unlockItemWrapper();
 		},
 		'jump loop_accettazione'
+	],
+
+	'TestClock': [
+		async () => await SceneUtility.loadScene("rabbia"),
+		'show scene room_rage',
+		() => {
+			PhoneUI.show();
+			startAcceleratingClock();
+		}
 	],
 
 	// Scena isolata: non viene richiamata dal flow narrativo, solo dal menu di debug.

@@ -396,6 +396,31 @@ const PhoneUI = {
 		this.show(nextContactName, { mode: 'lockscreen' });
 	},
 
+	/*
+		Mostra la lockscreen con il pulsante "Accendi la torcia" e attende
+		che venga premuto. La scena resta bloccata sull'await finché il
+		giocatore non tocca il pulsante; poi il telefono si chiude da solo.
+	*/
+	waitForTorchUnlock() {
+		if (!this.layer) this.init();
+
+		this.showLockScreen();
+		this.lockView.classList.add('torch-mode');
+
+		return new Promise((resolve) => {
+			const torchButton = document.getElementById('phone-lock-torch');
+
+			torchButton.addEventListener('click', (event) => {
+				// Il click non deve risalire alla lockscreen e aprire la chat.
+				event.stopPropagation();
+
+				this.lockView.classList.remove('torch-mode');
+				this.hide();
+				resolve();
+			}, { once: true });
+		});
+	},
+
     getContactName() {
         if (!this.contact) this.init();
 
@@ -623,7 +648,17 @@ const PhoneUI = {
 			Ogni notifica mostrata qui corrisponde a 1 numero nel badge.
 			Se vuoi raggruppare piu messaggi in una sola card, questo e' il punto da modificare.
 		*/
-		this.unreadNotifications.forEach((notification) => {
+		// Raggruppa per titolo (mittente): se una chat ha 3+ notifiche, mostra 1 card cumulativa
+		const groups = new Map();
+		this.unreadNotifications.forEach((n) => {
+			if (!groups.has(n.title)) groups.set(n.title, []);
+			groups.get(n.title).push(n);
+		});
+
+		groups.forEach((items) => {
+			const isGrouped = items.length >= 3;
+			const last = items[items.length - 1]; // card mostra sempre l'ultimo messaggio ricevuto
+
 			const item = document.createElement('div');
 			item.className = 'lock-notification';
 
@@ -636,11 +671,12 @@ const PhoneUI = {
 
 			const title = document.createElement('div');
 			title.className = 'lock-notification-title';
-			title.textContent = notification.title;
+			// Badge conteggio nel titolo, es. "Giulia (4)", solo se raggruppato
+			title.textContent = isGrouped ? `${last.title} (${items.length})` : last.title;
 
 			const subtitle = document.createElement('div');
 			subtitle.className = 'lock-notification-subtitle';
-			subtitle.textContent = notification.body;
+			subtitle.textContent = last.body;
 
 			text.appendChild(title);
 			text.appendChild(subtitle);
@@ -652,12 +688,23 @@ const PhoneUI = {
 		if (typeof PhoneToggle !== 'undefined') {
 			PhoneToggle.updateBadge(this.getUnreadCount());
 		}
+
+		// Senza messaggi da leggere lo sblocco e' disabilitato: l'hint
+		// "Tocca per sbloccare" sparisce per non promettere il contrario.
+		const hint = this.lockView?.querySelector('.lock-hint');
+		if (hint) {
+			hint.style.visibility = this.unreadNotifications.length ? 'visible' : 'hidden';
+		}
 	},
 
 	bindLockscreenEvents() {
 		if (!this.lockView || this.unlockEventsBound) return;
 
 		const unlock = (event) => {
+			// In modalità torcia il tocco non sblocca la chat: niente preventDefault,
+			// così su mobile il click sintetico arriva al pulsante torcia.
+			if (this.lockView.classList.contains('torch-mode')) return;
+
 			event.preventDefault();
 			event.stopPropagation();
 			this.unlockFromLockscreen();
@@ -686,6 +733,9 @@ const PhoneUI = {
 	unlockFromLockscreen() {
 		// Se la chat e' gia aperta, non facciamo nulla.
 		if (this.mode !== 'lockscreen') return;
+
+		// Nessun messaggio da leggere: la lockscreen resta bloccata.
+		if (this.getUnreadCount() === 0) return;
 
 		this.showChatView({ markNotificationsAsRead: true });
 	},
@@ -1345,10 +1395,12 @@ const NightOverlay = {
 	init(){
 		this.element = document.getElementById('night-overlay');
 		
-		//Desktop (capire se serve)
+		//Desktop: aggiorna il target come il touch, altrimenti il loop rAF
+		//riporta la torcia verso il vecchio target a ogni frame.
 		document.addEventListener('mousemove', (e) => {
 			if(!this.element.classList.contains('torch')) return;
-			this.updateTorch(e.clientX, e.clientY);	//Per il mouse non serve il target perchè tanto il movimento è sempre fluido e costante
+			this.targetX = e.clientX;
+			this.targetY = e.clientY;
 		});
 
 		//Mobile
@@ -1409,6 +1461,9 @@ const NightOverlay = {
 
     	this.updateTorch(x, y);
 
+		// Hint "esplora la stanza" solo la prima volta, finché non evidenzia qualcosa
+		if (!monogatari.storage().clickedObjects.length) TorchHint.arm();
+
 		// Debug sui click
 		// document.addEventListener("click", (e) => {
    		// 	console.log("CLICK SU ELEMENTO:", e.target);
@@ -1424,6 +1479,8 @@ const NightOverlay = {
 	hideTorch(){
 		this.isFrozen = true;
 		if(!this.element) this.init();
+
+		TorchHint.dismiss();
 
 		this.playTorchSound();
 		this.element.classList.remove('torch');
@@ -1486,6 +1543,32 @@ const NightOverlay = {
 			else
 				obj.classList.remove('highlight');
 		})
+	}
+};
+
+// Scritta lampeggiante nella scena torcia: appare se dopo 3 secondi
+// il giocatore non ha ancora evidenziato nessun oggetto con dialogo.
+const TorchHint = {
+	el: null,
+	timer: null,
+
+	arm(){
+		this.dismiss();
+		this.timer = setTimeout(() => {
+			if (!this.el) {
+				this.el = document.createElement('div');
+				this.el.id = 'torch-hint';
+				this.el.textContent = 'Esplora i vari elementi della stanza';
+				document.body.appendChild(this.el);
+			}
+			this.el.classList.add('visible');
+		}, 3000);
+	},
+
+	dismiss(){
+		clearTimeout(this.timer);
+		this.timer = null;
+		this.el?.classList.remove('visible');
 	}
 };
 
@@ -2546,13 +2629,17 @@ const WordsGame = {
 		let deltaX = 0;
 		let deltaY = 0;
 
-		wrapper.addEventListener("touchstart", (event) => {
+		// Pointer events: un solo set di listener copre touch e mouse.
+		// .word-item ha touch-action: none nel CSS, quindi su mobile il drag
+		// non viene interrotto dallo scroll del browser.
+		wrapper.addEventListener("pointerdown", (event) => {
 			if (!this.isCurrentRun(runId)) return;
 
-			const touch = event.touches[0];
-			if (!touch) return;
-
 			event.preventDefault();
+
+			// Il capture fa arrivare pointermove/pointerup al wrapper anche se
+			// il puntatore esce dai suoi bordi durante il drag.
+			wrapper.setPointerCapture(event.pointerId);
 
 			const rect = wrapper.getBoundingClientRect();
 
@@ -2560,33 +2647,30 @@ const WordsGame = {
 			wrapper.classList.add("dragging");
 			wrapper.style.transition = "";
 
-			startTouchX = touch.clientX;
-			startTouchY = touch.clientY;
+			startTouchX = event.clientX;
+			startTouchY = event.clientY;
 			currentLeft = parseFloat(wrapper.style.left) || 0;
 			currentTop = parseFloat(wrapper.style.top) || 0;
-			offsetX = touch.clientX - rect.left;
-			offsetY = touch.clientY - rect.top;
+			offsetX = event.clientX - rect.left;
+			offsetY = event.clientY - rect.top;
 			deltaX = 0;
 			deltaY = 0;
-		}, { passive: false });
+		});
 
-		wrapper.addEventListener("touchmove", (event) => {
+		wrapper.addEventListener("pointermove", (event) => {
 			if (!dragging || !this.isCurrentRun(runId)) return;
-
-			const touch = event.touches[0];
-			if (!touch) return;
 
 			event.preventDefault();
 
-			deltaX = touch.clientX - startTouchX;
-			deltaY = touch.clientY - startTouchY;
+			deltaX = event.clientX - startTouchX;
+			deltaY = event.clientY - startTouchY;
 
-			const newLeft = touch.clientX - offsetX;
-			const newTop = touch.clientY - offsetY;
+			const newLeft = event.clientX - offsetX;
+			const newTop = event.clientY - offsetY;
 
 			wrapper.style.left = `${newLeft}px`;
 			wrapper.style.top = `${newTop}px`;
-		}, { passive: false });
+		});
 
 		const endDrag = () => {
 			if (!dragging || !this.isCurrentRun(runId)) return;
@@ -2632,8 +2716,8 @@ const WordsGame = {
 			}
 		};
 
-		wrapper.addEventListener("touchend", endDrag, { passive: true });
-		wrapper.addEventListener("touchcancel", endDrag, { passive: true });
+		wrapper.addEventListener("pointerup", endDrag);
+		wrapper.addEventListener("pointercancel", endDrag);
 	},
 
 	clearVisibleWords() {
@@ -2705,7 +2789,7 @@ const SCENE_IMAGES = {
 		{ id: 'uomo', src: 'assets/images/uomo.png'},
 		{ id: 'ombra', src: 'assets/images/bambino_ombra.png', onClick: 'pipo', isVisible: 'false'}
 	],
-	// Schermata d'ingresso alla fase di accettazione: la stanza buia (room_day_dark)
+	// Schermata d'ingresso alla fase di accettazione: la stanza (room_day_dark)
 	// con la sola porta che lampeggia. Riusa la stessa meccanica .highlight + click
 	// degli oggetti della contrattazione. onClick punta alla stessa immagine (porta.png)
 	// perché non vogliamo cambiare la grafica: al click parte solo il jump della scena.
@@ -2716,11 +2800,10 @@ const SCENE_IMAGES = {
 		{ id: 'cornice',  src: 'assets/images/cornice.png' }
 	],
 	'accettazione': [
-		// TODO: sostituire con gli asset definitivi (attualmente i file non esistono)
 		// onClick: immagine sostituita dopo il click (stato "sistemato")
 		// dialog: label Monogatari lanciato dopo il click tramite lockContrattazioneObject
-		{ id: 'tenda',            src: 'assets/images/tenda_chiusa.png',      onClick: 'assets/images/tenda_aperta.png',      dialog: 'jump DialogoAccettazione_Tenda' },
-		{ id: 'cesta',            src: 'assets/images/cesta_vuota.png',        onClick: 'assets/images/cesta_piena.png',        dialog: 'jump DialogoAccettazione_Cesta' },
+		{ id: 'tenda',            src: 'assets/images/tenda_chiusa.png',      onClick: 'assets/images/tenda_aperta.png',      dialog: 'jump DialogoAccettazione_Tenda', deferSwap: true },
+		{ id: 'cesta',            src: 'assets/images/cesta_vuota.png',        onClick: 'assets/images/cesta_piena.png',        dialog: 'jump DialogoAccettazione_Cesta', deferSwap: true },
 		// Oggetto statico, già al suo posto (non interattivo)
 		{ id: 'porta_2', src: 'assets/images/porta_2.png' }
 		// La porta NON fa parte della stanza durante il riordino: la fase finale
@@ -2733,6 +2816,54 @@ const SCENE_IMAGES = {
 		{ id: 'mobile', src: 'assets/images/mobile.png', lighted: true, dialog: 'jump DialogoTorcia_Mobile'}
 	]
 }
+
+// Contatore discreto "trovati/totale" per le scene a oggetti interattivi
+// (torcia, contrattazione, accettazione). Solo feedback visivo: il gating
+// vero resta nei loop label che confrontano clickedObjects/allObjects.
+const ObjectCounter = {
+	element: null,
+	total: 0,
+	count: 0,
+
+	ensure() {
+		if (!this.element) {
+			this.element = document.createElement('div');
+			this.element.id = 'object-counter';
+			this.element.className = 'object-counter';
+			document.body.appendChild(this.element);
+		}
+		return this.element;
+	},
+
+	show(total) {
+		if (!total) return;
+		this.total = total;
+		this.count = 0;
+		this.render();
+		this.ensure().classList.add('visible');
+	},
+
+	increment() {
+		if (!this.total) return;
+		this.count = Math.min(this.count + 1, this.total);
+		this.render();
+
+		// A scena completata il contatore non serve più: sparisce da solo.
+		if (this.count >= this.total) {
+			setTimeout(() => this.hide(), 1500);
+		}
+	},
+
+	render() {
+		this.ensure().textContent = `${this.count}/${this.total}`;
+	},
+
+	hide() {
+		this.total = 0;
+		this.count = 0;
+		this.element?.classList.remove('visible');
+	}
+};
 
 const SceneUtility = {
 	clickedItems: false,
@@ -2824,17 +2955,8 @@ const SceneUtility = {
 		}
 		
 		if(typeOfItems === "contrattazione" || typeOfItems === "accettazione" || typeOfItems === "accettazione_porta"){
-			// Aggiungiamo un eventListener unico che gestisce i vari layer di immagini.
-			// Usiamo 'touchend' (non 'click') perché 'click' non ha e.touches.
-			// Su touchend le touches attive sono già vuote: si usa changedTouches.
-			wrapper.addEventListener('touchend', (e) => {
-				e.stopPropagation();
-				e.preventDefault();
-
-				const touch = e.changedTouches[0];
-				if (!touch) return;
-				const point = { clientX: touch.clientX, clientY: touch.clientY };
-
+			// Gestore unico per tap/click sui layer di immagini della scena.
+			const handleTap = (point) => {
 				// Prendiamo tutte le immagini clickabili
 				const clickableImages = wrapper.querySelectorAll('.clickable-object');
 
@@ -2850,6 +2972,25 @@ const SceneUtility = {
 					this.lockContrattazioneObject(img, imgData);
 					break;
 				}
+			};
+
+			// Touch: usiamo 'touchend' (non 'click') perché su mobile serve
+			// preventDefault() per sopprimere il click sintetico successivo.
+			// Su touchend le touches attive sono già vuote: si usa changedTouches.
+			wrapper.addEventListener('touchend', (e) => {
+				e.stopPropagation();
+				e.preventDefault();
+
+				const touch = e.changedTouches[0];
+				if (!touch) return;
+				handleTap({ clientX: touch.clientX, clientY: touch.clientY });
+			});
+
+			// Mouse/desktop: il preventDefault sul touchend sopprime il click
+			// sintetico, quindi questo listener scatta solo con un mouse reale.
+			wrapper.addEventListener('click', (e) => {
+				e.stopPropagation();
+				handleTap({ clientX: e.clientX, clientY: e.clientY });
 			});
 		}
 
@@ -2909,6 +3050,12 @@ const SceneUtility = {
 			await loadImage(imgData, wrapper);
 		}
 
+		// Contatore progresso: solo per le scene con più oggetti da trovare
+		// (accettazione_porta ha un solo elemento di transizione, niente contatore).
+		if (["torcia", "contrattazione", "accettazione"].includes(typeOfItems)) {
+			ObjectCounter.show(images.filter(img => img.dialog).length);
+		}
+
 		//Pre-calcola le mappe alpha per gli oggetti lighted
 	
 
@@ -2941,7 +3088,7 @@ const SceneUtility = {
 				await this.loadSky("giorno_2");
 				break;
 			case "rabbia":
-				await this.loadSky("nuvolo");
+				await this.loadSky("giorno_2");
 				break;
 			case "contrattazione":
 				await this.loadSky("giorno_2")
@@ -2998,9 +3145,11 @@ const SceneUtility = {
 
 		if(wrapper)
 			document.body.removeChild(wrapper);
-		
+
 		if(sky)
 			sky.innerHTML = ``;
+
+		ObjectCounter.hide();
 	},
 
 	addShadow(){
@@ -3066,6 +3215,7 @@ const SceneUtility = {
 			if (this.currentHoveredId !== found.data.id) {
 				this.clearHover();
 				this.currentHoveredId = found.data.id;
+				TorchHint.dismiss();
 
 				// Dopo 600ms di permanenza sullo stesso oggetto, apri il dettaglio
 				this.hoverTimer = setTimeout(() => {
@@ -3075,18 +3225,9 @@ const SceneUtility = {
 			}
 		};
 	
-		wrapper.addEventListener('touchmove', (e) => {
-			//Sempre stesso discorso, solo se torcia attiva
-			if (!NightOverlay.element?.classList.contains('torch')) return;
-			const touch = e.touches[0];
-			if(!touch) return;
-
-			// //Blocca lo scroll
-			// if(e.cancelable){
-			// 	e.preventDefault();
-			// }
-
-			lastPoint = { clientX: touch.clientX, clientY: touch.clientY};
+		// Throttle condiviso touch/mouse: al massimo un processHover per frame.
+		const queueHover = (clientX, clientY) => {
+			lastPoint = { clientX, clientY };
 
 			if(!rafId){
 				rafId = requestAnimationFrame(() => {
@@ -3094,7 +3235,23 @@ const SceneUtility = {
 					if (lastPoint) processHover(lastPoint);
 				});
 			}
+		};
+
+		wrapper.addEventListener('touchmove', (e) => {
+			//Sempre stesso discorso, solo se torcia attiva
+			if (!NightOverlay.element?.classList.contains('torch')) return;
+			const touch = e.touches[0];
+			if(!touch) return;
+
+			queueHover(touch.clientX, touch.clientY);
 		}, {passive: false});
+
+		// Desktop: la torcia segue già il mouse (NightOverlay); qui agganciamo
+		// anche l'apertura dei dialoghi quando il fascio resta su un oggetto.
+		wrapper.addEventListener('mousemove', (e) => {
+			if (!NightOverlay.element?.classList.contains('torch')) return;
+			queueHover(e.clientX, e.clientY);
+		});
 
 		wrapper.addEventListener('touchend', (e) => {
 			if(this.currentHoveredId){
@@ -3150,6 +3307,7 @@ const SceneUtility = {
 		// Aggiunge l'oggetto alla lista dei cliccati
 		if (!store.clickedObjects.includes(imgData.id)) {
 			store.clickedObjects.push(imgData.id);
+			ObjectCounter.increment();
 		}
 
 		// Rimuove highlight e interattività dall'oggetto
@@ -3186,9 +3344,12 @@ const SceneUtility = {
 
 		if (!store.clickedObjects.includes(imgData.id)) {
 			store.clickedObjects.push(imgData.id);
+			ObjectCounter.increment();
 		}
 
-		if (imgData.onClick) {
+		// deferSwap: lo swap dell'immagine non avviene al click ma viene fatto
+		// a mano dal label di dialogo (serve per mostrare battute PRIMA del cambio)
+		if (imgData.onClick && !imgData.deferSwap) {
 			element.src = imgData.onClick;
 		}
 
@@ -3219,40 +3380,55 @@ const SceneUtility = {
     el.classList.add('visible');
 },
 
-removeBlur(duration = 0) {
-    const el = document.getElementById('blur-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.remove('visible');
-},
+	removeBlur(duration = 0) {
+		const el = document.getElementById('blur-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.remove('visible');
+	},
 
-addBW(duration = 0) {
-    const el = document.getElementById('bw-filter-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.add('visible');
-},
+	addBW(duration = 0) {
+		const el = document.getElementById('bw-filter-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.add('visible');
+	},
 
-removeBW(duration = 0) {
-    const el = document.getElementById('bw-filter-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.remove('visible');
-},
+	removeBW(duration = 0) {
+		const el = document.getElementById('bw-filter-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.remove('visible');
+	},
 
-addSaturation(duration = 0) {
-    const el = document.getElementById('saturation-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.add('visible');
-},
+	addSaturation(duration = 0) {
+		const el = document.getElementById('saturation-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.add('visible');
+	},
 
-removeSaturation(duration = 0) {
-    const el = document.getElementById('saturation-overlay');
-    if (!el) return;
-    el.style.transition = `opacity ${duration}ms ease`;
-    el.classList.remove('visible');
-}
+	removeSaturation(duration = 0) {
+		const el = document.getElementById('saturation-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.remove('visible');
+	},
+
+	addDim(duration = 0){
+		const el = document.getElementById('dim-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.add('visible');
+	},
+
+	removeDim(duration = 0){
+		const el = document.getElementById('dim-overlay');
+		if (!el) return;
+		el.style.transition = `opacity ${duration}ms ease`;
+		el.classList.remove('visible');
+	}
+
 }
 
 const SceneFade = {
@@ -4077,43 +4253,95 @@ const BlinkOverlay = {
 	} 
 }
 
-// Orologio che accelera in modo esponenziale (scena #clock-display).
-// Ritorna una funzione stop() per fermarlo.
-function startAcceleratingClock(elementId) {
-	const display = document.getElementById(elementId);
-	const now = new Date();
+function startAcceleratingClock(options = {}) {
+	return new Promise((resolve) => {
+		// Overlay + cielo notte: singolo punto di controllo per entrambi i layer
+		const DayCycle = (() => {
+			let overlayEl = null;
+			let skyEl = null;
 
-	let hours = now.getHours();
-	let minutes = now.getMinutes();
-	let delay = 800;
-	let timeoutId;
-	let tickCount = 0;
+			function init() {
+				overlayEl = document.createElement('div');
+				overlayEl.className = 'daycycle-layer';
+				document.body.appendChild(overlayEl);
 
-	function updateClock() {
-		display.textContent = [
-			hours.toString().padStart(2, '0'),
-			minutes.toString().padStart(2, '0')
-		].join(':');
+				skyEl = document.createElement('div');
+				skyEl.className = 'sky-night';
+				skyEl.style.backgroundImage = 'url("assets/scenes/cielo_notte.png")'; // path fisso, una volta sola
+				document.body.appendChild(skyEl);
+			}
 
-		tickCount++;
-		minutes += Math.pow(2, tickCount); // l'aggiunta dei minuti è esponenziale
+			function set(isNight) {
+				if (!overlayEl) init();
+				overlayEl.classList.toggle('active', isNight);
+				skyEl.classList.toggle('active', isNight);
+			}
 
-		while (minutes >= 60) {
-			minutes -= 60;
-			hours++;
+			return { set };
+		})();
+
+		// rampMs: durata dell'accelerazione iniziale. plateauMs: durata nominale a velocità costante.
+		// speedPerMs: minuti simulati per ms reale a regime (hardcoded, unica fonte di velocità).
+		const { rampMs = 3000, plateauMs = 6000 } = options;
+		const speedPerMs = 1.3;
+
+		const timeEl = document.getElementById('lock-time');
+		const dateEl = document.getElementById('phone-lock-date');
+
+		PhoneUI.stopClock(); // sospende il clock reale per non farlo litigare col nostro rendering
+
+		const WEEKDAYS = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+		const isNight = (h) => h < 7 || h > 20;
+
+		let current = new Date();
+		let dayIndex = current.getDay();
+		let wasNight = isNight(current.getHours());
+		let frameId, lastTs, elapsed = 0, stopping = false;
+
+		function render() {
+			timeEl.textContent = `${String(current.getHours()).padStart(2,'0')}:${String(current.getMinutes()).padStart(2,'0')}`;
+
+			const nightNow = isNight(current.getHours());
+			if (wasNight && !nightNow) dayIndex = (dayIndex + 1) % 7; // avanza il giorno solo al varco notte->giorno
+			wasNight = nightNow;
+
+			dateEl.textContent = WEEKDAYS[dayIndex];
+			DayCycle.set(nightNow);
 		}
-		while (hours >= 24) {
-			hours -= 24;
-		}
 
-		delay = Math.max(30, delay * 0.85);
-		timeoutId = setTimeout(updateClock, delay);
-	}
+		timeEl.classList.add('clock-glitch'); // solo effetto CSS (blur/flicker): il tempo resta lineare, niente salti random
 
-	updateClock();
+		function loop(ts) {
+			if (lastTs === undefined) lastTs = ts;
+			const dt = ts - lastTs;
+			lastTs = ts;
+			elapsed += dt;
 
-	return () => clearTimeout(timeoutId);
+			// Velocità: ease-in quadratico durante il ramp, poi costante (plateau + eventuale extra)
+			const rampProgress = Math.min(1, elapsed / rampMs);
+			const speed = speedPerMs * rampProgress * rampProgress;
+
+			current = new Date(current.getTime() + speed * dt * 60000);
+			render();
+
+			// Oltre il plateau nominale: si ferma solo se è giorno, altrimenti continua un altro giro
+			const pastPlateau = elapsed >= rampMs + plateauMs;
+			if (pastPlateau && !isNight(current.getHours())) {
+				stopping = true;
+				timeEl.classList.remove('clock-glitch');
+				PhoneUI.startClock();
+				resolve(); // taglio secco, nessun cooldown
+				return;
+			}
+
+			frameId = requestAnimationFrame(loop);
+		};
+
+		frameId = requestAnimationFrame(loop);
+	});
 }
+	
+
 
 const AudioManager = {
 	//Dizionario delle tracce audio già create, indicizzato per ID
@@ -4133,6 +4361,7 @@ const AudioManager = {
 		rage: 'assets/music/mus_rabbia_loop.mp3',
 		rain: 'assets/music/rain.mp3',
 		depression: 'assets/music/mus_depressione_loop.mp3',
+		acceptance: 'assets/music/mus_accettazione_loop.mp3',
 		crash: 'assets/sounds/sfx_incidente.mp3',
 		crash_short: 'assets/sounds/crash.mp3',
 		phone_vibration: 'assets/sounds/phone_vibration.mp3',
@@ -4276,6 +4505,14 @@ const AudioManager = {
 
 		track.audio.pause();
 		track.audio.currentTime = 0;
+	},
+
+	/**
+	 * Ferma tutte le tracce attive. Usato dal debug menu prima di un salto
+	 * di scena per non lasciare musiche/loop della scena precedente.
+	 */
+	stopAll() {
+		Object.keys(this.tracks).forEach((id) => this.stop(id));
 	},
 
 	/**
@@ -4793,7 +5030,7 @@ const BWFilter = {
 
 // }
 
-function manageAllCLicks(lock){
+function manageAllClicks(lock){
 	if(lock)
 		document.documentElement.classList.add('block-all');
 	else
@@ -4950,12 +5187,89 @@ function isClickOnVisiblePixel(imgElement, point) {
 }
 
 /*
-DEBUG MENU
-Toggle globale del menu di debug.
-Mettere a false per disattivarlo completamente: non viene creato il DOM,
-non vengono registrati eventi e non funziona la scorciatoia Ctrl/Cmd + Shift + D.
+TITOLI DI CODA
+Overlay nero a schermo intero con scorrimento verticale stile film.
+Lanciato dal label 'TitoliDiCoda' a fine accettazione; play() risolve al
+click del giocatore dopo la scritta "Fine" (il label passa poi a 'end' → menu),
+mentre il nero resta a coprire la transizione e si dissolve da solo.
 */
-const DEBUG_MENU_ENABLED = true;
+const EndCredits = {
+	// Ruoli e nomi del team: aggiungere/modificare qui.
+	roles: [
+		{ role: 'Lead', names: 'Gaia Campo' },
+		{ role: 'Game Design', names: 'Davide Sarti' },
+		{ role: 'Illustrazioni', names: 'Sofia Donisi' },
+		{ role: 'Developers', names: 'Gabriele Milano\nGaetano Politi' },
+		{ role: 'Sound Designer', names: 'Claudio Bianchi' }
+	],
+
+	async play() {
+		const overlay = document.createElement('div');
+		overlay.id = 'end-credits';
+
+		const roll = document.createElement('div');
+		roll.className = 'credits-roll';
+		roll.innerHTML =
+			'<div class="credits-title">Ciò che resta</div>' +
+			this.roles.map(r =>
+				`<div class="credit"><div class="credit-role">${r.role}</div><div class="credit-names">${r.names}</div></div>`
+			).join('');
+		overlay.appendChild(roll);
+		document.body.appendChild(overlay);
+
+		const wait = (ms) => new Promise(r => setTimeout(r, ms));
+		// Doppio rAF: committa lo stato iniziale prima di animare (stessa
+		// tecnica del reveal di scena).
+		const nextFrames = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+		// Fade a nero
+		await nextFrames();
+		overlay.classList.add('visible');
+		await wait(1500);
+
+		// Scorrimento: il blocco parte sotto lo schermo ed esce dall'alto, velocità fissa ~28ms/px, regolare qui se il rullo è lento/veloce
+		const distance = window.innerHeight + roll.offsetHeight;
+		const duration = distance * 28;
+		roll.style.transition = `transform ${duration}ms linear`;
+		roll.style.transform = `translateY(-${distance}px)`;
+		await wait(duration + 500);
+		roll.remove();
+
+		// "Fine" resta a schermo 10 secondi, poi serve un click per uscire
+		const fine = document.createElement('div');
+		fine.className = 'credits-fine';
+		fine.textContent = 'Fine';
+		overlay.appendChild(fine);
+		await nextFrames();
+		fine.classList.add('visible');
+		await wait(10000);
+
+		const hint = document.createElement('div');
+		hint.className = 'credits-hint';
+		hint.textContent = 'tocca per continuare';
+		overlay.appendChild(hint);
+		await nextFrames();
+		hint.classList.add('visible');
+		await new Promise(resolve => {
+			overlay.addEventListener('click', resolve, { once: true });
+		});
+
+		// Si risolve subito ('end' riporta al menu sotto il nero); l'overlay
+		// si dissolve da solo poco dopo, rivelando il menu principale.
+		setTimeout(() => {
+			overlay.classList.remove('visible');
+			setTimeout(() => overlay.remove(), 1600);
+		}, 800);
+	}
+};
+
+/*
+DEBUG MENU
+Toggle globale del menu di debug, letto da js/debug-config.js (file locale,
+in .gitignore). Se il file manca — es. in produzione — il menu resta
+disattivato: niente DOM, niente eventi, niente scorciatoia Ctrl/Cmd + Shift + D.
+*/
+const DEBUG_MENU_ENABLED = window.DEBUG_MENU_ENABLED ?? false;
 
 const DebugMenu = {
 	// Elemento radice che contiene sia il bottone "Debug" sia il pannello.
@@ -4980,8 +5294,10 @@ const DebugMenu = {
 	// Ogni stringa e' sia il testo mostrato nel bottone sia il label usato da jump.
 	labels: [
 		'Start',
+		'Rimani',
 		'Intermezzo_Respira',
 		'Torcia',
+		'Continua_Torcia',
 		'Negazione_Cellulare',
 		'Rimani_A_Casa',
 		'Esci_Casa',
@@ -4989,8 +5305,13 @@ const DebugMenu = {
 		'GlitchRabbia',
 		'ContinuaGlitch',
 		'Contrattazione',
+		'Continua_Contrattazione',
 		'Depressione',
+		'Lascia_Andare',
+		'Non_Pronto',
 		'Accettazione',
+		'Scena_Accettazione',
+		'TitoliDiCoda',
 		//'Test_telefono'
 	],
 
@@ -5176,14 +5497,17 @@ const DebugMenu = {
 		this.refreshStatus();
 	},
 
-	close() {
+	close(persist = true) {
 		// Rimuove la classe "open" e aggiorna gli attributi aria.
 		this.root.classList.remove('open');
 		this.panel.setAttribute('aria-hidden', 'true');
 		this.toggleButton.setAttribute('aria-expanded', 'false');
 
-		// Ricorda che lo sviluppatore lo ha chiuso.
-		this.setStoredOpenState('0');
+		// Ricorda che lo sviluppatore lo ha chiuso. La chiusura automatica
+		// dopo un salto passa persist=false per non toccare la preferenza.
+		if (persist) {
+			this.setStoredOpenState('0');
+		}
 	},
 
 	getStoredOpenState() {
@@ -5236,6 +5560,9 @@ const DebugMenu = {
 			}
 
 			this.setStatus(`Label corrente: ${label}`);
+
+			// Chiude il pannello per lasciare vedere la scena appena caricata.
+			this.close(false);
 		} catch (error) {
 			this.handleJumpError(error, label);
 		}
@@ -5274,9 +5601,33 @@ const DebugMenu = {
 			WordsGame.reset();
 		}
 
+		// Ferma tutte le tracce audio delle scene (musiche, loop ambientali)
+		// e riporta il filtro passa-basso trasparente, se era stato attivato.
+		AudioManager.stopAll();
+		if (AudioManager.lowPassFilter) {
+			AudioManager.setLowPass(AudioManager.LOWPASS_BYPASS_FREQ, 0);
+		}
+
 		// Pulisce il telefono e gli overlay custom prima del salto.
 		PhoneUI.hide();
 		PhoneUI.reset();
+		PhoneTyping.hide();
+
+		// Alcune scene aspettano un messaggio sul telefono senza mostrare il
+		// pulsante (nel flusso normale e' gia' visibile dalla scena precedente):
+		// saltandoci direttamente va mostrato, altrimenti si resta bloccati.
+		const phoneLabels = ['Negazione_Cellulare', 'Rimani_A_Casa', 'Rabbia', 'Depressione'];
+		if (phoneLabels.includes(targetLabel)) {
+			PhoneToggle.show();
+		} else {
+			PhoneToggle.hide();
+		}
+
+		// Smonta i layer della scena precedente (sky, oggetti) e ripristina lo
+		// sfondo standard: ogni label ricrea i propri layer con loadScene.
+		SceneUtility.emptyScene();
+		SceneUtility.enableBackground();
+
 		this.resetNightRuntime();
 		this.resetVisualOverlays();
 		this.resetStorageFlags(targetLabel);
@@ -5316,6 +5667,38 @@ const DebugMenu = {
 	resetVisualOverlays() {
 		// WordsGame blocca lo scroll del body: qui lo ripristiniamo.
 		document.body.style.overflow = '';
+
+		// Nasconde il contatore oggetti della scena precedente.
+		ObjectCounter.hide();
+
+		// Chiude la textbox se un dialogo era a schermo e annulla un eventuale
+		// pauseTextBox in corso, che la farebbe riapparire nella scena nuova.
+		clearTimeout(pauseTextBoxTimer);
+		hideTextBox(false);
+
+		// Spegne i filtri visivi delle transizioni (blur, B/N, saturazione).
+		['blur-overlay', 'bw-filter-overlay', 'saturation-overlay'].forEach((id) => {
+			document.getElementById(id)?.classList.remove('visible', 'active');
+		});
+
+		// Rimuove il layer porta della transizione d'ingresso accettazione.
+		document.getElementById('door-layer')?.remove();
+
+		// Rimuove lo zoom inline applicato a game-screen (scena orsacchiotto).
+		const gameScreen = document.querySelector('game-screen');
+		if (gameScreen) {
+			gameScreen.style.transition = '';
+			gameScreen.style.transform = '';
+		}
+
+		// Rimuove lo zoom d'ingresso accettazione da #sky (elemento persistente,
+		// a differenza di #details-wrapper che viene ricreato a ogni loadScene).
+		const sky = document.getElementById('sky');
+		if (sky) {
+			sky.style.transition = '';
+			sky.style.transform = '';
+		}
+		document.body.style.background = '';
 
 		// Rimuove parole rimaste a schermo e pressione visiva della fase.
 		const wordGame = document.getElementById('word-game-overlay');
@@ -5434,11 +5817,15 @@ function hideTextBox(phoneVisible = true){
 	SceneUtility.unlockItemWrapper();
 }
 
+// Timer tracciato: il debug menu lo annulla saltando scena, altrimenti la
+// textbox riapparirebbe da sola nella scena di destinazione.
+let pauseTextBoxTimer = null;
+
 function pauseTextBox(time=3000){
 	hideTextBox();
-	setTimeout(() => {
+	pauseTextBoxTimer = setTimeout(() => {
 		showTextBox();
-	}, time);	
+	}, time);
 }
 		
 $_ready (() => {
@@ -5450,10 +5837,8 @@ $_ready (() => {
 		if(screens)
 			screens.forEach(s => {s.style.backgroundColor = "transparent";});
 
-		// Quando il giocatore lascia il menu principale e parte una scena, il pulsante telefono puo apparire.
-		if (PhoneToggle.root) {
-			PhoneToggle.queueRefreshVisibility();
-		}
+		// La visibilita' del pulsante telefono e' gestita esplicitamente dalle scene
+		// tramite PhoneToggle.show()/.hide().
 	})
 
 	monogatari.init ('#monogatari').then (() => {
@@ -5525,6 +5910,46 @@ $_ready (() => {
 
 		waitForNameNode();
 
+		// L'icona appare quando il typewriter finisce (skip incluso) e sparisce
+		// appena riparte una nuova riga: eventi nativi, niente polling/observer.
+		(() => {
+			let icon = null;
+
+			const getIcon = () => {
+				if (icon) return icon;
+				icon = document.createElement('div');
+				icon.id = 'dialog-waiting-icon';
+				icon.textContent = '▼';
+				document.body.appendChild(icon);
+				return icon;
+			};
+
+			const positionIcon = (textBox) => {
+				const rect = textBox.getBoundingClientRect();
+				const el = getIcon();
+				el.style.left = `${rect.right - 32}px`;
+				el.style.top = `${rect.bottom - 30}px`;
+			};
+
+			monogatari.on('didFinishTyping', () => {
+				const textBox = document.querySelector('text-box');
+				if (!textBox) return;
+				positionIcon(textBox);
+				getIcon().classList.add('visible');
+			});
+
+			monogatari.on('didStartTyping', () => {
+				getIcon().classList.remove('visible');
+			});
+
+			// Nasconde subito l'icona quando la textbox sparisce (classe hide-textbox sul body)
+			new MutationObserver(() => {
+				if (document.body.classList.contains('hide-textbox')) {
+					document.getElementById('dialog-waiting-icon')?.classList.remove('visible');
+				}
+			}).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+})();
+
 		// Il toggle globale evita di creare il menu quando DEBUG_MENU_ENABLED e' false.
 		if (DEBUG_MENU_ENABLED) {
 			DebugMenu.init();
@@ -5570,3 +5995,4 @@ $_ready (() => {
 		// }
 	});
 });
+

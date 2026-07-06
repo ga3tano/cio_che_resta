@@ -200,7 +200,9 @@ text-box {
 	max-height: 12% !important;
 	background: rgba(6, 10, 16, 0.50) !important;
 	color: #f3f7ff !important;
-	z-index: 10 !important;
+	/* Sopra tutti i layer di scena (dim 9, door-layer 10, filtri 12-13, rage-border 20),
+	   sotto phone-toggle (150) e debug menu */
+	z-index: 100 !important;
 }
 
 /* Reposition character name as a simple translucent label */
@@ -228,6 +230,26 @@ text-box [data-content="name"] {
     text-align: right;
 }
 
+/* Icona "prosegui": indipendente da text-box, nascosta finché non riceve .visible */
+#dialog-waiting-icon {
+	position: fixed;
+	font-size: 0.9rem;
+	color: #f3f7ff;
+	opacity: 0;                         /* nascosta di default */
+	pointer-events: none;               /* non deve intercettare i click */
+	transition: opacity 0.2s ease;
+	z-index: 101;                        /* sopra text-box, sotto blink-overlay */
+}
+
+#dialog-waiting-icon.visible { 
+    opacity: 0.8;
+	animation: unread-bounce 1s ease-in-out infinite;   /* animazione solo se visibiile, altrimenti copre le regole di opacity della classe */ }
+
+@keyframes unread-bounce {
+	0%, 100% { transform: translateY(0); opacity: 0.5; }
+	50%      { transform: translateY(4px); opacity: 1; }
+}
+
 body.show-textbox [data-component="text-box"] [data-content="name"] {
 	transform: translateY(-1px);
 	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
@@ -240,7 +262,8 @@ body.speaker-shadow text-box {
 
 body.speaker-shadow text-box [data-content="name"] {
 	color: #7b5eb0 !important;
-	background: rgba(255, 255, 255, 0.06);
+	background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(24px);
 }
 
 body.speaker-shadow text-box [data-content="text"],
@@ -256,7 +279,8 @@ body.speaker-dad text-box {
 
 body.speaker-dad text-box [data-content="name"] {
 	color: #66bdda !important;
-	background: rgba(255, 255, 255, 0.06);
+	background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(24px);
 }
 
 body.speaker-dad text-box [data-content="text"],
@@ -449,6 +473,7 @@ html.block-all body {
     z-index: 1000001;
     display: none;
     pointer-events: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Stato visibile: PhoneToggle lo applica solo durante le scene, mai nel menu principale. */
@@ -461,6 +486,10 @@ html.block-all body {
 body.show-textbox .phone-toggle {
     display: none !important;
     pointer-events: none !important;
+}
+
+.phone-toggle.disabled .phone-toggle-button{
+    pointer-events: none;
 }
 
 /* Bottone icona: dimensione stabile per evitare salti quando appare/scompare il badge. */
@@ -1109,6 +1138,37 @@ body.show-textbox .phone-toggle {
     animation: pulse-hint 2s ease-in-out infinite;
 }
 
+/* Pulsante torcia sulla lockscreen: visibile solo in modalità torcia. */
+.lock-torch-btn {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-family: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    animation: pulse-hint 2s ease-in-out infinite;
+}
+
+.lock-torch-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+#phone-lock-view.torch-mode .lock-torch-btn {
+    display: flex;
+}
+
+/* In modalità torcia il tocco serve al pulsante, non allo sblocco della chat. */
+#phone-lock-view.torch-mode .lock-hint {
+    display: none;
+}
+
 /* Lock Screen Notifications */
 .lock-notifications {
     width: 100%;
@@ -1200,6 +1260,7 @@ body.show-textbox .phone-toggle {
     100% { transform: scale(0); opacity: 0; }
 }
 
+/* Stile dell'orologio del telefono */
 .clock-display{
 	display: none;
     position: fixed;
@@ -1214,6 +1275,61 @@ body.show-textbox .phone-toggle {
     border-radius: 10px;
     z-index: 1000;
 }
+
+/* Effetto scramble del plateau: leggero flicker/blur, nessun impatto sulle performance. */
+.clock-glitch {
+	filter: blur(1px);
+	animation: clock-flicker 90ms steps(2) infinite;
+}
+@keyframes clock-flicker {
+	0%, 100% { opacity: 1; transform: translateY(0); }
+	50%      { opacity: 0.7; transform: translateY(-2px); }
+}
+
+/* Base comune ai 4 layer del ciclo giorno/notte, impilati e sempre in DOM */
+.daycycle-layer {
+	position: fixed;
+	inset: 0;
+	z-index: 5;
+	pointer-events: none;
+	opacity: 0;
+    background-color: rgba(5,10,35,0.88);
+	mix-blend-mode: hue;
+	transition: opacity 0.8s ease; /* solo opacity anima: blend-mode resta fisso per layer */
+}
+
+.daycycle-layer.active { opacity: 1; }
+
+/* Secondo layer cielo per il crossfade notte, sovrapposto a #sky */
+.sky-night {
+	position: fixed;
+	inset: 0;
+	z-index: -999; /* sopra #sky (-1000), sotto la scena */
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	opacity: 0;
+	transition: opacity 0.8s ease; /* stessa durata di .daycycle-overlay */
+	pointer-events: none;
+}
+
+.sky-night.active { opacity: 1; }
+
+/* Dawn: rinforza i toni caldi già presenti (color-6/color-8) invece di virare al rosa
+/* .daycycle-dawn { 
+	background: linear-gradient(180deg, rgba(230,140,58,0.4), rgba(230,123,49,0.25));
+	mix-blend-mode: hard-light;  
+} */
+
+/* Dusk: intensifica verso i rossi più scuri della palette (color-5/color-11) */
+/* .daycycle-dusk {
+	background: linear-gradient(180deg, rgba(173,58,41,0.55), rgba(173,49,33,0.5));
+	mix-blend-mode: multiply; 
+} */
+/* .daycycle-night {
+	background-color: rgba(5,10,35,0.88);
+	mix-blend-mode: hue;
+} */
 
 /* Overlay glitch sopra tutto il telefono */
 .phone-glitch {
@@ -1272,6 +1388,33 @@ body.show-textbox .phone-toggle {
     pointer-events: none;
 }
 
+/* Hint lampeggiante della scena torcia */
+#torch-hint{
+    position: fixed;
+    bottom: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 90vw;
+    font-family: 'Pangolin', sans-serif;
+    color: #fff;
+    font-size: 1.2em;
+    text-align: center;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+    z-index: 2; /* sopra .night-overlay (1), sotto i dialoghi */
+    pointer-events: none;
+    opacity: 0;
+}
+
+#torch-hint.visible{
+    animation: torch-hint-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes torch-hint-blink{
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
 .torch-hole{
     position: absolute;
     width: 180px;
@@ -1290,6 +1433,7 @@ body.show-textbox .phone-toggle {
     cursor: none;
 } */
 
+.dim-overlay,
 .blur-overlay,
 .bw-filter-overlay,
 .saturation-overlay {
@@ -1303,6 +1447,7 @@ body.show-textbox .phone-toggle {
     transition: opacity 2s ease;
 }
 
+.dim-overlay.visible,
 .blur-overlay.visible,
 .bw-filter-overlay.visible,
 .saturation-overlay.visible {
@@ -1329,6 +1474,11 @@ body.show-textbox .phone-toggle {
     background-color: rgba(255, 0, 0, 0.3);
 }
 
+/* Scurimento */
+.dim-overlay{
+    z-index: 9;
+    background: rgba(0,0,0,0.35);
+}
 
 
 /* .detail-zoom {
@@ -1993,6 +2143,17 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	z-index: 1;
 }
 
+/* Effetto "si sta attraversando la porta": l'immagine si ingrandisce leggermente e sparisce.
+   Usato su porta_2 (ingresso stanza accettazione) e porta_acc (uscita da accettazione_porta). */
+.door-enter {
+	transition: transform 1400ms ease-out, opacity 1400ms ease-out;
+}
+
+.door-enter.door-enter-active {
+	transform: scale(1.15);
+	opacity: 0;
+}
+
 
 
 /* game-screen[data-component="game-screen"].bg-transparent {
@@ -2164,4 +2325,112 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	font-size: clamp(1.4rem, 3vw, 3rem);
 	line-height: 1.5;
 	white-space: pre-wrap;
+}
+
+/* --- CONTATORE OGGETTI INTERATTIVI --- */
+/* Pill discreta in alto a destra, gestita da ObjectCounter in js/main.js. */
+.object-counter {
+	position: fixed;
+	top: max(14px, env(safe-area-inset-top));
+	right: max(14px, env(safe-area-inset-right));
+	z-index: 300; /* sopra night-overlay e scena, sotto debug menu e telefono */
+	padding: 6px 14px;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.55);
+	color: #e5e5e5;
+	font-family: 'Cormorant Garamond', serif;
+	font-size: 19px;
+	letter-spacing: 2px;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.6s ease;
+}
+
+.object-counter.visible {
+	opacity: 1;
+}
+
+/* ============ TITOLI DI CODA (EndCredits, main.js) ============ */
+
+#end-credits {
+	position: fixed;
+	inset: 0;
+	background: #000;
+	/* Sopra tutto il gioco e il phone toggle, sotto il debug menu */
+	z-index: 1000000;
+	overflow: hidden;
+	opacity: 0;
+	transition: opacity 1.5s ease;
+	color: #e5e5e5;
+	font-family: 'Cormorant Garamond', Georgia, serif;
+	text-align: center;
+}
+
+#end-credits.visible {
+	opacity: 1;
+}
+
+.credits-roll {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	will-change: transform;
+}
+
+.credits-title {
+	font-size: 34px;
+	letter-spacing: 4px;
+	margin-bottom: 70px;
+}
+
+.credit {
+	margin-bottom: 46px;
+}
+
+.credit-role {
+	font-size: 15px;
+	text-transform: uppercase;
+	letter-spacing: 4px;
+	opacity: 0.55;
+	margin-bottom: 6px;
+}
+
+.credit-names {
+	font-size: 24px;
+	letter-spacing: 1px;
+	/* Gli \n nei names di EndCredits.roles diventano a-capo */
+	white-space: pre-line;
+}
+
+.credits-fine {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 40px;
+	letter-spacing: 8px;
+	opacity: 0;
+	transition: opacity 2.5s ease;
+}
+
+.credits-fine.visible {
+	opacity: 1;
+}
+
+.credits-hint {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: max(40px, env(safe-area-inset-bottom));
+	text-align: center;
+	font-size: 16px;
+	letter-spacing: 3px;
+	opacity: 0;
+	transition: opacity 1.5s ease;
+}
+
+.credits-hint.visible {
+	opacity: 0.5;
 }
