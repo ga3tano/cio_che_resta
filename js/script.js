@@ -1497,7 +1497,7 @@ monogatari.script ({
 			PhoneToggle.hide();
 			ObjectCounter.hide();
 
-			document.body.style.background = '#fff';
+			document.body.style.background = '#000';
 
 			// Stato di partenza = stato finale dell'ingresso
 			for (const el of roomLayers()) {
@@ -1518,15 +1518,21 @@ monogatari.script ({
 			document.body.appendChild(doorLayer);
 
 			// Farfalle dietro la stanza ma sopra il cielo (z-index -998, vedi
-			// .butterflies-layer): due pose in crossfade continuo, visibili
-			// dalla finestra finché il giocatore non clicca la porta.
+			// .butterflies-layer): tre farfalle indipendenti, ognuna con due
+			// pose in crossfade e una deriva propria (durate diverse, mai in
+			// sincrono), visibili dalla finestra finché non si clicca la porta.
 			const farfalle = document.createElement('div');
 			farfalle.id = 'butterflies-layer';
 			farfalle.className = 'butterflies-layer';
-			for (const src of ['assets/images/farfalle_1.png', 'assets/images/farfalle_2.png']) {
-				const img = document.createElement('img');
-				img.src = src;
-				farfalle.appendChild(img);
+			for (const n of ['a', 'b', 'c']) {
+				const farfalla = document.createElement('div');
+				farfalla.className = `butterfly butterfly-${n}`;
+				for (const frame of [1, 2]) {
+					const img = document.createElement('img');
+					img.src = `assets/images/farfalla_${n.toUpperCase()}_${frame}.png`;
+					farfalla.appendChild(img);
+				}
+				farfalle.appendChild(farfalla);
 			}
 			document.body.appendChild(farfalle);
 		},
