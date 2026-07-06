@@ -4229,7 +4229,10 @@ const BreathingGame = {
 
 
 	// -------------------------------------------------------------------------
-	// _restart() — riavvia il ciclo da capo dopo un errore del giocatore.
+	// _restart() — riavvia il respiro CORRENTE dopo un errore del giocatore.
+	// I respiri già completati restano acquisiti (this.cycle non si tocca):
+	// per finire servono comunque 3 respiri completi, ma sbagliarne uno fa
+	// ripetere solo quello.
 	//
 	// Viene chiamato quando:
 	//   a) rilascio durante inhale/hold-in  → dito alzato quando doveva essere giù
@@ -4240,14 +4243,13 @@ const BreathingGame = {
 	//   1. Il cerchio si ritrae dolcemente alla scala minima (700ms), partendo
 	//      dal punto esatto in cui si trovava grazie a this.currentScale.
 	//   2. Pausa silenziosa di 1.5s con l'hint visibile.
-	//   3. Riparte _startPhase(0) con cycle = 0.
+	//   3. Riparte _startPhase(0): il respiro corrente ricomincia dall'inspirazione.
 	// -------------------------------------------------------------------------
 	_restart() {
 		clearTimeout(this.phaseTimer);
 		clearTimeout(this._holdGraceTimer);
 		if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
 
-		this.cycle = 0;
 		this.currentPhase = 'pause';
 
 		// Resetta lo stato del tocco: ogni nuovo ciclo ricomincia da zero,
