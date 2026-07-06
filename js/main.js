@@ -1104,6 +1104,13 @@ const PhoneToggle = {
 		if (!this.button) return;
 
 		this.button.setAttribute('aria-pressed', String(isExpanded));
+	},
+
+	lockToggle(lock){
+		if (!this.root) return;
+		
+		if(lock) this.root.classList.add('disabled');
+		else this.root.classList.remove('disabled');
 	}
 };
 

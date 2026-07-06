@@ -505,7 +505,6 @@ monogatari.script ({
                 PhoneUI.setContactName('Giulia');
                 PhoneUI.addIncoming('Sai che può solo farti bene, hai bisogno di aria. Ti aspetto.');
                 // PhoneUI.vibrate();
-                return true;
 		},
 
         {'PhoneChoice': {
@@ -525,8 +524,7 @@ monogatari.script ({
 			PhoneToggle.show();
 			PhoneUI.hide();
 			SceneUtility.addDim(3000);
-			const el = document.getElementById('phone-toggle');
-			if (el) el.classList.add('disabled');
+			PhoneToggle.lockToggle(true);
 			await sleep(5000);
 		},
 
@@ -565,8 +563,7 @@ monogatari.script ({
 
 		() => {
 			PhoneUI.addIncoming('Fra poco vado via...');
-			const el = document.getElementById('phone-toggle');
-			if (el) el.classList.remove('disabled');
+			PhoneToggle.lockToggle(false);
 		},
 
 		'wait 500',
@@ -750,7 +747,11 @@ monogatari.script ({
 			// Prepariamo mittente e notifica; il giocatore aprira' il telefono dal pulsante.
 			PhoneUI.setContactName('Giulia');
 			PhoneUI.addIncoming('Come stai oggi? Ti va di vederci?');
-			// PhoneUI.vibrate();
+			
+			// Non blocca lo script: gira in background, si attiva al primo unread→0
+			PhoneUI.waitUntilAllNotificationsRead().then(() => {
+				PhoneToggle.lockToggle(true);
+			});
 		},
 
 		// Qui la risposta e' parte della conversazione, quindi resta dentro il telefono.
@@ -759,13 +760,15 @@ monogatari.script ({
 				'Text': 'Lasciami in pace!',
 				'Do': 'jump GlitchRabbia'
 			}
-		}}
+		}},
+
 	],
 
 
 	'GlitchRabbia': [
 		() => {
 			PhoneUI.hide();
+			PhoneToggle.hide();
 			const store = monogatari.storage();
 			store.glitchGameCompleted = false;
 			store.glitchGamePhase = 1;
@@ -816,6 +819,7 @@ monogatari.script ({
 		// },
 
 		async () => {
+			PhoneToggle.lockToggle(false);
 			PhoneUI.show('Messaggi');
 			PhoneUI.addNotification({
 				title: 'Messaggi',
