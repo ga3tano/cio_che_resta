@@ -1604,6 +1604,33 @@ body.show-textbox .phone-toggle {
 }
 
 /* Minigioco frasi  */
+/* --- TUTORIAL MINIGIOCO PAROLE --- */
+.tutorial-overlay {
+	position: absolute;
+    top: 0;
+    left: 0;
+    width: 100svw;
+    height: 100svh;
+	inset: 0;
+	z-index: 2;
+	touch-action: none;
+}
+
+@keyframes tutorialWiggle {
+	0%, 100% { transform: translateX(-8px); }
+	50% { transform: translateX(8px); }
+}
+
+/* Placeholder: sostituire con background-image quando pronto l'asset mano */
+.tutorial-hand {
+	position: absolute;
+	/* top: 52%;
+	left: 46%; */
+    width: 64px;
+	pointer-events: none;
+    filter: drop-shadow(0px 0px 0px 4px rgb(0, 0, 0));
+}
+
 .word-game {
 	position: fixed;
 	inset: 0;

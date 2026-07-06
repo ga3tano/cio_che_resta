@@ -1806,6 +1806,11 @@ const Glitch={
 		
 		this.ensureGameOverOverlay();
 
+		if (!store.glitchTutorialShown) {
+			await WordsGame.tutorial();
+			store.glitchTutorialShown = true;
+		}	
+
 		//Avvio il battito cardiaco
 		await HeartbeatManager.load(); //Mi assicuro che i buffer con gli audio siano caricati prima di partire
 		HeartbeatManager.start({bpm: 75, volume: 1, fadeIn: 1});
@@ -2486,6 +2491,62 @@ const WordsGame = {
 		}
 	},
 
+	// Tutorial swipe: 1 parola ferma + manina che oscilla, stesso movimento sincronizzato.
+	// Si chiude SOLO quando il giocatore swipa fuori schermo (nessun timeout).
+	tutorial() {
+		if (!this.element) this.init();
+
+		return new Promise((resolve) => {
+			const overlay = document.createElement("div");
+			overlay.className = "tutorial-overlay";
+			this.element.appendChild(overlay);
+			this.element.classList.add("visible");
+
+			const wordObj = this.createWordElement("AAAARGH!");
+			overlay.appendChild(wordObj.wrapper);
+			this.freezeWordLayout(wordObj.textNode, wordObj.label, wordObj.wrapper);
+
+			const cx = window.innerWidth / 2 - wordObj.wrapper.offsetWidth / 2;
+			const cy = window.innerHeight / 2 - wordObj.wrapper.offsetHeight / 2;
+			wordObj.wrapper.style.left = `${cx}px`;
+			wordObj.wrapper.style.top = `${cy}px`;
+			wordObj.wrapper.style.visibility = "visible";
+
+			const hand = document.createElement("img");
+			hand.className = "tutorial-hand";
+			hand.src = "assets/images/swipe-hand.png";
+			hand.style.top = `${cy + wordObj.wrapper.offsetHeight}px`
+			hand.style.left = `${cx + (wordObj.wrapper.offsetWidth / 2) - 26}px`
+			overlay.appendChild(hand);
+
+			// Wiggle: solo estetico, non tocca transform del wrapper (riservato al drag reale)
+			wordObj.label.style.animation = "tutorialWiggle 900ms ease-in-out infinite";
+			hand.style.animation = "tutorialWiggle 900ms ease-in-out infinite";
+
+			// runId fittizio: attachTouchSwipe lo confronta con this.runId/isActive
+			this.isActive = true;
+			this.runId += 1;
+			const runId = this.runId;
+
+			// Overrida solo il cleanup finale: stessa meccanica di endDrag, ma risolve il tutorial invece di resolveRun
+			const originalRemove = wordObj.wrapper.remove.bind(wordObj.wrapper);
+			wordObj.wrapper.remove = () => {
+				originalRemove();
+				overlay.remove();
+				this.element.classList.remove("visible");
+				this.isActive = false;
+				resolve();
+			};
+
+			wordObj.wrapper.addEventListener("pointerdown", () => {
+				hand.style.display = "none";
+			}, { once: true });
+
+			this.attachTouchSwipe(wordObj.wrapper, runId);
+		});
+},
+
+
 	createWordElement(text) {
 		const wrapper = document.createElement("div");
 		wrapper.className = "word-item";
@@ -2641,7 +2702,7 @@ const WordsGame = {
 		// non viene interrotto dallo scroll del browser.
 		wrapper.addEventListener("pointerdown", (event) => {
 			if (!this.isCurrentRun(runId)) return;
-
+			
 			event.preventDefault();
 
 			// Il capture fa arrivare pointermove/pointerup al wrapper anche se
