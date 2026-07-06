@@ -5357,11 +5357,10 @@ const EndCredits = {
 
 /*
 DEBUG MENU
-Toggle globale del menu di debug, letto da js/debug-config.js (file locale,
-in .gitignore). Se il file manca — es. in produzione — il menu resta
-disattivato: niente DOM, niente eventi, niente scorciatoia Ctrl/Cmd + Shift + D.
+Attivo solo in locale, mai in produzione. Disattivato: niente DOM, niente
+eventi, niente scorciatoia Ctrl/Cmd + Shift + D.
 */
-const DEBUG_MENU_ENABLED = window.DEBUG_MENU_ENABLED ?? false;
+const DEBUG_MENU_ENABLED = ['localhost', '127.0.0.1'].includes(location.hostname);
 
 const DebugMenu = {
 	// Elemento radice che contiene sia il bottone "Debug" sia il pannello.
