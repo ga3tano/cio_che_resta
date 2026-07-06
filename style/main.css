@@ -1521,34 +1521,44 @@ body.show-textbox .phone-toggle {
     transition: filter 0.2s ease,  transform 0.2s ease;
 }
 
+/* Stato "spento" del lampeggio: il vecchio frame 0% dell'animazione.
+   Filter statico = rasterizzato una volta sola, nessun costo per frame. */
 .clickable-object.highlight{
     filter: drop-shadow(0 0 2px rgba(0,0,0,0.8))
-            drop-shadow(0 0 3px rgba(0,0,0,0.6)) 
+            drop-shadow(0 0 3px rgba(0,0,0,0.6))
             drop-shadow(0 0 5px rgba(255, 255, 255, 0.6))
             brightness(1.1)
             contrast(1.05);
-    animation: highlight-pulse 2s ease-in-out infinite;;
 }
 
-.clickable-object.hide{
+/* ponytail: cross-fade tra due copie invece di animare filter:
+   animare drop-shadow ri-rasterizza il PNG full-screen a ogni frame.
+   Il clone (.glow-clone, creato in loadImage) ha il filter "acceso" statico
+   e pulsa solo in opacity (composited). Il selettore + lo lega all'immagine
+   base: tolta .highlight, il clone torna a opacity 0 senza JS. */
+.glow-clone{
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.8))
+            drop-shadow(0 0 3px rgba(0,0,0,0.6))
+            drop-shadow(0 0 9px rgba(255, 255, 255, 0.9))
+            brightness(1.5)
+            contrast(1.1);
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity;
+}
+
+.clickable-object.highlight + .glow-clone{
+    animation: highlight-pulse 2s ease-in-out infinite;
+}
+
+.clickable-object.hide,
+.clickable-object.hide + .glow-clone{
     display: none;
 }
 
 @keyframes highlight-pulse {
-    0%, 100% {
-        filter: drop-shadow(0 0 2px rgba(0,0,0,0.8))
-                drop-shadow(0 0 3px rgba(0,0,0,0.6)) 
-                drop-shadow(0 0 5px rgba(255, 255, 255, 0.6))
-                brightness(1.1)
-                contrast(1.05);
-    }
-    50% {
-        filter: drop-shadow(0 0 2px rgba(0,0,0,0.8))
-                drop-shadow(0 0 3px rgba(0,0,0,0.6)) 
-                drop-shadow(0 0 9px rgba(255, 255, 255, 0.9))
-                brightness(1.5)
-                contrast(1.1);
-    }
+    0%, 100% { opacity: 0; }
+    50%      { opacity: 1; }
 }
 
 /* --- SCENA RABBIA --- */
