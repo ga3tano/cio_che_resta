@@ -1840,9 +1840,27 @@ const Glitch={
 						case 1: 
 							//Sincronizzo la decelerazione con l'inizio di una nuova fase, e decelero a un bpm sempre più alto
 							await this.cooldown(1400, 0.16, { bpmFrom: 160, bpmTo: 90});
+							await this.playDialogue
+								([
+									"Guardami, guardami!",
+									"Non riesco neanche a prendermi cura di una stupida pianta!",
+									"Dai, forza, appassisci!",
+									"LASCIAMI ANCHE TU!"
+								]);
+							await this.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'pianta_1'));
+							await sleep(1000);
 							break;
 						case 2: 
 							await this.cooldown(700, 0.05, {bpmFrom: 170, bpmTo: 110});
+							await this.playDialogue
+								([
+									"Inutile! È tutto inutile..ho rovinato tutto, ancora una volta!",
+									"Non avremo mai più momenti felici come questo ed è tutta colpa mia!",
+									"...", 
+									"È TUTTA COLPA MIA!!"
+								]);
+							await this.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'cornice_rotta'));
+							await sleep(1000);
 							break;
 						default:
 							break;
@@ -1875,6 +1893,17 @@ const Glitch={
 
 			store.glitchGameCompleted = true;
 			await this.stop(true);
+
+			await this.playDialogue
+				([
+					"Dov'è quella maglietta...dove l'ho messa?!", 
+					"Non so cosa mi sia passato per la testa, volevo farti un regalo...",
+					"...ti sarebbe piaciuto, ma un regalo per chi?! Tu non lo vedrai mai, NON...",
+					"...non potrai mai...",
+					"...NON CI SEI PIÙ!!!"
+				]);
+			await this.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'vestiti'), { roomShake: true });
+			await sleep(1000);
 			return true;
 		} catch (error) {
 			await this.stop(false);
@@ -2065,6 +2094,7 @@ const Glitch={
 		this.currentPhaseIndex = 0;
 		this.intensity = 0;
 		WordsGame.reset();
+		this.resetRabbiaObjects();
 		
 		// Riavvio il battito per il nuovo tentativo
 		HeartbeatManager.start({ bpm: 75, volume: 0.4, fadeIn: 0.5 });
@@ -2294,6 +2324,32 @@ const Glitch={
 		});
 	},
 
+	// Mostra una riga nel text-box esistente e aspetta un click per proseguire.
+	// Non passa dalla coda script di Monogatari: scrive direttamente nel DOM.
+	showDialogueLine(text) {
+		const nameNode = document.querySelector('text-box [data-content="name"]');
+		const textNode = document.querySelector('text-box [data-content="text"]') 
+			?? document.querySelector('[data-ui="say"]');
+
+		if (nameNode) nameNode.textContent = 'Tu';
+		if (textNode) textNode.textContent = text;
+
+		return new Promise(resolve => {
+			const onAdvance = (e) => { e.stopPropagation(); resolve(); };
+			// { once: true } pulisce da solo il listener dopo il click
+			document.querySelector('text-box')?.addEventListener('click', onAdvance, { once: true });
+		});
+	},
+
+	// Sequenza di righe: textbox aperta all'inizio, chiusa alla fine.
+	async playDialogue(lines = []) {
+		showTextBox();
+		for (const line of lines) {
+			await this.showDialogueLine(line);
+		}
+		hideTextBox();
+	},
+
 	wait(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	},
@@ -2317,6 +2373,69 @@ const Glitch={
 
 		// Pausa nera finale per dare respiro e rendere il reset più cinematografico
 		await this.wait(1400);
+	},
+
+	roomShakeQuick(duration = 400, strength = 18) {
+		if (!this.prepareShakeWrapper()) return Promise.resolve();
+
+		const start = performance.now();
+		return new Promise(resolve => {
+			const tick = (now) => {
+				const t = Math.min(1, (now - start) / duration);
+				const decay = 1 - t;
+				const x = (Math.random() * 2 - 1) * strength * decay;
+				const y = (Math.random() * 2 - 1) * strength * decay;
+				this.applySceneTransform(`translate(${x}px, ${y}px)`);
+
+				if (t < 1) requestAnimationFrame(tick);
+				else { this.applySceneTransform('translate(0,0)'); resolve(); }
+			};
+			requestAnimationFrame(tick);
+		});
+	},
+
+	// Fade opacity 0→1→0 con durate asimmetriche (in lento, out brusco)
+	fadeSwapOverlay(fromOp, toOp, duration) {
+		const el = document.getElementById('rage-swap-overlay');
+		if (!el) return this.wait(duration);
+
+		const start = performance.now();
+		return new Promise(resolve => {
+			const tick = (now) => {
+				const t = Math.min(1, (now - start) / duration);
+				el.style.opacity = fromOp + (toOp - fromOp) * t;
+				if (t < 1) requestAnimationFrame(tick);
+				else resolve();
+			};
+			requestAnimationFrame(tick);
+		});
+	},
+
+	// Shake → overlay rosso pieno (in lento/out brusco) → swap src a overlay acceso
+	async animateObjectSwap(imgData, { roomShake = false } = {}) {
+		const el = document.getElementById(imgData.id);
+		if (!el || !imgData.onAnimation) return;
+
+		if (roomShake) {
+			await this.roomShakeQuick(700);
+		} else {
+			el.classList.add('rabbia-object-shake');
+			await this.wait(700);
+			el.classList.remove('rabbia-object-shake');
+		}
+
+		await this.fadeSwapOverlay(0, 1, 500);
+		el.src = imgData.onAnimation;
+		await this.wait(120);
+		await this.fadeSwapOverlay(1, 0, 260);
+	},
+
+	// Riporta gli oggetti rabbia al src iniziale (chiamato al game over/reset fase).
+	resetRabbiaObjects() {
+		SCENE_IMAGES.rabbia.forEach(o => {
+			const el = document.getElementById(o.id);
+			if (el) el.src = o.src;
+		});
 	},
 
 	async stop(completed = false) {
@@ -2502,7 +2621,7 @@ const WordsGame = {
 
 		return new Promise((resolve) => {
 			const overlay = document.createElement("div");
-			overlay.className = "tutorial-overlay";
+			overlay.className = "rage-tutorial-overlay";
 			this.element.appendChild(overlay);
 			this.element.classList.add("visible");
 
@@ -2517,7 +2636,7 @@ const WordsGame = {
 			wordObj.wrapper.style.visibility = "visible";
 
 			const hand = document.createElement("img");
-			hand.className = "tutorial-hand";
+			hand.className = "rage-tutorial-hand";
 			hand.src = "assets/images/swipe-hand.png";
 			hand.style.top = `${cy + wordObj.wrapper.offsetHeight}px`
 			hand.style.left = `${cx + (wordObj.wrapper.offsetWidth / 2) - 26}px`
@@ -2846,9 +2965,9 @@ const SCENE_IMAGES = {
 		{ id: 'pianta_2', src: 'assets/images/pianta_2.png'}
 	],
 	'rabbia': [
-		{ id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png'},
-		{ id: 'pianta_1', src: 'assets/images/pianta_1.png'},
-		{ id: 'vestiti', src: 'assets/images/vestiti.png'}
+		{ id: 'cornice_rotta', src: 'assets/images/cornice.png', onAnimation: 'assets/images/cornice_rotta.png'},
+		{ id: 'pianta_1', src: 'assets/images/pianta_2.png', onAnimation: 'assets/images/pianta_1.png'},
+		{ id: 'vestiti', src: 'assets/images/blank.png', onAnimation: 'assets/images/vestiti.png'}
 	],
 	'contrattazione': [
 		{ id: 'cornice_rotta', src: 'assets/images/cornice_rotta.png', onClick: 'assets/images/cornice.png', dialog: 'jump DialogoContrattazione_Cornice'},
