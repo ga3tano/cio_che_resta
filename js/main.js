@@ -3037,6 +3037,16 @@ const SceneUtility = {
 				img.onload = () => {
 					wrapper.appendChild(img);
 
+					// Cross-fade del lampeggio: copia dell'immagine con il glow
+					// "acceso" statico, subito dopo la base (il CSS .highlight + .glow-clone
+					// la fa pulsare in opacity). Vedi .glow-clone in main.css.
+					if (imgData.onClick) {
+						const glow = img.cloneNode();
+						glow.removeAttribute('id');
+						glow.className = 'wrapper-item glow-clone';
+						wrapper.appendChild(glow);
+					}
+
 					//Costruisce la mappa alpha subito dopo il caricamento dell'immagine
 					if(imgData.lighted)
 						buildAlphaMap(img);
