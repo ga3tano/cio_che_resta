@@ -254,6 +254,10 @@ class PhoneChoice extends Monogatari.Action {
 
 			if (choice.doAction) {
 				await monogatari.run (choice.doAction);
+
+				//se serve, lavorare direttamente su apply o si sminchiano tutti i tempi di gioco, non usare ASSOLUTAMENTE run('next')
+				// if(!choice.doAction.trim().startsWith('jump'))
+				// 	monogatari.run('next');
 			}
 		} catch (error) {
 			monogatari.global ('block', false);

@@ -1070,20 +1070,38 @@ monogatari.script ({
 		async () => {
 			PhoneUI.reset();
 
-			await PhoneUI.playMessages([
-				{
-					type: 'incoming',
-					text: 'Oggi è più difficile degli altri giorni, non devi essere sempre forte. '
-				},
-				{
-					type: 'incoming',
-					text: 'Va bene anche così.'
-				}
-			]),
 
-			PhoneUI.hide();
+			// await PhoneUI.playMessages([
+			// 	{
+			// 		type: 'incoming',
+			// 		text: 'Oggi è più difficile degli altri giorni, non devi essere sempre forte. '
+			// 	},
+			// 	{
+			// 		type: 'incoming',
+			// 		text: 'Va bene anche così.'
+			// 	}
+			// ]),
+
+			PhoneUI.addIncoming("Oggi è più difficile degli altri giorni, non devi essere sempre forte.");
+			await PhoneUI.waitUntilAllNotificationsRead();
+			await sleep(4000);
+
+			PhoneUI.addIncoming("Va bene anche così", {notify: false});
+			await sleep (2000);
 		},
 
+		{'PhoneChoice': {
+			'Blocca': {
+				'Text': 'Blocca telefono',
+				'Do': 'jump Continua_Depressione',
+				'onChosen': function(){
+					PhoneUI.hide();
+				}
+			}	
+		}},
+	],
+
+	'Continua_Depressione': [
 		'wait 2000',
 		
 		async() => {
