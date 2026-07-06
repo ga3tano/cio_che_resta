@@ -1923,35 +1923,40 @@ body.show-textbox .phone-toggle {
 	object-fit: cover;
 }
 
-/* I due frame di ogni farfalla animano su timeline complementari (il frame 1
-   e' visibile quando il 2 non lo e'): due battiti rapidi, poi planata lunga.
-   I delay negativi fanno partire ogni farfalla a meta' del proprio ciclo. */
-.butterfly img:first-child { animation: butterflies-flap-a 2.4s ease-in-out infinite; }
-.butterfly img:last-child  { animation: butterflies-flap-b 2.4s ease-in-out infinite; }
+/* I tre frame di ogni farfalla animano su timeline complementari (uno solo
+   visibile per volta, crossfade tra pose adiacenti): battito 1→2→3→2→1 nei
+   primi 32% del ciclo, poi planata lunga sulla posa 1. I delay negativi
+   fanno partire ogni farfalla a meta' del proprio ciclo. */
+.butterfly img:nth-child(1) { animation: butterflies-flap-1 2.4s ease-in-out infinite; }
+.butterfly img:nth-child(2) { animation: butterflies-flap-2 2.4s ease-in-out infinite; }
+.butterfly img:nth-child(3) { animation: butterflies-flap-3 2.4s ease-in-out infinite; }
 
-/* scale() rimpicciolisce la farfalla sul posto: il transform-origin e' il
-   centro del suo ingombro nel frame 1440x2560 (il canvas e' 9:16 come il
-   viewport portrait, quindi le percentuali dell'immagine valgono anche per
-   l'elemento). */
-.butterfly-a img { animation-duration: 2.1s; transform: scale(0.7); transform-origin: 78.8% 36.6%; }
-.butterfly-b img { animation-duration: 2.4s; animation-delay: -0.9s; transform: scale(0.7); transform-origin: 71.3% 40%; }
-.butterfly-c img { animation-duration: 2.8s; animation-delay: -1.7s; transform: scale(0.7); transform-origin: 75.8% 44.1%; }
+.butterfly-a img { animation-duration: 2.1s; }
+.butterfly-b img { animation-duration: 2.4s; animation-delay: -0.9s; }
+.butterfly-c img { animation-duration: 2.8s; animation-delay: -1.7s; }
 
-@keyframes butterflies-flap-a {
+@keyframes butterflies-flap-1 {
 	0%   { opacity: 1; }
 	8%   { opacity: 0; }
-	16%  { opacity: 1; }
 	24%  { opacity: 0; }
 	32%  { opacity: 1; }
 	100% { opacity: 1; }
 }
 
-@keyframes butterflies-flap-b {
+@keyframes butterflies-flap-2 {
 	0%   { opacity: 0; }
 	8%   { opacity: 1; }
 	16%  { opacity: 0; }
 	24%  { opacity: 1; }
 	32%  { opacity: 0; }
+	100% { opacity: 0; }
+}
+
+@keyframes butterflies-flap-3 {
+	0%   { opacity: 0; }
+	8%   { opacity: 0; }
+	16%  { opacity: 1; }
+	24%  { opacity: 0; }
 	100% { opacity: 0; }
 }
 

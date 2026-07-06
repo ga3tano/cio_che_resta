@@ -1518,7 +1518,7 @@ monogatari.script ({
 			document.body.appendChild(doorLayer);
 
 			// Farfalle dietro la stanza ma sopra il cielo (z-index -998, vedi
-			// .butterflies-layer): tre farfalle indipendenti, ognuna con due
+			// .butterflies-layer): tre farfalle indipendenti, ognuna con tre
 			// pose in crossfade e una deriva propria (durate diverse, mai in
 			// sincrono), visibili dalla finestra finché non si clicca la porta.
 			const farfalle = document.createElement('div');
@@ -1527,7 +1527,7 @@ monogatari.script ({
 			for (const n of ['a', 'b', 'c']) {
 				const farfalla = document.createElement('div');
 				farfalla.className = `butterfly butterfly-${n}`;
-				for (const frame of [1, 2]) {
+				for (const frame of [1, 2, 3]) {
 					const img = document.createElement('img');
 					img.src = `assets/images/farfalla_${n.toUpperCase()}_${frame}.png`;
 					farfalla.appendChild(img);
