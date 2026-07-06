@@ -1498,6 +1498,19 @@ monogatari.script ({
 			doorLayer.style.transform = 'scale(1.15)';
 			doorLayer.style.opacity = '0';
 			document.body.appendChild(doorLayer);
+
+			// Farfalle dietro la stanza ma sopra il cielo (z-index -998, vedi
+			// .butterflies-layer): due pose in crossfade continuo, visibili
+			// dalla finestra finché il giocatore non clicca la porta.
+			const farfalle = document.createElement('div');
+			farfalle.id = 'butterflies-layer';
+			farfalle.className = 'butterflies-layer';
+			for (const src of ['assets/images/farfalle_1.png', 'assets/images/farfalle_2.png']) {
+				const img = document.createElement('img');
+				img.src = src;
+				farfalle.appendChild(img);
+			}
+			document.body.appendChild(farfalle);
 		},
 		() => {
 			for (const el of roomLayers()) {
@@ -1513,6 +1526,9 @@ monogatari.script ({
 			doorLayer.style.transition = 'transform 4000ms ease-out, opacity 4000ms ease-out';
 			doorLayer.style.transform = 'scale(1)';
 			doorLayer.style.opacity = '1';
+
+			// Le farfalle sfumano dentro insieme alla porta (transition 4000ms)
+			document.getElementById('butterflies-layer')?.classList.add('visible');
 		},
 		'wait 4000',
 		// Zoom-out finito: la porta lampeggia (stessa meccanica .highlight degli
@@ -1544,6 +1560,8 @@ monogatari.script ({
 			DebugMenu.resetNightRuntime();
 			DebugMenu.resetVisualOverlays();
 			DebugMenu.resetStorageFlags();
+
+			document.getElementById('butterflies-layer')?.remove();
 
 			document.body.style.background = '';
 			for (const el of roomLayers()) {
