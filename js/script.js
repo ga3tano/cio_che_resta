@@ -465,8 +465,6 @@ monogatari.script ({
 				'Do': 'jump Negazione_Ignora_2'
 			}
 		}}
-                
-        // 'jump Esercizio_Respirazione'	DA IMPLEMENTARE
     ],
 
 	'Negazione_Ignora_2':[
@@ -483,14 +481,16 @@ monogatari.script ({
 
 		async () => {
 			await sleep(6000);
-			AudioManager.fadeOut('birds', 2);
 		},
 
 		'jump Secondo_Messaggio'
 	],
 
     'Negazione_Ignora': [
-		() => PhoneUI.hide(),
+		async () => {
+			PhoneUI.hide();
+			await AudioManager.play('birds', {fade: 1, volume: 0.4, loop: true});
+		},
 		
 		'wait 2000',
         'jump Secondo_Messaggio'
@@ -525,6 +525,7 @@ monogatari.script ({
 			PhoneUI.hide();
 			SceneUtility.addDim(3000);
 			PhoneToggle.lockToggle(true);
+			AudioManager.setLowPass(2500, 2);
 			await sleep(5000);
 		},
 
@@ -624,6 +625,7 @@ monogatari.script ({
 		async () => {
 			AudioManager.setLowPass(20000, 1.5);
 			AudioManager.fadeOut('fan', 2.5);
+			AudioManager.fadeOut('brids', 2.5);
 			SceneUtility.removeDim();
 			PhoneUI.hide();
 			await SceneFade.toVisible({ color: '#fff' });
