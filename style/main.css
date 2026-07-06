@@ -1953,13 +1953,16 @@ body.show-textbox .phone-toggle {
    visibile per volta, crossfade tra pose adiacenti): battito 1→2→3→2→1 nei
    primi 32% del ciclo, poi planata lunga sulla posa 1. I delay negativi
    fanno partire ogni farfalla a meta' del proprio ciclo. */
-.butterfly img:nth-child(1) { animation: butterflies-flap-1 2.4s ease-in-out infinite; }
-.butterfly img:nth-child(2) { animation: butterflies-flap-2 2.4s ease-in-out infinite; }
-.butterfly img:nth-child(3) { animation: butterflies-flap-3 2.4s ease-in-out infinite; }
+/* Durata e delay passano per variabili ereditate dal .butterfly-X: una
+   regola `.butterfly-X img` perderebbe in specificita' contro
+   `img:nth-child(n)` e verrebbe ignorata (battito di nuovo in sincrono). */
+.butterfly img:nth-child(1) { animation: butterflies-flap-1 var(--flap-dur, 2.4s) ease-in-out var(--flap-delay, 0s) infinite; }
+.butterfly img:nth-child(2) { animation: butterflies-flap-2 var(--flap-dur, 2.4s) ease-in-out var(--flap-delay, 0s) infinite; }
+.butterfly img:nth-child(3) { animation: butterflies-flap-3 var(--flap-dur, 2.4s) ease-in-out var(--flap-delay, 0s) infinite; }
 
-.butterfly-a img { animation-duration: 2.1s; }
-.butterfly-b img { animation-duration: 2.4s; animation-delay: -0.9s; }
-.butterfly-c img { animation-duration: 2.8s; animation-delay: -1.7s; }
+.butterfly-a { --flap-dur: 2.1s; }
+.butterfly-b { --flap-dur: 2.4s; --flap-delay: -0.9s; }
+.butterfly-c { --flap-dur: 2.8s; --flap-delay: -1.7s; }
 
 @keyframes butterflies-flap-1 {
 	0%   { opacity: 1; }
