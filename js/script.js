@@ -908,6 +908,15 @@ monogatari.script ({
 //CONTRATTAZIONE
 	'Contrattazione': [
 		async () => {
+			console.log('=== DEBUG BACKGROUND ===');
+			console.log('1. game-screen:', document.querySelector('game-screen'));
+			console.log('2. game-screen [data-ui="background"]:', document.querySelector('game-screen [data-ui="background"]'));
+			console.log('3. Tutti gli elementi con data-ui="background":', document.querySelectorAll('[data-ui="background"]'));
+			console.log('4. Glitch wrapper:', document.getElementById('glitch-shake-wrapper'));
+			console.log('5. Glitch wrapper children:', document.getElementById('glitch-shake-wrapper')?.children);
+			//Ripristina il background
+			// SceneUtility.restoreBackgroundFromGlitch();
+			
 			await SceneFade.toVisible({duration: 5});
 			await AudioManager.fadeOut('rage', 5);
 			await SceneUtility.loadScene("contrattazione");

@@ -1697,65 +1697,168 @@ const Glitch={
 
 //Implemento un wrapper che contiene i vari elementi del DOM in questa scena, così da applicare le trasformazioni al wrapper e non ad ogni elemento singolarmente
 //GESTIONE WRAPPER
-	prepareShakeWrapper() {
-		if (this.shakeWrapper?.isConnected) {
-			return true;
-		}
+	// prepareShakeWrapper() {
+	// 	if (this.shakeWrapper?.isConnected) {
+	// 		return true;
+	// 	}
 
-		const layers = this.sceneLayerSelectors
-			.map(selector => document.querySelector(selector))
-			.filter(layer => layer);
+	// 	const layers = this.sceneLayerSelectors
+	// 		.map(selector => document.querySelector(selector))
+	// 		.filter(layer => layer);
 
-		if (!layers.length) {
-			return false;
-		}
+	// 	if (!layers.length) {
+	// 		return false;
+	// 	}
 
-		let viewport = document.getElementById("glitch-shake-viewport");
-		let wrapper = document.getElementById("glitch-shake-wrapper");
+	// 	let viewport = document.getElementById("glitch-shake-viewport");
+	// 	let wrapper = document.getElementById("glitch-shake-wrapper");
 
-		if (!viewport) {
-			viewport = document.createElement("div");
-			viewport.id = "glitch-shake-viewport";
-		}
+	// 	if (!viewport) {
+	// 		viewport = document.createElement("div");
+	// 		viewport.id = "glitch-shake-viewport";
+	// 	}
 
-		if (!wrapper) {
-			wrapper = document.createElement("div");
-			wrapper.id = "glitch-shake-wrapper";
-		}
+	// 	if (!wrapper) {
+	// 		wrapper = document.createElement("div");
+	// 		wrapper.id = "glitch-shake-wrapper";
+	// 	}
 
-		const firstLayer = layers[0];
-		firstLayer.parentNode.insertBefore(viewport, firstLayer);
+	// 	const firstLayer = layers[0];
+	// 	firstLayer.parentNode.insertBefore(viewport, firstLayer);
 
-		if (!viewport.contains(wrapper)) {
-			viewport.appendChild(wrapper);
-		}
+	// 	if (!viewport.contains(wrapper)) {
+	// 		viewport.appendChild(wrapper);
+	// 	}
 
-		this.originalLayerPositions.clear();
+	// 	this.originalLayerPositions.clear();
 
-		layers.forEach(layer => {
-			const placeholder = document.createComment(`glitch-placeholder:${layer.id || layer.className || "layer"}`);
+	// 	// layers.forEach(layer => {
+	// 	// 	const placeholder = document.createComment(`glitch-placeholder:${layer.id || layer.className || "layer"}`);
 
-			layer.parentNode.insertBefore(placeholder, layer);
+	// 	// 	layer.parentNode.insertBefore(placeholder, layer);
 
-			this.originalLayerPositions.set(layer, {
-				placeholder,
-				inlinePosition: layer.style.position,
-				inlineInset: layer.style.inset,
-				inlineWidth: layer.style.width,
-				inlineHeight: layer.style.height
-			});
+	// 	// 	this.originalLayerPositions.set(layer, {
+	// 	// 		placeholder,
+	// 	// 		inlinePosition: layer.style.position,
+	// 	// 		inlineInset: layer.style.inset,
+	// 	// 		inlineWidth: layer.style.width,
+	// 	// 		inlineHeight: layer.style.height
+	// 	// 	});
 
-			wrapper.appendChild(layer);
-		});
+	// 	// 	wrapper.appendChild(layer);
+	// 	// });
 
-		this.shakeViewport = viewport;
-		this.shakeWrapper = wrapper;
-		this.originalWrapperTransform = wrapper.style.transform || "";
+	// 	layers.forEach(layer => {
+	// 	// CREA UNA COPIA ESATTA DELL'ELEMENTO
+	// 	const clone = layer.cloneNode(true);
+	// 	clone.id = layer.id + '-clone'; // Cambia ID per evitare conflitti
+		
+	// 	// COPIA GLI STILI CALCOLATI
+	// 	const computedStyle = window.getComputedStyle(layer);
+	// 	clone.style.position = computedStyle.position || 'absolute';
+	// 	clone.style.top = computedStyle.top || '0';
+	// 	clone.style.left = computedStyle.left || '0';
+	// 	clone.style.width = computedStyle.width || '100%';
+	// 	clone.style.height = computedStyle.height || '100%';
+	// 	clone.style.inset = computedStyle.inset || '0';
+	// 	clone.style.objectFit = computedStyle.objectFit || 'cover';
+	// 	clone.style.objectPosition = computedStyle.objectPosition || 'center';
+		
+	// 	// Se è un'immagine, copia anche l'src
+	// 	if (layer.tagName === 'IMG') {
+	// 		clone.src = layer.src;
+	// 	}
+		
+	// 	// Aggiungi la copia al wrapper
+	// 	wrapper.appendChild(clone);
+	// });
 
-		wrapper.style.willChange = "transform";
+	// 	this.shakeViewport = viewport;
+	// 	this.shakeWrapper = wrapper;
+	// 	this.originalWrapperTransform = wrapper.style.transform || "";
 
+	// 	wrapper.style.willChange = "transform";
+
+	// 	return true;
+	// },
+
+	// Versione che clona ricorsivamente tutto perfettamente
+prepareShakeWrapper() {
+	if (this.shakeWrapper?.isConnected) {
 		return true;
-	},
+	}
+
+	// Prendi background e sky
+	const background = document.querySelector('game-screen [data-ui="background"]');
+	const sky = document.getElementById('sky');
+	
+	const layers = [background, sky].filter(layer => layer);
+
+	if (!layers.length) {
+		return false;
+	}
+
+	let viewport = document.getElementById("glitch-shake-viewport");
+	let wrapper = document.getElementById("glitch-shake-wrapper");
+
+	if (!viewport) {
+		viewport = document.createElement("div");
+		viewport.id = "glitch-shake-viewport";
+	}
+
+	if (!wrapper) {
+		wrapper = document.createElement("div");
+		wrapper.id = "glitch-shake-wrapper";
+	}
+
+	const firstLayer = layers[0];
+	firstLayer.parentNode.insertBefore(viewport, firstLayer);
+
+	if (!viewport.contains(wrapper)) {
+		viewport.appendChild(wrapper);
+	}
+
+	this.originalLayerPositions.clear();
+
+	layers.forEach(layer => {
+		// CREA UNA COPIA SEMPLICE
+		const clone = layer.cloneNode(true);
+		
+		// Cambia ID per evitare conflitti
+		if (layer.id) {
+			clone.id = layer.id + '-glitch-clone';
+		}
+		
+		// Copia lo stile di base
+		clone.style.position = 'absolute';
+		clone.style.inset = '0';
+		clone.style.width = '100%';
+		clone.style.height = '100%';
+		clone.style.pointerEvents = 'none';
+		
+		// Se è un'immagine, copia src
+		if (layer.tagName === 'IMG') {
+			clone.src = layer.src;
+		}
+		
+		// Se è un div con background, copia background
+		if (layer.tagName === 'DIV' && layer.style.backgroundImage) {
+			clone.style.backgroundImage = layer.style.backgroundImage;
+			clone.style.backgroundSize = layer.style.backgroundSize || 'cover';
+			clone.style.backgroundPosition = layer.style.backgroundPosition || 'center';
+		}
+		
+		wrapper.appendChild(clone);
+	});
+
+	this.shakeViewport = viewport;
+	this.shakeWrapper = wrapper;
+	this.originalWrapperTransform = wrapper.style.transform || "";
+
+	wrapper.style.willChange = "transform";
+
+	return true;
+},
 
 	applySceneTransform(glitchTransform) {
 		if (!this.shakeWrapper?.isConnected) {
@@ -1768,37 +1871,54 @@ const Glitch={
 			`${this.originalWrapperTransform} ${glitchTransform}`.trim();
 	},
 
+	// restoreSceneTransforms() {
+	// 	 if (!this.shakeWrapper) {
+    //     return;
+    // }
+
+    // this.shakeWrapper.style.transform = this.originalWrapperTransform;
+    // this.shakeWrapper.style.willChange = "";
+
+    // this.originalLayerPositions.forEach((position, layer) => {
+    //     if (!position.placeholder?.parentNode) {
+    //         return;
+    //     }
+
+    //     position.placeholder.parentNode.insertBefore(layer, position.placeholder);
+    //     position.placeholder.remove();
+
+    //     layer.style.position = position.inlinePosition;
+    //     layer.style.inset = position.inlineInset;
+    //     layer.style.width = position.inlineWidth;
+    //     layer.style.height = position.inlineHeight;
+    // });
+
+    // if (this.shakeViewport) {
+    //     this.shakeViewport.remove();
+    // }
+
+    // this.shakeViewport = null;
+    // this.shakeWrapper = null;
+    // this.originalWrapperTransform = "";
+    // this.originalLayerPositions.clear();
+	// },
+
 	restoreSceneTransforms() {
-		if (!this.shakeWrapper) {
-			return;
-		}
+	if (!this.shakeWrapper) {
+		return;
+	}
 
-		this.shakeWrapper.style.transform = this.originalWrapperTransform;
-		this.shakeWrapper.style.willChange = "";
+	// Non devi ripristinare niente perché hai usato COPIE!
+	// Basta rimuovere il wrapper
+	if (this.shakeViewport) {
+		this.shakeViewport.remove();
+	}
 
-		this.originalLayerPositions.forEach((position, layer) => {
-			if (!position.placeholder?.parentNode) {
-				return;
-			}
-
-			position.placeholder.parentNode.insertBefore(layer, position.placeholder);
-			position.placeholder.remove();
-
-			layer.style.position = position.inlinePosition;
-			layer.style.inset = position.inlineInset;
-			layer.style.width = position.inlineWidth;
-			layer.style.height = position.inlineHeight;
-		});
-
-		if (this.shakeViewport) {
-			this.shakeViewport.remove();
-		}
-
-		this.shakeViewport = null;
-		this.shakeWrapper = null;
-		this.originalWrapperTransform = "";
-		this.originalLayerPositions.clear();
-	},
+	this.shakeViewport = null;
+	this.shakeWrapper = null;
+	this.originalWrapperTransform = "";
+	this.originalLayerPositions.clear();
+},
 
 //INIZIO GLITCH
 	async start(){
@@ -3345,6 +3465,51 @@ const SceneUtility = {
 			sky.innerHTML = ``;
 
 		ObjectCounter.hide();
+	},
+
+	restoreBackgroundFromGlitch() {
+		// 1. Trova il wrapper di Glitch
+		const wrapper = document.getElementById('glitch-shake-wrapper');
+		if (!wrapper) {
+			console.log('Nessun wrapper Glitch trovato');
+			return false;
+		}
+		
+		// 2. Trova il background (ha id="background" o data-ui="background")
+		const background = wrapper.querySelector('#background') || 
+						wrapper.querySelector('[data-ui="background"]');
+		
+		if (!background) {
+			console.log('Nessun background trovato nel wrapper');
+			return false;
+		}
+		
+		// 3. Trova game-screen
+		const gameScreen = document.querySelector('game-screen');
+		if (!gameScreen) {
+			console.log('Nessun game-screen trovato');
+			return false;
+		}
+		
+		// 4. Ripristina il background
+		try {
+			// Rimuovi dal wrapper
+			wrapper.removeChild(background);
+			// Aggiungi a game-screen (come primo figlio o dove vuoi)
+			gameScreen.prepend(background);
+			// Rimuovi il wrapper
+			wrapper.remove();
+			
+			// Rimuovi anche il viewport
+			const viewport = document.getElementById('glitch-shake-viewport');
+			if (viewport) viewport.remove();
+			
+			console.log('✅ Background ripristinato con successo!');
+			return true;
+		} catch (error) {
+			console.error('Errore nel ripristino del background:', error);
+			return false;
+		}
 	},
 
 	addShadow(){
