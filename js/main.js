@@ -550,11 +550,12 @@ const PhoneUI = {
         this.chat.scrollTop = this.chat.scrollHeight;
     },
 
-	addNotification(notification = {}, clickable = true) {
+	addNotification(notification = {}, clickable = true, silent = false) {
 		if (!this.layer) this.init();
 
 		const title = notification.title ?? this.getContactName();
 		const body = notification.body ?? '';
+		const notify = notification.notify ?? true;
 
 		this.notificationId += 1;
 
@@ -562,7 +563,8 @@ const PhoneUI = {
 			id: this.notificationId,
 			title,
 			body,
-			clickable
+			clickable,
+			silent
 		});
 
 		this.renderNotifications();
@@ -606,7 +608,7 @@ const PhoneUI = {
 	},
 
 	getUnreadCount() {
-		return this.unreadNotifications.length;
+		return this.unreadNotifications.filter(n => !n.silent).length;
 	},
 
 	/**

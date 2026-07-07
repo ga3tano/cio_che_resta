@@ -870,13 +870,8 @@ monogatari.script ({
 		// },
 
 		async () => {
-			PhoneToggle.lockToggle(false);
 			PhoneUI.show('Messaggi');
-			PhoneUI.addNotification({
-				title: 'Messaggi',
-				body: 'Nessun nuovo messaggio',
-				notify: false
-			}, false);
+			PhoneUI.addNotification({ title: 'Messaggi', body: 'Nessun nuovo messaggio' }, false, true);
 
 			await startAcceleratingClock();
 			await sleep (2000);
@@ -901,6 +896,7 @@ monogatari.script ({
 			PhoneTyping.send();
 			PhoneUI.addOutgoing('Ehi');
 			PhoneTyping.hide();
+			PhoneToggle.lockToggle(false);
 		},
 
 		'wait 5000',
