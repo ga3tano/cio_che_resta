@@ -1687,6 +1687,12 @@ const Glitch={
 		}
 	],
 
+	_phaseResolvers: {},
+
+	resumeAfterPhase1() { this._phaseResolvers.phase1?.(); },
+	resumeAfterPhase2() { this._phaseResolvers.phase2?.(); },
+	finishAfterFinalDialogue() { this._phaseResolvers.final?.(); },
+
 //Implemento un wrapper che contiene i vari elementi del DOM in questa scena, così da applicare le trasformazioni al wrapper e non ad ogni elemento singolarmente
 //GESTIONE WRAPPER
 	prepareShakeWrapper() {
@@ -1840,27 +1846,17 @@ const Glitch={
 						case 1: 
 							//Sincronizzo la decelerazione con l'inizio di una nuova fase, e decelero a un bpm sempre più alto
 							await this.cooldown(1400, 0.16, { bpmFrom: 160, bpmTo: 90});
-							await this.playDialogue
-								([
-									"Guardami, guardami!",
-									"Non riesco neanche a prendermi cura di una stupida pianta!",
-									"Dai, forza, appassisci!",
-									"LASCIAMI ANCHE TU!"
-								]);
-							await this.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'pianta_1'));
-							await sleep(1000);
+							await new Promise(resolve => {
+								this._phaseResolvers.phase1 = resolve;
+								monogatari.run('jump DialogoGlitch_Fase1');
+							});
 							break;
 						case 2: 
 							await this.cooldown(700, 0.05, {bpmFrom: 170, bpmTo: 110});
-							await this.playDialogue
-								([
-									"Inutile! È tutto inutile..ho rovinato tutto, ancora una volta!",
-									"Non avremo mai più momenti felici come questo ed è tutta colpa mia!",
-									"...", 
-									"È TUTTA COLPA MIA!!"
-								]);
-							await this.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'cornice_rotta'));
-							await sleep(1000);
+							await new Promise(resolve => {
+								this._phaseResolvers.phase2 = resolve;
+								monogatari.run('jump DialogoGlitch_Fase2');
+							});
 							break;
 						default:
 							break;
@@ -1894,16 +1890,6 @@ const Glitch={
 			store.glitchGameCompleted = true;
 			await this.stop(true);
 
-			await this.playDialogue
-				([
-					"Dov'è quella maglietta...dove l'ho messa?!", 
-					"Non so cosa mi sia passato per la testa, volevo farti un regalo...",
-					"...ti sarebbe piaciuto, ma un regalo per chi?! Tu non lo vedrai mai, NON...",
-					"...non potrai mai...",
-					"...NON CI SEI PIÙ!!!"
-				]);
-			await this.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'vestiti'), { roomShake: true });
-			await sleep(1000);
 			return true;
 		} catch (error) {
 			await this.stop(false);
@@ -2324,32 +2310,6 @@ const Glitch={
 		});
 	},
 
-	// Mostra una riga nel text-box esistente e aspetta un click per proseguire.
-	// Non passa dalla coda script di Monogatari: scrive direttamente nel DOM.
-	showDialogueLine(text) {
-		const nameNode = document.querySelector('text-box [data-content="name"]');
-		const textNode = document.querySelector('text-box [data-content="text"]') 
-			?? document.querySelector('[data-ui="say"]');
-
-		if (nameNode) nameNode.textContent = 'Tu';
-		if (textNode) textNode.textContent = text;
-
-		return new Promise(resolve => {
-			const onAdvance = (e) => { e.stopPropagation(); resolve(); };
-			// { once: true } pulisce da solo il listener dopo il click
-			document.querySelector('text-box')?.addEventListener('click', onAdvance, { once: true });
-		});
-	},
-
-	// Sequenza di righe: textbox aperta all'inizio, chiusa alla fine.
-	async playDialogue(lines = []) {
-		showTextBox();
-		for (const line of lines) {
-			await this.showDialogueLine(line);
-		}
-		hideTextBox();
-	},
-
 	wait(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	},
@@ -2456,6 +2416,12 @@ const Glitch={
 		}
 
 		await this.cooldown(500, 0, 0, true);
+
+		if(completed)
+			await new Promise(resolve => {
+				this._phaseResolvers.final = resolve;
+				monogatari.run('jump DialogoGlitch_Finale');
+			});
 	}
 };
 
@@ -2529,6 +2495,9 @@ const WordsGame = {
 		this.clearPhasePressure();
 		this.abortCurrentRun({success: false, reason: "reset"});
 	},
+
+	lock() {if (this.element) this.element.style.pointerEvents = 'none';},
+	unlock() {if (this.element) this.element.style.pointerEvents = 'auto';},
 
 	abortCurrentRun(result = { success: false, reason: "aborted"}) {
 		const resolve = this.resolver;
@@ -2626,6 +2595,8 @@ const WordsGame = {
 			this.element.classList.add("visible");
 
 			const wordObj = this.createWordElement("AAAARGH!");
+			wordObj.label.style.setProperty("--word-rotation", '0deg')
+			wordObj.label.style.animation = "none";
 			overlay.appendChild(wordObj.wrapper);
 			this.freezeWordLayout(wordObj.textNode, wordObj.label, wordObj.wrapper);
 
@@ -2635,37 +2606,58 @@ const WordsGame = {
 			wordObj.wrapper.style.top = `${cy}px`;
 			wordObj.wrapper.style.visibility = "visible";
 
-			const hand = document.createElement("img");
-			hand.className = "rage-tutorial-hand";
-			hand.src = "assets/images/swipe-hand.png";
-			hand.style.top = `${cy + wordObj.wrapper.offsetHeight}px`
-			hand.style.left = `${cx + (wordObj.wrapper.offsetWidth / 2) - 26}px`
-			overlay.appendChild(hand);
+			// Pop-in gigante, poi torna a scala 1
+			wordObj.label.classList.add("rage-tutorial-giant");
 
-			// Wiggle: solo estetico, non tocca transform del wrapper (riservato al drag reale)
-			wordObj.label.style.animation = "tutorialWiggle 900ms ease-in-out infinite";
-			hand.style.animation = "tutorialWiggle 900ms ease-in-out infinite";
+			const showHandAndWiggle = () => {
+				const hand = document.createElement("img");
+				hand.className = "rage-tutorial-hand";
+				hand.src = "assets/images/swipe-hand.png";
+				hand.style.top = `${cy + wordObj.wrapper.offsetHeight}px`
+				hand.style.left = `${cx + (wordObj.wrapper.offsetWidth / 2) - 26}px`
+				overlay.appendChild(hand);
+				
+				//Fade in della manina
+				requestAnimationFrame(() => {
+					requestAnimationFrame(() => {
+						hand.style.transition = "opacity 900ms ease";
+						hand.style.opacity = "1";
+					})
+				});
 
-			// runId fittizio: attachTouchSwipe lo confronta con this.runId/isActive
-			this.isActive = true;
-			this.runId += 1;
-			const runId = this.runId;
+				setTimeout(() => {
+					// Wiggle: solo estetico, non tocca transform del wrapper (riservato al drag reale)
+					wordObj.label.style.animation = "rageTutorialWiggle 900ms ease-in-out infinite";
+					hand.style.animation = "rageTutorialWiggle 900ms ease-in-out infinite";
+				}, 1400); //900ms fade + 500ms di attesa prima del wiggle				
 
-			// Overrida solo il cleanup finale: stessa meccanica di endDrag, ma risolve il tutorial invece di resolveRun
-			const originalRemove = wordObj.wrapper.remove.bind(wordObj.wrapper);
-			wordObj.wrapper.remove = () => {
-				originalRemove();
-				overlay.remove();
-				this.element.classList.remove("visible");
-				this.isActive = false;
-				resolve();
+				// runId fittizio: attachTouchSwipe lo confronta con this.runId/isActive
+				this.isActive = true;
+				this.runId += 1;
+				const runId = this.runId;
+
+				// Overrida solo il cleanup finale: stessa meccanica di endDrag, ma risolve il tutorial invece di resolveRun
+				const originalRemove = wordObj.wrapper.remove.bind(wordObj.wrapper);
+				wordObj.wrapper.remove = () => {
+					originalRemove();
+					overlay.remove();
+					this.element.classList.remove("visible");
+					this.isActive = false;
+					resolve();
+				};
+
+				wordObj.wrapper.addEventListener("pointerdown", () => {
+					hand.style.display = "none";
+				}, { once: true });
+
+				this.attachTouchSwipe(wordObj.wrapper, runId);
 			};
 
-			wordObj.wrapper.addEventListener("pointerdown", () => {
-				hand.style.display = "none";
-			}, { once: true });
-
-			this.attachTouchSwipe(wordObj.wrapper, runId);
+			wordObj.wrapper.addEventListener('animationend', () => {
+				wordObj.label.classList.remove('rage-tutorial-giant');
+				showHandAndWiggle();
+			}, {once: true});
+			
 		});
 },
 

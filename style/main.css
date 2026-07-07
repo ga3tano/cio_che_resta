@@ -1611,17 +1611,15 @@ body.show-textbox .phone-toggle {
 
 /* --- SHAKE LOCALE OGGETTI RABBIA (pianta/cornice) --- */
 @keyframes rabbia-object-shake {
-	0%   { transform: translate(0,0); }
-	10%  { transform: translate(-1px, 0); }
-	25%  { transform: translate(2px, -1px); }
-	40%  { transform: translate(-3px, 2px); }
-	55%  { transform: translate(4px, -3px); }
-	70%  { transform: translate(-6px, 3px); }
-	85%  { transform: translate(6px, -4px); }
-	100% { transform: translate(0,0); }
+	0%   { transform: translate(0,0) rotate(0deg); }
+	20%  { transform: translate(-2px, 1px) rotate(-0.4deg); }
+	40%  { transform: translate(4px, -3px) rotate(0.9deg); }
+	60%  { transform: translate(-7px, 5px) rotate(-1.8deg); }
+	80%  { transform: translate(11px, -7px) rotate(2.8deg); }
+	100% { transform: translate(-15px, 10px) rotate(-4deg); }
 }
 
-.rabbia-object-shake { animation: rabbia-object-shake 700ms ease-in; }
+.rabbia-object-shake { animation: rabbia-object-shake 700ms cubic-bezier(.55,.05,.95,.6); }
 
 /* Minigioco frasi  */
 /* --- TUTORIAL MINIGIOCO PAROLE --- */
@@ -1636,9 +1634,10 @@ body.show-textbox .phone-toggle {
 	touch-action: none;
 }
 
-@keyframes tutorialWiggle {
-	0%, 100% { transform: translateX(-8px); }
-	50% { transform: translateX(8px); }
+@keyframes rageTutorialWiggle {
+	0%, 100% { transform: translateX(0); }
+	25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
 }
 
 /* Placeholder: sostituire con background-image quando pronto l'asset mano */
@@ -1648,7 +1647,8 @@ body.show-textbox .phone-toggle {
 	left: 46%; */
     width: 64px;
 	pointer-events: none;
-    filter: drop-shadow(0px 0px 0px 4px rgb(0, 0, 0));
+    opacity: 0;
+    will-change: opacity, transform;
 }
 
 /* Overlay rosso pieno per lo swap oggetti rabbia: fade-in lento, fade-out più rapido */
@@ -1740,6 +1740,16 @@ body.show-textbox .phone-toggle {
 		wordBurst 340ms cubic-bezier(.18, .89, .32, 1.28) forwards,
 		wordTimedShake 240ms linear 90ms infinite,
 		rageGlow 260ms ease-out forwards;
+}
+
+.word-label.rage-tutorial-giant {
+    animation: rageTutorialGiantPop 900ms cubic-bezier(.18, .89, .32, 1.28) forwards !important;
+}
+
+@keyframes rageTutorialGiantPop {
+    0%   { transform: scale(1); }
+    60%  { transform: scale(2.8); }
+    100% { transform: scale(1); }
 }
 
 .word-text {

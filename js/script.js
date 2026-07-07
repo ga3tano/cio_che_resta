@@ -798,6 +798,55 @@ monogatari.script ({
 		'jump loop_glitch'
 	],
 
+	'DialogoGlitch_Fase1': [
+		() => { WordsGame.lock(); showTextBox(); },
+		'<div style="color: #000000;">.</div>',
+		'dad Guardami, guardami!',
+		'dad Non riesco neanche a prendermi cura di una stupida pianta!',
+		'dad Dai, forza, appassisci!',
+		'dad LASCIAMI ANCHE TU!',
+		async () => {
+			hideTextBox();
+			WordsGame.unlock();
+			await Glitch.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'pianta_1'));
+			await sleep(1000);
+			Glitch.resumeAfterPhase1();
+		}
+	],
+
+	'DialogoGlitch_Fase2': [
+		() => { WordsGame.lock(); showTextBox(); },
+		'dad Inutile! È tutto inutile..ho rovinato tutto, ancora una volta!',
+		'dad Non avremo mai più momenti felici come questo ed è tutta colpa mia!',
+		'dad ...',
+		'dad È TUTTA COLPA MIA!!',
+		async () => {
+			hideTextBox();
+			WordsGame.unlock();
+			await Glitch.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'cornice_rotta'));
+			await sleep(1000);
+			Glitch.resumeAfterPhase2();
+		}
+	],
+
+	'DialogoGlitch_Finale': [
+		() => { WordsGame.lock(); showTextBox(); },
+		"dad Dov'è quella maglietta...dove l'ho messa?!",
+		'dad Non so cosa mi sia passato per la testa, volevo farti un regalo...',
+		'dad ...ti sarebbe piaciuto, ma un regalo per chi?! Tu non lo vedrai mai, NON...',
+		'dad ...non potrai mai...',
+		'dad ...NON CI SEI PIÙ!!!',
+		async () => {
+			hideTextBox();
+			WordsGame.unlock();
+			await Glitch.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'vestiti'), { roomShake: true });
+			await sleep(1000);
+			Glitch.finishAfterFinalDialogue();
+		},
+
+		'jump loop_glitch'
+	],
+
 	'ContinuaGlitch': [
 		// 'centered <div style="color: #e5e5e5; font-style: italic; z-index: 14 !important;">...</div>',
 		// async () => {
