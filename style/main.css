@@ -1609,17 +1609,19 @@ body.show-textbox .phone-toggle {
 	height: 100%;
 }
 
-/* --- SHAKE LOCALE OGGETTI RABBIA (pianta/cornice) --- */
+/* --- SHAKE LOCALE OGGETTI RABBIA (pianta/cornice) - TREMORE PORCO DIO --- */
 @keyframes rabbia-object-shake {
-	0%   { transform: translate(0,0) rotate(0deg); }
-	20%  { transform: translate(-2px, 1px) rotate(-0.4deg); }
-	40%  { transform: translate(4px, -3px) rotate(0.9deg); }
-	60%  { transform: translate(-7px, 5px) rotate(-1.8deg); }
-	80%  { transform: translate(11px, -7px) rotate(2.8deg); }
-	100% { transform: translate(-15px, 10px) rotate(-4deg); }
+	0%   { transform: translate(0,0); }
+	20%  { transform: translate(-5px, 3px); }
+	40%  { transform: translate(5px, -3px); }
+	60%  { transform: translate(-5px, 3px); }
+	80%  { transform: translate(5px, -3px); }
+	100% { transform: translate(0,0); }
 }
 
-.rabbia-object-shake { animation: rabbia-object-shake 700ms cubic-bezier(.55,.05,.95,.6); }
+.rabbia-object-shake { 
+	animation: rabbia-object-shake 100ms steps(5, end) infinite; 
+}
 
 /* Minigioco frasi  */
 /* --- TUTORIAL MINIGIOCO PAROLE --- */
@@ -2307,11 +2309,13 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 }
 
 .wrapper-item{
+    display: block;
 	position: absolute;
 	top: 0;
 	left: 0;
 	width: 100svw;
 	height: 100svh;
+    max-height: none !important;    /*Sovrascrive la regola di monogatari*/
 	/* cover + center: identico a come l'engine mostra lo sfondo della stanza
 	   ([data-ui=background]) e a .sky. Gli oggetti sono PNG full-frame 1440x2560,
 	   quindi con cover vengono scalati e ritagliati ESATTAMENTE come lo sfondo e

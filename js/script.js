@@ -189,6 +189,7 @@ monogatari.script ({
 //TORCIA
 	'Torcia': [
 		async () => {
+			PhoneUI.setTime("03:36");
 			await SceneFade.toVisible();
 			await AudioManager.play('fan', {
 				loop: true,
@@ -363,6 +364,8 @@ monogatari.script ({
         async () => {
 			NightOverlay.hide();
 
+			PhoneUI.setTime("9:47");
+
 			await SceneUtility.loadScene("negazione"); 
 			await AudioManager.play('fan', {volume: 0.2, fade: 1, loop: true});
 		},
@@ -527,6 +530,7 @@ monogatari.script ({
 			PhoneToggle.lockToggle(true);
 			AudioManager.setLowPass(2500, 2);
 			await sleep(5000);
+			PhoneUI.setTime("19:23");
 		},
 
 		'play sound phone_vibration',
@@ -725,6 +729,7 @@ monogatari.script ({
 		async () => {
 			AudioManager.fadeOut('whistle', 0.5);
 			await SceneFade.toVisible();
+			PhoneUI.setTime("14:51");
 			AudioManager.play('rage', {
 				loop: true,
 				volume: 0.50,
@@ -841,6 +846,7 @@ monogatari.script ({
 			WordsGame.unlock();
 			await Glitch.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'vestiti'), { roomShake: true });
 			await sleep(1000);
+			Glitch.restoreSceneTransforms();
 			Glitch.finishAfterFinalDialogue();
 		},
 
@@ -872,6 +878,8 @@ monogatari.script ({
 		async () => {
 			PhoneUI.show('Messaggi');
 			PhoneUI.addNotification({ title: 'Messaggi', body: 'Nessun nuovo messaggio' }, false, true);
+
+			PhoneUI.setTime("15:22");
 
 			await startAcceleratingClock();
 			await sleep (2000);
@@ -907,16 +915,7 @@ monogatari.script ({
 	],
 //CONTRATTAZIONE
 	'Contrattazione': [
-		async () => {
-			console.log('=== DEBUG BACKGROUND ===');
-			console.log('1. game-screen:', document.querySelector('game-screen'));
-			console.log('2. game-screen [data-ui="background"]:', document.querySelector('game-screen [data-ui="background"]'));
-			console.log('3. Tutti gli elementi con data-ui="background":', document.querySelectorAll('[data-ui="background"]'));
-			console.log('4. Glitch wrapper:', document.getElementById('glitch-shake-wrapper'));
-			console.log('5. Glitch wrapper children:', document.getElementById('glitch-shake-wrapper')?.children);
-			//Ripristina il background
-			// SceneUtility.restoreBackgroundFromGlitch();
-			
+		async () => {			
 			await SceneFade.toVisible({duration: 5});
 			await AudioManager.fadeOut('rage', 5);
 			await SceneUtility.loadScene("contrattazione");

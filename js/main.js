@@ -346,6 +346,7 @@ const PhoneUI = {
 	notificationId: 0,
 	messageAdvanceResolve: null,
 	messageAdvanceEventsBound: false,	
+	timeOffset: null,
 
     init() {
         this.layer = document.getElementById('phone-layer');
@@ -783,8 +784,44 @@ const PhoneUI = {
         this.statusClockTimer = null;
     },
 
-    updateClock() {
+	/**
+     * setTime — imposta l'ora "di gioco" mostrata dal telefono per la scena.
+     * Il clock continua a scorrere in tempo reale a partire da questo punto
+     * (non è congelato): dopo setTime('22:30') passano i minuti normalmente.
+     * @param {string} timeString - formato "HH:MM", es. "22:30"
+     */
+    setTime(timeString) {
+        const [hours, minutes] = timeString.split(':').map(Number);
+
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+            console.warn(`PhoneUI.setTime: formato non valido "${timeString}", atteso "HH:MM"`);
+            return;
+        }
+
         const now = new Date();
+        const target = new Date(now);
+        target.setHours(hours, minutes, 0, 0);
+
+        // L'offset resta costante: ogni updateClock() successivo somma questo
+        // scarto all'ora reale corrente, quindi il tempo scorre naturalmente.
+        this.timeOffset = target.getTime() - now.getTime();
+
+        this.updateClock();
+    },
+
+    /**
+     * clearTime — rimuove l'override e torna a mostrare l'ora reale.
+     */
+    clearTime() {
+        this.timeOffset = null;
+        this.updateClock();
+    },
+
+    updateClock() {
+        const now = this.timeOffset !== null
+            ? new Date(Date.now() + this.timeOffset)
+            : new Date();
+
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const currentTime = `${hours}:${minutes}`;
@@ -1783,82 +1820,100 @@ const Glitch={
 	// },
 
 	// Versione che clona ricorsivamente tutto perfettamente
-prepareShakeWrapper() {
-	if (this.shakeWrapper?.isConnected) {
+	prepareShakeWrapper() {
+		if (this.shakeWrapper?.isConnected) {
+			return true;
+		}
+
+		// Prendi background e sky
+		const background = document.querySelector('game-screen [data-ui="background"]');
+		const sky = document.getElementById('sky');
+		const details = document.getElementById('details-wrapper');
+		
+		const layers = [background, sky, details].filter(layer => layer);
+
+		if (!layers.length) {
+			return false;
+		}
+
+		let viewport = document.getElementById("glitch-shake-viewport");
+		let wrapper = document.getElementById("glitch-shake-wrapper");
+
+		if (!viewport) {
+			viewport = document.createElement("div");
+			viewport.id = "glitch-shake-viewport";
+		}
+
+		if (!wrapper) {
+			wrapper = document.createElement("div");
+			wrapper.id = "glitch-shake-wrapper";
+		}
+
+		const firstLayer = layers[0];
+		firstLayer.parentNode.insertBefore(viewport, firstLayer);
+
+		if (!viewport.contains(wrapper)) {
+			viewport.appendChild(wrapper);
+		}
+
+		this.originalLayerPositions.clear();
+
+		layers.forEach(layer => {
+			const clone = layer.cloneNode(true);
+			
+			if (layer.id) {
+				clone.id = layer.id + '-glitch-clone';
+			}
+			
+			clone.style.position = 'absolute';
+			clone.style.inset = '0';
+			clone.style.width = '100%';
+			clone.style.height = '100%';
+			clone.style.pointerEvents = 'none';
+			
+			if (layer.tagName === 'IMG') {
+				clone.src = layer.src;
+			}
+			
+			if (layer.tagName === 'DIV' && layer.style.backgroundImage) {
+				clone.style.backgroundImage = layer.style.backgroundImage;
+				clone.style.backgroundSize = layer.style.backgroundSize || 'cover';
+				clone.style.backgroundPosition = layer.style.backgroundPosition || 'center';
+			}
+			
+			clone.querySelectorAll('.wrapper-item, .glow-clone').forEach(child => {
+				child.style.width = '100%';
+				child.style.height = '100%';
+
+				// Rinomina anche gli id dei figli (pianta_1, cornice_rotta, ecc.):
+				// altrimenti restano duplicati con l'originale e getElementById
+				// trova un nodo a caso invece di quello del clone.
+				if (child.id) {
+					child.id = child.id + '-glitch-clone';
+				}
+			});
+			
+			wrapper.appendChild(clone);
+
+			// Nasconde l'originale mentre il clone (dentro il wrapper trasformato)
+			// ne prende visivamente il posto — altrimenti sono sovrapposti.
+			layer.style.visibility = 'hidden';
+		});
+
+		 // Salva i nodi nascosti così restoreSceneTransforms() li ritrova
+		// per riferimento diretto, senza dover ri-fare query che potrebbero
+		// non trovare più lo stesso elemento (o trovarne uno diverso) se
+		// Monogatari ha nel frattempo ricreato la scena.
+		this.hiddenOriginalLayers = layers;
+
+		this.shakeViewport = viewport;
+		this.shakeWrapper = wrapper;
+		this.originalWrapperTransform = wrapper.style.transform || "";
+
+		wrapper.style.willChange = "transform";
+
 		return true;
-	}
-
-	// Prendi background e sky
-	const background = document.querySelector('game-screen [data-ui="background"]');
-	const sky = document.getElementById('sky');
-	
-	const layers = [background, sky].filter(layer => layer);
-
-	if (!layers.length) {
-		return false;
-	}
-
-	let viewport = document.getElementById("glitch-shake-viewport");
-	let wrapper = document.getElementById("glitch-shake-wrapper");
-
-	if (!viewport) {
-		viewport = document.createElement("div");
-		viewport.id = "glitch-shake-viewport";
-	}
-
-	if (!wrapper) {
-		wrapper = document.createElement("div");
-		wrapper.id = "glitch-shake-wrapper";
-	}
-
-	const firstLayer = layers[0];
-	firstLayer.parentNode.insertBefore(viewport, firstLayer);
-
-	if (!viewport.contains(wrapper)) {
-		viewport.appendChild(wrapper);
-	}
-
-	this.originalLayerPositions.clear();
-
-	layers.forEach(layer => {
-		// CREA UNA COPIA SEMPLICE
-		const clone = layer.cloneNode(true);
-		
-		// Cambia ID per evitare conflitti
-		if (layer.id) {
-			clone.id = layer.id + '-glitch-clone';
-		}
-		
-		// Copia lo stile di base
-		clone.style.position = 'absolute';
-		clone.style.inset = '0';
-		clone.style.width = '100%';
-		clone.style.height = '100%';
-		clone.style.pointerEvents = 'none';
-		
-		// Se è un'immagine, copia src
-		if (layer.tagName === 'IMG') {
-			clone.src = layer.src;
-		}
-		
-		// Se è un div con background, copia background
-		if (layer.tagName === 'DIV' && layer.style.backgroundImage) {
-			clone.style.backgroundImage = layer.style.backgroundImage;
-			clone.style.backgroundSize = layer.style.backgroundSize || 'cover';
-			clone.style.backgroundPosition = layer.style.backgroundPosition || 'center';
-		}
-		
-		wrapper.appendChild(clone);
-	});
-
-	this.shakeViewport = viewport;
-	this.shakeWrapper = wrapper;
-	this.originalWrapperTransform = wrapper.style.transform || "";
-
-	wrapper.style.willChange = "transform";
-
-	return true;
-},
+	},
 
 	applySceneTransform(glitchTransform) {
 		if (!this.shakeWrapper?.isConnected) {
@@ -1904,21 +1959,34 @@ prepareShakeWrapper() {
 	// },
 
 	restoreSceneTransforms() {
-	if (!this.shakeWrapper) {
-		return;
-	}
+		if (!this.shakeWrapper) {
+			return;
+		}
 
-	// Non devi ripristinare niente perché hai usato COPIE!
-	// Basta rimuovere il wrapper
-	if (this.shakeViewport) {
-		this.shakeViewport.remove();
-	}
 
-	this.shakeViewport = null;
-	this.shakeWrapper = null;
-	this.originalWrapperTransform = "";
-	this.originalLayerPositions.clear();
-},
+		// Ripristina solo i nodi che abbiamo effettivamente nascosto e che
+		// sono ancora nel DOM: se Monogatari li ha rimossi/sostituiti nel
+		// frattempo, isConnected è false e non c'è nulla da fare (il nuovo
+		// nodo creato da Monogatari non è mai stato toccato, quindi è già
+		// visibile di suo).
+		(this.hiddenOriginalLayers || []).forEach(layer => {
+			if (layer.isConnected) {
+				layer.style.visibility = '';
+			}
+		});
+		this.hiddenOriginalLayers = null;
+
+		// Non devi ripristinare niente perché hai usato COPIE!
+		// Basta rimuovere il wrapper
+		if (this.shakeViewport) {
+			this.shakeViewport.remove();
+		}
+
+		this.shakeViewport = null;
+		this.shakeWrapper = null;
+		this.originalWrapperTransform = "";
+		this.originalLayerPositions.clear();
+	},
 
 //INIZIO GLITCH
 	async start(){
@@ -2457,7 +2525,7 @@ prepareShakeWrapper() {
 		await this.wait(1400);
 	},
 
-	roomShakeQuick(duration = 400, strength = 18) {
+	roomShakeQuick(duration = 400, strength = 18, zoom = 1.04) {
 		if (!this.prepareShakeWrapper()) return Promise.resolve();
 
 		const start = performance.now();
@@ -2467,10 +2535,10 @@ prepareShakeWrapper() {
 				const decay = 1 - t;
 				const x = (Math.random() * 2 - 1) * strength * decay;
 				const y = (Math.random() * 2 - 1) * strength * decay;
-				this.applySceneTransform(`translate(${x}px, ${y}px)`);
+				this.applySceneTransform(`scale(${zoom}) translate(${x}px, ${y}px)`);
 
 				if (t < 1) requestAnimationFrame(tick);
-				else { this.applySceneTransform('translate(0,0)'); resolve(); }
+				else { this.applySceneTransform('scale(1)translate(0,0)'); resolve(); }
 			};
 			requestAnimationFrame(tick);
 		});
@@ -2493,30 +2561,69 @@ prepareShakeWrapper() {
 		});
 	},
 
-	// Shake → overlay rosso pieno (in lento/out brusco) → swap src a overlay acceso
+	preloadImage(src) {
+		return new Promise(resolve => {
+			const preload = new Image();
+			preload.onload = async () => {
+				if (preload.decode) {
+					try { await preload.decode(); }
+					catch (_) {}
+				}
+				resolve();
+			};
+			preload.onerror = resolve;
+			preload.src = src;
+		});
+	},
+
+	revealOriginalLayer(layerId) {
+		const layer = (this.hiddenOriginalLayers || []).find(node => node.id === layerId);
+		if (layer?.isConnected) layer.style.visibility = '';
+	},
+
+
+	waitForPaint() {
+		return new Promise(resolve => {
+			requestAnimationFrame(() => requestAnimationFrame(resolve));
+		});
+	},
+
 	async animateObjectSwap(imgData, { roomShake = false } = {}) {
-		const el = document.getElementById(imgData.id);
-		if (!el || !imgData.onAnimation) return;
+		// Aggiorna sia il clone visibile (durante lo shake) sia l'originale
+		// nascosto: quando stop() ripristina la visibility a fine fase 3,
+		// l'originale deve già mostrare il src aggiornato, senza scatti.
+		const clone = document.getElementById(imgData.id + '-glitch-clone');
+		const original = document.getElementById(imgData.id);
+		const el = clone || original;
+
+		await this.preloadImage(imgData.onAnimation);
 
 		if (roomShake) {
-			await this.roomShakeQuick(700);
+			await this.roomShakeQuick(1500);
 		} else {
 			el.classList.add('rabbia-object-shake');
-			await this.wait(700);
+			await this.wait(1500);
 			el.classList.remove('rabbia-object-shake');
 		}
 
 		await this.fadeSwapOverlay(0, 1, 500);
-		el.src = imgData.onAnimation;
-		await this.wait(120);
+
+		// Cambia immagine con overlay pieno e aspetta il paint prima del fade-out.
+		if (clone) clone.src = imgData.onAnimation;
+		if (original) original.src = imgData.onAnimation;
+		if(roomShake) this.revealOriginalLayer('details-wrapper');
+		await this.waitForPaint();
+	
 		await this.fadeSwapOverlay(1, 0, 260);
 	},
 
 	// Riporta gli oggetti rabbia al src iniziale (chiamato al game over/reset fase).
 	resetRabbiaObjects() {
 		SCENE_IMAGES.rabbia.forEach(o => {
-			const el = document.getElementById(o.id);
-			if (el) el.src = o.src;
+			const original = document.getElementById(o.id);
+			const clone = document.getElementById(`${o.id}-glitch-clone`);
+			if (original) original.src = o.src;
+			if(clone) clone.src = o.src;
 		});
 	},
 
@@ -2544,6 +2651,8 @@ prepareShakeWrapper() {
 				this._phaseResolvers.final = resolve;
 				monogatari.run('jump DialogoGlitch_Finale');
 			});
+		else
+			this.restoreSceneTransforms();
 	}
 };
 
@@ -4655,7 +4764,12 @@ function startAcceleratingClock(options = {}) {
 		const WEEKDAYS = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
 		const isNight = (h) => h < 7 || h > 20;
 
-		let current = new Date();
+		// Parte dall'ora "di gioco" se PhoneUI.setTime() è stato usato in questa
+		// scena, altrimenti dall'ora reale come prima.
+		let current = PhoneUI.timeOffset !== null
+			? new Date(Date.now() + PhoneUI.timeOffset)
+			: new Date();	
+
 		let dayIndex = current.getDay();
 		let wasNight = isNight(current.getHours());
 		let frameId, lastTs, elapsed = 0, stopping = false;
@@ -4691,6 +4805,11 @@ function startAcceleratingClock(options = {}) {
 			if (pastPlateau && !isNight(current.getHours())) {
 				stopping = true;
 				timeEl.classList.remove('clock-glitch');
+
+				// Fissa l'offset all'ora raggiunta dall'accelerazione, così il clock
+				// normale riprende da qui invece di tornare all'ora reale.
+				PhoneUI.timeOffset = current.getTime() - Date.now();
+
 				PhoneUI.startClock();
 				resolve(); // taglio secco, nessun cooldown
 				return;
