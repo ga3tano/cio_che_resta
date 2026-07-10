@@ -3231,6 +3231,24 @@ const SCENE_IMAGES = {
 	]
 }
 
+// Icona "solo osserva": stessa area di ObjectCounter. Se il counter è attivo
+// si affianca (classe .with-counter sposta la posizione via CSS), altrimenti
+// prende il suo posto.
+const WatchOnlyIcon = {
+	element: null,
+	ensure() {
+		if (!this.element) {
+			this.element = document.createElement('div');
+			this.element.id = 'watch-only-icon';
+			this.element.className = 'watch-only-icon';
+			document.body.appendChild(this.element);
+		}
+		return this.element;
+	},
+	show() { this.ensure().classList.add('visible'); },
+	hide() { this.element?.classList.remove('visible'); }
+};
+
 // Contatore discreto "trovati/totale" per le scene a oggetti interattivi
 // (torcia, contrattazione, accettazione). Solo feedback visivo: il gating
 // vero resta nei loop label che confrontano clickedObjects/allObjects.
@@ -5751,6 +5769,99 @@ const EndCredits = {
 			overlay.classList.remove('visible');
 			setTimeout(() => overlay.remove(), 1600);
 		}, 800);
+	}
+};
+
+/*
+TUTORIAL INIZIALE
+4 slide fullscreen, tap per avanzare. Mostrato una sola volta (flag in storage).
+Le icone reali (phone-toggle, object-counter, watch-only) sono clonate via CSS
+per coerenza visiva col gioco vero.
+*/
+const Tutorial = {
+	slides: [
+		{
+			icon: 'object',
+			text: 'Quando vedi oggetti che lampeggiano così, puoi cliccarci sopra per interagire.'
+		},
+		{
+			icon: 'phone',
+			text: 'Tocca questa icona per aprire il telefono: leggi le notifiche, apri le conversazioni e scegli le risposte per andare avanti nella storia.'
+		},
+		{
+			icon: 'watch',
+			text: 'Quando vedi questa icona, è in corso un\'animazione: non devi interagire, limitati a osservare.'
+		},
+		{
+			icon: 'counter',
+			text: 'Questo numero indica quanti oggetti della scena ti restano ancora da trovare.'
+		}
+	],
+
+	index: 0,
+	overlay: null,
+
+	storageKey: 'tutorialShown',
+
+	shouldShow() {
+		return !monogatari.storage()[this.storageKey];
+	},
+
+	play() {
+		if (!this.shouldShow()) return Promise.resolve();
+
+		return new Promise((resolve) => {
+			this.index = 0;
+			this.build();
+			this.render();
+			this.resolver = resolve;
+		});
+	},
+
+	build() {
+		this.overlay = document.createElement('div');
+		this.overlay.id = 'tutorial-overlay';
+		this.overlay.addEventListener('click', () => this.next());
+		document.body.appendChild(this.overlay);
+	},
+
+	render() {
+		const slide = this.slides[this.index];
+
+		// Icona: riusa i marker reali via classe CSS invece di duplicare markup
+		this.overlay.innerHTML = `
+			<div class="tutorial-icon tutorial-icon-${slide.icon}"></div>
+			<p class="tutorial-text">${slide.text}</p>
+			<div class="tutorial-progress">${this.index + 1} / ${this.slides.length}</div>
+			<div class="tutorial-hint">tocca per continuare</div>
+		`;
+
+		requestAnimationFrame(() => this.overlay.classList.add('visible'));
+	},
+
+	next() {
+		this.index++;
+
+		if (this.index >= this.slides.length) {
+			this.close();
+			return;
+		}
+
+		this.overlay.classList.remove('visible');
+		setTimeout(() => this.render(), 200);
+	},
+
+	close() {
+		monogatari.storage()[this.storageKey] = true;
+
+		this.overlay.classList.remove('visible');
+		setTimeout(() => {
+			this.overlay.remove();
+			this.overlay = null;
+			const resolve = this.resolver;
+			this.resolver = null;
+			resolve?.();
+		}, 300);
 	}
 };
 

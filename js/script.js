@@ -111,13 +111,45 @@ monogatari.characters ({
 	'dad': {
 		name: 'Tu',
 		color: '#66bdda'
+	},
+	'guide': {
+		name: 'Jizo',
+		color: '#d4af37'
 	}
+
 });
 
 monogatari.script ({
 	// The game starts here.
 
+	'Tutorial': [
+		() => showTextBox(),
+		'guide Prima di iniziare, lascia che ti guidi attraverso questo mondo.',
+		'guide Stai per giocare ad una visual novel nella quale saranno presenti elementi con i quali potrai interagire.',
+		'guide Quando vedrai qualcosa lampeggiare così, potrai toccarlo per scoprire cosa nasconde.',
+		"guide Prova a ad interagire con l'oggetto per continuare.",
+
+		async () => {
+			hideTextBox();
+			//await Tutorial.objectClicked();
+			//In tutorial objectClciked, faccio qualcosa (un glow, una dissolvenza, nu sacciu)
+			showTextBox();
+		},
+				
+		'guide Questa icona, in basso a destra, è il tuo telefono: toccala per leggere i messaggi e scegliere come rispondere.',
+
+		() => {
+			hideTextBox();
+		},
+		'guide Se vedrai comparire questo simbolo {icona clessidra}, vuol dire che sta accadendo qualcosa: osserva soltanto, non serve fare nulla.',
+		'guide E quando in alto a destra vedrai un numero, saprai quanti dettagli di questa stanza aspettano ancora di essere trovati.',
+		'guide Ora, respira. Sono pronto quando lo sei tu.',
+
+		'jump Start'
+	],
+
 	'Start': [
+		async () => await Tutorial.play(),
 		'show scene #000000 with fadeIn',
 
 		//Test negazione

@@ -470,6 +470,108 @@ html.block-all body {
     pointer-events: none !important; 
 }
 
+/* --- TUTORIAL INIZIALE --- */
+#tutorial-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1000003; /* sopra debug menu */
+	background: rgba(5, 7, 11, 0.96);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 28px;
+	padding: 2rem;
+	opacity: 0;
+	cursor: pointer;
+	transition: opacity 0.3s ease;
+}
+#tutorial-overlay.visible { opacity: 1; }
+
+.tutorial-icon {
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	background: rgba(255,255,255,0.08);
+	border: 1px solid rgba(255,255,255,0.2);
+}
+/* Placeholder oggetto: stesso glow di .clickable-object.highlight */
+.tutorial-icon-object {
+	filter: drop-shadow(0 0 8px rgba(255,255,255,0.7));
+	animation: highlight-pulse 2s ease-in-out infinite;
+}
+.tutorial-icon-phone::before {
+	content: '';
+	display: block;
+	width: 22px; height: 32px;
+	margin: 16px auto;
+	border: 2px solid #fff;
+	border-radius: 7px;
+}
+.tutorial-icon-watch::after {
+	content: '⏳';
+	display: block;
+	text-align: center;
+	line-height: 64px;
+	font-size: 28px;
+}
+.tutorial-icon-counter::after {
+	content: '3/5';
+	display: block;
+	text-align: center;
+	line-height: 64px;
+	font-family: 'Cormorant Garamond', serif;
+	font-size: 20px;
+	color: #e5e5e5;
+}
+
+.tutorial-text {
+	max-width: 480px;
+	text-align: center;
+	color: #f3f7ff;
+	font-family: 'Pangolin', sans-serif;
+	font-size: 1.15rem;
+	line-height: 1.5;
+}
+
+.tutorial-progress {
+	color: rgba(255,255,255,0.4);
+	font-size: 0.85rem;
+	letter-spacing: 0.1em;
+}
+
+.tutorial-hint {
+	position: absolute;
+	bottom: 40px;
+	color: rgba(255,255,255,0.35);
+	font-size: 0.8rem;
+	letter-spacing: 0.15em;
+	animation: pulse-hint 2s ease-in-out infinite;
+}
+
+/* --- WATCH-ONLY ICON: stessa riga di .object-counter --- */
+.watch-only-icon {
+	position: fixed;
+	top: max(14px, env(safe-area-inset-top));
+	right: max(14px, env(safe-area-inset-right));
+	z-index: 300;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: rgba(0,0,0,0.55);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.4s ease, right 0.3s ease;
+}
+.watch-only-icon::after { content: '⏳'; }
+.watch-only-icon.visible { opacity: 1; }
+/* Se il counter è attivo, l'icona si sposta a sinistra del counter invece di sovrapporsi */
+.watch-only-icon.with-counter { right: max(90px, calc(env(safe-area-inset-right) + 90px)); }
+
 /* --- PULSANTE GLOBALE TELEFONO --- */
 /* Wrapper fisso: resta fuori dal layout Monogatari e viene mostrato/nascosto da PhoneToggle. */
 .phone-toggle {
