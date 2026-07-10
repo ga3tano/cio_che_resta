@@ -140,6 +140,8 @@ monogatari.script ({
 
 		() => {
 			hideTextBox();
+			PhoneToggle.show();
+			PhoneToggle.addNotification({title: ""})
 		},
 		'guide Se vedrai comparire questo simbolo {icona clessidra}, vuol dire che sta accadendo qualcosa: osserva soltanto, non serve fare nulla.',
 		'guide E quando in alto a destra vedrai un numero, saprai quanti dettagli di questa stanza aspettano ancora di essere trovati.',
