@@ -3970,6 +3970,72 @@ const SceneFade = {
 };
 
 
+// -----------------------------------------------------------------------------
+// CarCrash — animazione dell'incidente (scena Continua_Depressione).
+// L'immagine dell'auto (Auto_auto.png) parte piccolissima al centro dello
+// schermo e cresce con accelerazione cubica (sempre più veloce), simulando
+// l'auto che si avvicina. Al termine lo schermo diventa nero (SceneFade);
+// il suono del crash viene lanciato dallo script subito dopo.
+// Lo script attende la Promise: `async () => await CarCrash.start()`.
+// -----------------------------------------------------------------------------
+const CarCrash = {
+	duration: 2500,     // ms dall'apparizione dell'auto allo schermo nero completo
+	impactTime: 6200,   // ms nel file sfx_incidente.mp3 in cui il botto è compiuto (picco a ~6.0s);
+	                    // l'audio viene troncato all'inizio: parte da (impactTime - duration)
+	scaleFrom: 0.15,    // scala iniziale (auto lontana)
+	scaleTo: 8,         // scala finale (auto addosso)
+	blackoutLead: 500,  // ms prima della fine: parte il fade a nero (l'auto sparisce "un po' prima")
+	audio: null,
+
+	async start() {
+		// L'audio parte subito, PRIMA dell'animazione: Audio diretto, non
+		// monogatari.run, che accodava il suono dopo la fine della scena.
+		// Il crescendo iniziale viene troncato così il botto cade sul buio.
+		if (!this.audio) this.audio = new Audio('assets/sounds/sfx_incidente.mp3');
+		this.audio.currentTime = Math.max(0, (this.impactTime - this.duration) / 1000);
+		this.audio.play().catch(() => {});
+
+		const img = document.createElement('img');
+		img.src = 'assets/scenes/Auto_auto.png';
+		img.alt = '';
+		// Sotto text-box (100) e phone (150), sopra la scena di Monogatari.
+		img.style.cssText =
+			'position:fixed;left:50%;top:50%;' +
+			`transform:translate(-50%,-50%) scale(${this.scaleFrom});` +
+			'max-width:90vw;z-index:50;pointer-events:none;will-change:transform;';
+		document.body.appendChild(img);
+
+		// Il buio parte blackoutLead ms prima della fine dell'animazione.
+		const blackoutAt = this.duration - this.blackoutLead;
+
+		const t0 = performance.now();
+		let fading = false;
+		await new Promise((resolve) => {
+			const tick = (now) => {
+				const elapsed = now - t0;
+				const t = Math.min(elapsed / this.duration, 1);
+				// Easing cubico: parte lentissima e accelera sempre di più.
+				const e = t * t * t;
+				const scale = this.scaleFrom + (this.scaleTo - this.scaleFrom) * e;
+				img.style.transform = `translate(-50%, -50%) scale(${scale})`;
+
+				// Fade a nero mentre l'auto sta ancora crescendo: non aspettiamo
+				// la scala massima, il buio arriva prima dell'"impatto" visivo.
+				if (!fading && elapsed >= blackoutAt) {
+					fading = true;
+					SceneFade.toVisible({ duration: this.blackoutLead / 1000 }).then(resolve);
+				}
+
+				if (t < 1) requestAnimationFrame(tick);
+			};
+			requestAnimationFrame(tick);
+		});
+
+		img.remove();
+	},
+};
+
+
 const PanicBreath = {
 	state: "idle",	//idle | buildup | plateau | release
 	rate: 1,	//1 = normale, 3 = panico
@@ -4171,10 +4237,10 @@ const BreathingGame = {
 
 	// Durata di ciascuna fase in millisecondi
 	durations: {
-		'inhale':  4000,  // il cerchio cresce lentamente
-		'hold-in': 2000,  // il cerchio resta grande
-		'exhale':  5000,  // il cerchio si riduce (espirazione più lunga = più calmante)
-		'pause':   2000,  // piccola pausa prima del ciclo successivo
+		'inhale':  2500,  // il cerchio cresce lentamente
+		'hold-in': 1200,  // il cerchio resta grande
+		'exhale':  3000,  // il cerchio si riduce (espirazione più lunga = più calmante)
+		'pause':   1200,  // piccola pausa prima del ciclo successivo
 	},
 
 	// Testo mostrato sotto il cerchio per ciascuna fase.
@@ -4236,6 +4302,7 @@ const BreathingGame = {
 		this.isHeld = false;
 		this.currentPhase = 'pause';
 		this.currentScale = this.scaleMin;
+		this._awaitingRelease = false;
 
 		// Resetta il cerchio alla scala minima prima del fade-in, così non
 		// appare già espanso durante la transizione di ingresso.
@@ -4283,11 +4350,13 @@ const BreathingGame = {
 	//
 	// MECCANICA TOCCO PER FASE:
 	//   inhale / hold-in → dito PREMUTO; se si alza → restart (onUp in _bindInput)
-	//   exhale           → dito ALZATO;  se si preme → restart (onDown in _bindInput)
+	//   exhale           → dito ALZATO;  se si preme → restart (onDown in _bindInput);
+	//                       se il dito è ancora giù all'inizio della fase, il
+	//                       minigioco si mette in PAUSA (nessun fallimento) finché
+	//                       non viene alzato (vedi _awaitingRelease e onUp).
 	//   pause            → nessun vincolo
 	//
-	// I timer di grazia gestiscono la transizione: all'inizio di ogni fase attiva
-	// il giocatore ha 1 secondo per adeguarsi allo stato richiesto.
+
 	// -------------------------------------------------------------------------
 	_startPhase(index) {
 		if (this.state !== 'running') return;
@@ -4300,6 +4369,7 @@ const BreathingGame = {
 		this.currentPhase = phase;
 
 		clearTimeout(this._holdGraceTimer);
+		this._awaitingRelease = false;
 
 		if (phase === 'inhale' || phase === 'hold-in') {
 			// Fase PREMUTA: il giocatore deve tenere il dito giù.
@@ -4307,16 +4377,6 @@ const BreathingGame = {
 			if (!this.isHeld) {
 				this._holdGraceTimer = setTimeout(() => {
 					if (this.state === 'running' && !this.isHeld && (this.currentPhase === 'inhale' || this.currentPhase === 'hold-in')) {
-						this._restart();
-					}
-				}, 1000);
-			}
-		} else if (phase === 'exhale') {
-			// Fase RILASCIATA: il giocatore deve alzare il dito.
-			// Se sta ancora premendo (transizione da hold-in), ha 1 secondo per rilasciare.
-			if (this.isHeld) {
-				this._holdGraceTimer = setTimeout(() => {
-					if (this.state === 'running' && this.isHeld && this.currentPhase === 'exhale') {
 						this._restart();
 					}
 				}, 1000);
@@ -4341,6 +4401,25 @@ const BreathingGame = {
 			}
 		}
 
+		if (phase === 'exhale' && this.isHeld) {
+			// Il dito è ancora premuto (transizione da hold-in): niente fallimento,
+			// il cerchio resta fermo e il timer non parte finché non viene alzato
+			// (ripreso in onUp, vedi _bindInput).
+			this._awaitingRelease = true;
+			return;
+		}
+
+		this._runPhase(phase, index, duration);
+	},
+
+
+	// -------------------------------------------------------------------------
+	// _runPhase(phase, index, duration) — avvia effettivamente l'animazione,
+	// l'audio e il timer di una fase. Separato da _startPhase perché la fase
+	// 'exhale' può restare in pausa (_awaitingRelease) prima di partire
+	// davvero, quando il dito viene alzato in ritardo.
+	// -------------------------------------------------------------------------
+	_runPhase(phase, index, duration) {
 		this._animateScale(phase, duration);
 		this._playAudio(phase);
 
@@ -4494,10 +4573,15 @@ const BreathingGame = {
 				this._restart();
 			} else if (this.currentPhase === 'exhale') {
 				// Rilasciato durante l'espirazione: azione corretta.
-				// Annulla il timer di grazia "stai ancora premendo".
-				clearTimeout(this._holdGraceTimer);
 				// Nasconde l'hint "Alza il dito": il giocatore ha già obbedito.
 				if (this.hint) this.hint.classList.remove('visible');
+
+				if (this._awaitingRelease) {
+					// La fase 'exhale' era in pausa in attesa del rilascio:
+					// la avviamo ora, con la sua durata piena.
+					this._awaitingRelease = false;
+					this._runPhase('exhale', this.sequence.indexOf('exhale'), this.durations['exhale']);
+				}
 			}
 		};
 
@@ -5915,6 +5999,7 @@ const DebugMenu = {
 		'Contrattazione',
 		'Continua_Contrattazione',
 		'Depressione',
+		'Continua_Depressione',
 		'Lascia_Andare',
 		'Non_Pronto',
 		'Accettazione',

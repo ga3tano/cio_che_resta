@@ -43,14 +43,15 @@ button:hover {
  * ===========================
 **/
 
-/* Main Menu Styling */
+/* Main Menu Styling — velo scuro sopra lo sfondo, stessa oscurità di .night-overlay (torcia) */
 [data-screen="main"] {
     background-image:
+        linear-gradient(rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.82)),
         url('../assets/scenes/stanza_sfondo_4.png'),
         url('../assets/scenes/cielo_notte.png');
-    background-size: cover, cover;
-    background-position: center, center;
-    background-repeat: no-repeat, no-repeat;
+    background-size: cover, cover, cover;
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, no-repeat;
     background-color: #090c18;
 }
 
@@ -61,7 +62,7 @@ button:hover {
     left: 50%;
     transform: translate(-50%, -50%);
     font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: clamp(3rem, 8vw, 6rem);
+    font-size: clamp(3.5rem, 9vw, 7rem);
     font-weight: 700;
     font-style: italic;
     color: rgba(220, 212, 198, 0.92);
@@ -75,40 +76,166 @@ button:hover {
     z-index: 5;
 }
 
-/* Nascondi il pulsante Load */
-[data-screen="main"] button[data-open="load"] {
+/* Nascondi i pulsanti Load e Help */
+[data-screen="main"] button[data-open="load"],
+[data-screen="main"] button[data-open="help"] {
     display: none !important;
 }
 
-/* Main Menu Buttons Styling */
-[data-screen="main"] button {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: clamp(1.4rem, 3vw, 2rem);
-    font-weight: 300;
-    font-style: italic;
-    letter-spacing: 0.16em;
-    color: rgba(200, 192, 178, 0.78);
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid rgba(200, 192, 178, 0.15);
-    border-radius: 0;
-    width: auto;
-    height: auto;
-    padding: 0.55em 0.6em 0.45em;
-    text-transform: lowercase;
+/* Centra il menu (titolo escluso, che resta in position:absolute) nel mezzo dello schermo */
+[data-screen="main"] {
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Il motore posiziona <main-menu> con position:absolute; bottom:0; align-items:flex-end
+   (vedi main-menu{} in engine/core/monogatari.css) — lo sovrascriviamo per
+   metterlo al centro esatto dello schermo, sotto il titolo. */
+main-menu {
+    position: absolute !important;
+    bottom: 8% !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+    display: flex !important;
+    flex-direction: column;
+    align-items: center !important;
+    gap: 1.1rem;
+}
+
+/* Pulsante "a pillola" condiviso da tutti i pulsanti dell'interfaccia (menu
+   principale, menu debug, telefono): stessa forma, sfondo scuro sfocato,
+   bordo, ombra e hover. Ogni contesto cambia SOLO il font, sotto. */
+[data-screen="main"] button,
+.debug-menu-toggle,
+.debug-menu-close,
+.debug-menu-jump,
+.debug-menu-reset {
+    color: rgba(235, 225, 208, 0.92);
+    background: rgba(8, 10, 14, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.42),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
     cursor: pointer;
     transition:
-        color 0.4s ease,
-        border-bottom-color 0.4s ease,
-        letter-spacing 0.35s ease;
+        background 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease;
 }
 
 [data-screen="main"] button:hover,
-[data-screen="main"] button:focus {
-    color: rgba(235, 225, 208, 1);
-    border-bottom-color: rgba(200, 192, 178, 0.45);
-    letter-spacing: 0.22em;
+[data-screen="main"] button:focus-visible,
+.debug-menu-toggle:hover,
+.debug-menu-close:hover,
+.debug-menu-jump:hover,
+.debug-menu-reset:hover {
+    background: rgba(20, 24, 32, 0.9);
+    border-color: rgba(255, 255, 255, 0.34);
+    outline: none;
+    transform: translateY(-1px);
+}
+
+/* Font del menu principale: unico attributo che differenzia questi pulsanti
+   dagli altri che condividono lo stesso stile "a pillola" sopra. */
+[data-screen="main"] button {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(1.9rem, 4vw, 2.7rem);
+    font-weight: 400;
+    font-style: italic;
+    letter-spacing: 0.12em;
+    width: min(90vw, 340px);
+    height: auto;
+    padding: 0.55em 1em;
+    text-align: center;
+    text-transform: lowercase;
+}
+
+/* Settings Screen — stessa identità visiva del menu principale: sfondo camera
+   da letto ancora più scuro (velo 0.9 invece di 0.82), testo bianco, stesso font. */
+[data-screen="settings"] {
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+        url('../assets/scenes/stanza_sfondo_4.png'),
+        url('../assets/scenes/cielo_notte.png');
+    background-size: cover, cover, cover;
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, no-repeat;
+    background-color: #090c18;
+    color: rgba(235, 225, 208, 0.92);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center;
+}
+
+[data-screen="settings"] h3,
+[data-screen="settings"] span,
+[data-screen="settings"] label {
+    color: rgba(235, 225, 208, 0.92);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    text-align: center;
+}
+
+[data-screen="settings"] h3 {
+    font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+    font-style: italic;
+}
+
+[data-screen="settings"] span {
+    font-size: clamp(1.15rem, 2.4vw, 1.6rem);
+}
+
+[data-screen="settings"] select {
+    background: rgba(8, 10, 14, 0.55);
+    color: rgba(235, 225, 208, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    font-size: clamp(1rem, 2vw, 1.3rem);
+}
+
+/* Slider: traccia grigia, pallina di regolazione bianca */
+[data-screen="settings"] input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 60%;
+    height: 6px;
     background: transparent;
+}
+
+[data-screen="settings"] input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(180, 180, 180, 0.5);
+}
+
+[data-screen="settings"] input[type="range"]::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(180, 180, 180, 0.5);
+}
+
+[data-screen="settings"] input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -6px; /* centra la pallina (18px) sulla traccia (6px) */
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+}
+
+[data-screen="settings"] input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
 }
 
 /**
@@ -301,7 +428,7 @@ text-box [data-content="text"],
 [data-content="dialog"] {
 	padding: 0.5rem 1rem !important;
 	line-height: 1.4;
-	font-size: 1.1rem;
+	font-size: 1.25rem;
 	color: #f3f7ff !important;
 }
 
@@ -326,7 +453,7 @@ text-box [data-content="text"],
 	[data-ui="say"],
 	[data-content="dialog"] {
 		padding: 0.35rem 0.65rem !important;
-		font-size: 0.85rem;
+		font-size: 0.95rem;
 		line-height: 1.3;
 	}
 }
@@ -2174,23 +2301,14 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	font: inherit;
 }
 
-/* Bottone compatto sempre visibile: apre e chiude il pannello debug. */
+/* Bottone compatto sempre visibile: apre e chiude il pannello debug.
+   Stile "a pillola" condiviso (vedi regola comune sopra, con [data-screen="main"] button):
+   qui restano solo font e layout specifici. */
 .debug-menu-toggle {
 	pointer-events: auto;
-	border: 1px solid rgba(255, 255, 255, 0.18);
-	border-radius: 8px;
-	background: rgba(10, 10, 12, 0.88);
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	color: #fff;
 	padding: 8px 10px;
-	cursor: pointer;
-	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-	backdrop-filter: blur(12px);
-}
-
-/* Feedback hover condiviso tra bottone principale e bottoni interni. */
-.debug-menu-toggle:hover,
-.debug-menu button:hover {
-	background: rgba(255, 255, 255, 0.14);
 }
 
 /* Pannello apribile: e' scrollabile per funzionare anche su viewport piccoli. */
@@ -2233,11 +2351,8 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 .debug-menu-close {
 	min-width: 30px;
 	height: 30px;
-	border: 1px solid rgba(255, 255, 255, 0.14);
-	border-radius: 8px;
-	background: rgba(255, 255, 255, 0.08);
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	color: #fff;
-	cursor: pointer;
 }
 
 /* Riga informativa: label corrente, messaggi di salto o errore. */
@@ -2273,11 +2388,8 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 /* Stile base comune ai bottoni di salto e al reset runtime. */
 .debug-menu-jump,
 .debug-menu-reset {
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	border-radius: 8px;
-	background: rgba(255, 255, 255, 0.07);
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	color: #fff;
-	cursor: pointer;
 	text-align: left;
 }
 
@@ -2550,12 +2662,11 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 */
 .breathing-label {
 	position: absolute;
-	top: 50%;
+	top: 20%;
 	left: 50%;
 	transform: translateX(-50%);
-	margin-top: 135px; /* 115px raggio cerchio max + 20px clearance */
 	font-family: 'Pangolin', sans-serif;
-	font-size: clamp(1rem, 2.8vw, 1.5rem);
+	font-size: clamp(1.5rem, 4vw, 2.3rem);
 	font-weight: 400;
 	letter-spacing: 0.28em;
 	color: rgba(195, 220, 248, 0.82);
@@ -2578,11 +2689,11 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 */
 .breathing-hint {
 	position: absolute;
-	bottom: 13%;
+	top: 13%;
 	left: 50%;
 	transform: translateX(-50%);
 	font-family: 'Pangolin', sans-serif;
-	font-size: clamp(1.1rem, 3vw, 1.5rem);
+	font-size: clamp(1.4rem, 3.8vw, 1.9rem);
 	font-style: italic;
 	color: rgba(145, 180, 218, 0.42); /* tenue: suggerimento, non istruzione imperativa */
 	text-align: center;
