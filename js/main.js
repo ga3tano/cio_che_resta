@@ -3963,6 +3963,72 @@ const SceneFade = {
 };
 
 
+// -----------------------------------------------------------------------------
+// CarCrash — animazione dell'incidente (scena Continua_Depressione).
+// L'immagine dell'auto (Auto_auto.png) parte piccolissima al centro dello
+// schermo e cresce con accelerazione cubica (sempre più veloce), simulando
+// l'auto che si avvicina. Al termine lo schermo diventa nero (SceneFade);
+// il suono del crash viene lanciato dallo script subito dopo.
+// Lo script attende la Promise: `async () => await CarCrash.start()`.
+// -----------------------------------------------------------------------------
+const CarCrash = {
+	duration: 2500,     // ms dall'apparizione dell'auto allo schermo nero completo
+	impactTime: 6200,   // ms nel file sfx_incidente.mp3 in cui il botto è compiuto (picco a ~6.0s);
+	                    // l'audio viene troncato all'inizio: parte da (impactTime - duration)
+	scaleFrom: 0.15,    // scala iniziale (auto lontana)
+	scaleTo: 8,         // scala finale (auto addosso)
+	blackoutLead: 500,  // ms prima della fine: parte il fade a nero (l'auto sparisce "un po' prima")
+	audio: null,
+
+	async start() {
+		// L'audio parte subito, PRIMA dell'animazione: Audio diretto, non
+		// monogatari.run, che accodava il suono dopo la fine della scena.
+		// Il crescendo iniziale viene troncato così il botto cade sul buio.
+		if (!this.audio) this.audio = new Audio('assets/sounds/sfx_incidente.mp3');
+		this.audio.currentTime = Math.max(0, (this.impactTime - this.duration) / 1000);
+		this.audio.play().catch(() => {});
+
+		const img = document.createElement('img');
+		img.src = 'assets/scenes/Auto_auto.png';
+		img.alt = '';
+		// Sotto text-box (100) e phone (150), sopra la scena di Monogatari.
+		img.style.cssText =
+			'position:fixed;left:50%;top:50%;' +
+			`transform:translate(-50%,-50%) scale(${this.scaleFrom});` +
+			'max-width:90vw;z-index:50;pointer-events:none;will-change:transform;';
+		document.body.appendChild(img);
+
+		// Il buio parte blackoutLead ms prima della fine dell'animazione.
+		const blackoutAt = this.duration - this.blackoutLead;
+
+		const t0 = performance.now();
+		let fading = false;
+		await new Promise((resolve) => {
+			const tick = (now) => {
+				const elapsed = now - t0;
+				const t = Math.min(elapsed / this.duration, 1);
+				// Easing cubico: parte lentissima e accelera sempre di più.
+				const e = t * t * t;
+				const scale = this.scaleFrom + (this.scaleTo - this.scaleFrom) * e;
+				img.style.transform = `translate(-50%, -50%) scale(${scale})`;
+
+				// Fade a nero mentre l'auto sta ancora crescendo: non aspettiamo
+				// la scala massima, il buio arriva prima dell'"impatto" visivo.
+				if (!fading && elapsed >= blackoutAt) {
+					fading = true;
+					SceneFade.toVisible({ duration: this.blackoutLead / 1000 }).then(resolve);
+				}
+
+				if (t < 1) requestAnimationFrame(tick);
+			};
+			requestAnimationFrame(tick);
+		});
+
+		img.remove();
+	},
+};
+
+
 const PanicBreath = {
 	state: "idle",	//idle | buildup | plateau | release
 	rate: 1,	//1 = normale, 3 = panico
@@ -5926,6 +5992,7 @@ const DebugMenu = {
 		'Contrattazione',
 		'Continua_Contrattazione',
 		'Depressione',
+		'Continua_Depressione',
 		'Lascia_Andare',
 		'Non_Pronto',
 		'Accettazione',

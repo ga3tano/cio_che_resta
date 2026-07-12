@@ -95,6 +95,7 @@ monogatari.assets ('scenes', {
 	room_day_dark: 'stanza_sfondo_3.png',
 	room_accettazione: 'stanza2_sfondo_1.png',
 	auto: 'Auto.png',
+	auto_back: 'Auto_back.png',
 	feet: 'Piedi.png',
 	teddybear: 'Orsacchiotto.png',
 	outside: 'scena2_mondo.png',
@@ -1196,11 +1197,13 @@ monogatari.script ({
 			SceneUtility.emptyScene();
 			AudioManager.setVolume('depression', 0.15, 1);
 		},
-		'show scene auto',
+		'show scene auto_back',
 		async() => await SceneFade.toHidden({duration: 0.25}),
-		'play sound crash',
+		// L'auto si avvicina sempre più veloce, poi lo schermo diventa nero.
+		// Il suono crash lo lancia CarCrash, sincronizzato col buio.
+		async() => await CarCrash.start(),
 
-		'wait 10000',
+		'wait 4000',
 		async() =>{
 			await SceneFade.toVisible({duration: 0.25});
 			AudioManager.setLowPass(400, 1.5);
