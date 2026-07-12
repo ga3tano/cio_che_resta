@@ -1452,6 +1452,7 @@ monogatari.script ({
 
 	'Non_Pronto': [
 		async () => {
+			hideTextBox(),
 			await SceneFade.toVisible();
 			await SceneUtility.loadScene("rabbia");
 		},
