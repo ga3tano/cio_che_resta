@@ -124,14 +124,25 @@ monogatari.script ({
 	// The game starts here.
 
 	'Tutorial': [
+		'jump Start', //Per saltare, finchè non è finito
 		() => showTextBox(),
+		'guide Benvenuto! Mi presento, io sono Jizo.',
 		'guide Prima di iniziare, lascia che ti guidi attraverso questo mondo.',
-		'guide Stai per giocare ad una visual novel nella quale saranno presenti elementi con i quali potrai interagire.',
-		'guide Quando vedrai qualcosa lampeggiare così, potrai toccarlo per scoprire cosa nasconde.',
-		"guide Prova a ad interagire con l'oggetto per continuare.",
+		'guide Stai per giocare ad una visual novel nella quale saranno presenti elementi con cui potrai interagire.',
+		'guide Quando vedrai qualcosa lampeggiare in questo modo, potrai toccarlo per scoprire cosa nasconde.',
 
 		async () => {
-			hideTextBox();
+			hideTextBox(false);
+			// await Tutorial.showObject();
+			showTextBox();
+		},
+
+		"guide Prova a ad interagire con l'oggetto per continuare.",
+		'clear',
+
+		async () => {
+			hideTextBox(false);
+			await sleep(3000);
 			//await Tutorial.objectClicked();
 			//In tutorial objectClciked, faccio qualcosa (un glow, una dissolvenza, nu sacciu)
 			showTextBox();
@@ -139,21 +150,112 @@ monogatari.script ({
 				
 		'guide Questa icona, in basso a destra, è il tuo telefono: toccala per leggere i messaggi e scegliere come rispondere.',
 
-		() => {
+		async () => {
 			hideTextBox();
-			PhoneToggle.show();
-			PhoneToggle.addNotification({title: ""})
+			PhoneUI.addIncoming("Cosa preferisci per cena?", {title: "Mamma"});
+			await PhoneUI.waitUntilAllNotificationsRead();
+			PhoneToggle.lockToggle(true);
 		},
-		'guide Se vedrai comparire questo simbolo {icona clessidra}, vuol dire che sta accadendo qualcosa: osserva soltanto, non serve fare nulla.',
-		'guide E quando in alto a destra vedrai un numero, saprai quanti dettagli di questa stanza aspettano ancora di essere trovati.',
-		'guide Ora, respira. Sono pronto quando lo sei tu.',
 
-		'jump Start'
+		{'PhoneChoice': 
+			{
+				'Lasagna': {
+					'Text': 'Lasagna',
+					'Do': 'jump TutorialChoice_1'
+				},
+
+				'Insalata': {
+					'Text': 'Insalata',
+					'Do': 'jump TutorialChoice_2'
+				},
+			}
+		}	
+	],
+
+	'TutorialChoice_1':[
+		async () => {
+			PhoneUI.addOutgoing("Sto morendo di fame, fammi la lasagna per favore");
+			await sleep(1500);
+			PhoneUI.addIncoming("Va bene amore, la faccio proprio come piace a te!", {notify: false});
+		},
+
+		'wait 2000',
+
+		{'PhoneChoice': {
+			'Blocca':{
+				'Text': 'Blocca schermo',
+				'Do':'jump ContinuaTutorial'
+			}
+		}}
+	],
+
+	'TutorialChoice_2':[
+		async () => {
+			PhoneUI.addOutgoing("Non ho molta fame, preparami un'insalata");
+			await sleep(1500);
+			PhoneUI.addIncoming("Ti faccio anche due polpette, ti vedo sciupato a mamma", {notify: false});
+		},
+
+		'wait 2000',
+
+		{'PhoneChoice': {
+			'Blocca':{
+				'Text': 'Blocca schermo',
+				'Do':'jump ContinuaTutorial'
+			}
+		}}
+	],
+
+	'ContinuaTutorial':[
+		async () => {
+			PhoneUI.hide();
+			PhoneToggle.lockToggle(false);
+			PhoneToggle.hide();
+			await sleep (1500);
+			showTextBox();
+		},
+
+		'guide A seconda delle scelte che farai, la storia si svilupperà in un modo diverso.',
+
+		'guide Se vedrai comparire questo simbolo {icona ciak}, vuol dire che sta accadendo qualcosa: osserva soltanto, non serve fare nulla.',
+		async () => {
+			hideTextBox(false);
+			WatchOnlyIcon.show();
+			//Tutorial.highlight('ciak');
+			await sleep(3000);
+			WatchOnlyIcon.hide();
+			showTextBox();
+		},
+
+		'clear',
+		'guide E quando in alto a destra vedrai un numero, saprai quanti dettagli di questa stanza aspettano ancora di essere trovati.',
+		
+		async () => {
+			hideTextBox(false);
+			ObjectCounter.show(4);
+			//Tutorial.highlight('objectCounter');
+			await sleep(3000);
+			ObjectCounter.hide();
+			showTextBox();
+		},
+
+		'guide Ora, respira. Sarò pronto quando lo sarai tu.',
+
+		{
+			'Choice': {
+				'Inizia':{
+					'Text': 'INIZIA',
+					'Do': 'jump Start' 
+				}
+			}
+		}
 	],
 
 	'Start': [
-		async () => await Tutorial.play(),
-		'show scene #000000 with fadeIn',
+
+		// async () => await Tutorial.play(),
+		() => GameTimer.start(),
+		'show scene #000000 with fadeIn duration 5s',
 
 		//Test negazione
 		//'jump Rabbia',
@@ -1350,6 +1452,7 @@ monogatari.script ({
 
 	'Non_Pronto': [
 		async () => {
+			hideTextBox(),
 			await SceneFade.toVisible();
 			await SceneUtility.loadScene("rabbia");
 		},
@@ -1664,6 +1767,7 @@ monogatari.script ({
 			});
 		},
 		async () => {
+			await ClearTimeScreen.play();
 			await EndCredits.play(); // risolve al click del giocatore dopo "Fine"
 
 			// Sotto il nero: ferma tutte le musiche/loop custom e riporta il
