@@ -501,6 +501,8 @@ const PhoneUI = {
 			PhoneUI.addIncoming('Ciao', { notify: false }); // nessuna notifica
 		*/
 
+		this.setContactName(options.title ?? this.getContactName());
+
 		if(!PhoneToggle.visible)
 			PhoneToggle.show();
 
@@ -3241,6 +3243,11 @@ const WatchOnlyIcon = {
 			this.element = document.createElement('div');
 			this.element.id = 'watch-only-icon';
 			this.element.className = 'watch-only-icon';
+			
+			const img = document.createElement('img');
+			img.src = '../assets/images/ciak.png';
+			
+			this.element.appendChild(img);
 			document.body.appendChild(this.element);
 		}
 		return this.element;

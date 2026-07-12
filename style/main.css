@@ -555,8 +555,8 @@ html.block-all body {
 	top: max(14px, env(safe-area-inset-top));
 	right: max(14px, env(safe-area-inset-right));
 	z-index: 300;
-	width: 32px;
-	height: 32px;
+	width: 64px;
+	height: 64px;
 	border-radius: 50%;
 	background: rgba(0,0,0,0.55);
 	display: flex;
@@ -567,7 +567,6 @@ html.block-all body {
 	pointer-events: none;
 	transition: opacity 0.4s ease, right 0.3s ease;
 }
-.watch-only-icon::after { content: '⏳'; }
 .watch-only-icon.visible { opacity: 1; }
 /* Se il counter è attivo, l'icona si sposta a sinistra del counter invece di sovrapporsi */
 .watch-only-icon.with-counter { right: max(90px, calc(env(safe-area-inset-right) + 90px)); }
