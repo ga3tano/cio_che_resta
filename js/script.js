@@ -238,7 +238,7 @@ monogatari.script ({
 			showTextBox();
 		},
 
-		'guide Ora, respira. Sono pronto quando lo sei tu.',
+		'guide Ora, respira. Sarò pronto quando lo sarai tu.',
 
 		{
 			'Choice': {
@@ -251,8 +251,9 @@ monogatari.script ({
 	],
 
 	'Start': [
-		
+
 		// async () => await Tutorial.play(),
+		() => GameTimer.start(),
 		'show scene #000000 with fadeIn duration 5s',
 
 		//Test negazione
@@ -1764,6 +1765,7 @@ monogatari.script ({
 			});
 		},
 		async () => {
+			await ClearTimeScreen.play();
 			await EndCredits.play(); // risolve al click del giocatore dopo "Fine"
 
 			// Sotto il nero: ferma tutte le musiche/loop custom e riporta il

@@ -42,6 +42,9 @@ button:hover {
  * Main Menu Styling
  * ===========================
 **/
+* {
+	-webkit-tap-highlight-color: transparent;
+}
 
 /* Main Menu Styling — velo scuro sopra lo sfondo, stessa oscurità di .night-overlay (torcia) */
 [data-screen="main"] {
@@ -330,6 +333,7 @@ text-box {
     display: grid !important;
 	background: rgba(6, 10, 16, 0.50) !important;
 	color: #f3f7ff !important;
+	padding-top: 0.5%;
 	/* Sopra tutti i layer di scena (dim 9, door-layer 10, filtri 12-13, rage-border 20),
 	   sotto phone-toggle (150) e debug menu */
 	z-index: 100 !important;
@@ -341,7 +345,7 @@ text-box {
 /* Reposition character name as a simple translucent label */
 text-box [data-content="name"] {
 	position: fixed;
-	bottom: 12%; /* deve combaciare con text-box height (12%) */
+	bottom: 11.5%; /* deve combaciare con text-box height (12%) */
 	right: 0;
 	min-width: 80px;
 	background: rgba(6, 10, 16, 0.50);
@@ -360,7 +364,7 @@ text-box [data-content="name"] {
 	display: block !important;
 	line-height: 1;
 	transition: transform 160ms ease, background 160ms ease;
-	text-align: right;
+	text-align: center;
 }
 
 /* Icona "prosegui": indipendente da text-box, nascosta finché non riceve .visible */
@@ -395,7 +399,6 @@ body.speaker-shadow text-box {
 
 body.speaker-shadow text-box [data-content="name"] {
 	color: #7b5eb0 !important;
-	background: rgba(255, 255, 255, 0.22);
     backdrop-filter: blur(24px);
 }
 
@@ -412,7 +415,6 @@ body.speaker-dad text-box {
 
 body.speaker-dad text-box [data-content="name"] {
 	color: #66bdda !important;
-	background: rgba(255, 255, 255, 0.22);
     backdrop-filter: blur(24px);
 }
 
@@ -673,6 +675,53 @@ html.block-all body {
 	color: rgba(255,255,255,0.35);
 	font-size: 0.8rem;
 	letter-spacing: 0.15em;
+	animation: pulse-hint 2s ease-in-out infinite;
+}
+
+/* Clear time */
+.clear-time-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1000000;
+	background: #000;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 18px;
+	opacity: 0;
+	transition: opacity 0.8s ease;
+	cursor: pointer;
+}
+
+.clear-time-overlay.visible { opacity: 1; }
+
+.clear-time-title {
+	font-family: 'MrHorror', sans-serif;
+	font-size: clamp(2rem, 9vw, 3.5rem);
+	color: #d4af37;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	-webkit-text-stroke: 3px #000;
+	text-shadow: 0 6px 0 #000;
+}
+
+.clear-time-value {
+	font-family: 'Pangolin', sans-serif;
+	font-size: clamp(3.5rem, 18vw, 7rem);
+	color: #fff;
+	-webkit-text-stroke: 4px #000;
+	text-shadow: 0 8px 0 #000, 0 0 40px rgba(238,203,135,0.4);
+	font-variant-numeric: tabular-nums;
+}
+
+.clear-time-hint {
+	position: absolute;
+	right: 24px;
+	bottom: max(24px, env(safe-area-inset-bottom));
+	font-family: 'Pangolin', sans-serif;
+	font-size: 1.8rem;
+	color: rgba(255,255,255,0.8);
 	animation: pulse-hint 2s ease-in-out infinite;
 }
 

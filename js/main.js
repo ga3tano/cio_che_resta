@@ -3233,77 +3233,6 @@ const SCENE_IMAGES = {
 	]
 }
 
-// Icona "solo osserva": stessa area di ObjectCounter. Se il counter è attivo
-// si affianca (classe .with-counter sposta la posizione via CSS), altrimenti
-// prende il suo posto.
-const WatchOnlyIcon = {
-	element: null,
-	ensure() {
-		if (!this.element) {
-			this.element = document.createElement('div');
-			this.element.id = 'watch-only-icon';
-			this.element.className = 'watch-only-icon';
-			
-			const img = document.createElement('img');
-			img.src = '../assets/images/ciak.png';
-			
-			this.element.appendChild(img);
-			document.body.appendChild(this.element);
-		}
-		return this.element;
-	},
-	show() { this.ensure().classList.add('visible'); },
-	hide() { this.element?.classList.remove('visible'); }
-};
-
-// Contatore discreto "trovati/totale" per le scene a oggetti interattivi
-// (torcia, contrattazione, accettazione). Solo feedback visivo: il gating
-// vero resta nei loop label che confrontano clickedObjects/allObjects.
-const ObjectCounter = {
-	element: null,
-	total: 0,
-	count: 0,
-
-	ensure() {
-		if (!this.element) {
-			this.element = document.createElement('div');
-			this.element.id = 'object-counter';
-			this.element.className = 'object-counter';
-			document.body.appendChild(this.element);
-		}
-		return this.element;
-	},
-
-	show(total) {
-		if (!total) return;
-		this.total = total;
-		this.count = 0;
-		this.render();
-		this.ensure().classList.add('visible');
-	},
-
-	increment() {
-		if (!this.total) return;
-		this.count = Math.min(this.count + 1, this.total);
-		this.render();
-
-		// A scena completata il contatore non serve più: sparisce da solo.
-		if (this.count >= this.total) {
-			setTimeout(() => this.hide(), 1500);
-		}
-	},
-
-	render() {
-		this.ensure().textContent = `${this.count}/${this.total}`;
-	},
-
-	hide() {
-		this.total = 0;
-		this.count = 0;
-		this.element?.classList.remove('visible');
-	}
-};
-
 const SceneUtility = {
 	clickedItems: false,
 	hoverTimer: null,
@@ -3969,6 +3898,76 @@ const SceneFade = {
 	}
 };
 
+// Icona "solo osserva": stessa area di ObjectCounter. Se il counter è attivo
+// si affianca (classe .with-counter sposta la posizione via CSS), altrimenti
+// prende il suo posto.
+const WatchOnlyIcon = {
+	element: null,
+	ensure() {
+		if (!this.element) {
+			this.element = document.createElement('div');
+			this.element.id = 'watch-only-icon';
+			this.element.className = 'watch-only-icon';
+			
+			const img = document.createElement('img');
+			img.src = '../assets/images/ciak.png';
+			
+			this.element.appendChild(img);
+			document.body.appendChild(this.element);
+		}
+		return this.element;
+	},
+	show() { this.ensure().classList.add('visible'); },
+	hide() { this.element?.classList.remove('visible'); }
+};
+
+// Contatore discreto "trovati/totale" per le scene a oggetti interattivi
+// (torcia, contrattazione, accettazione). Solo feedback visivo: il gating
+// vero resta nei loop label che confrontano clickedObjects/allObjects.
+const ObjectCounter = {
+	element: null,
+	total: 0,
+	count: 0,
+
+	ensure() {
+		if (!this.element) {
+			this.element = document.createElement('div');
+			this.element.id = 'object-counter';
+			this.element.className = 'object-counter';
+			document.body.appendChild(this.element);
+		}
+		return this.element;
+	},
+
+	show(total) {
+		if (!total) return;
+		this.total = total;
+		this.count = 0;
+		this.render();
+		this.ensure().classList.add('visible');
+	},
+
+	increment() {
+		if (!this.total) return;
+		this.count = Math.min(this.count + 1, this.total);
+		this.render();
+
+		// A scena completata il contatore non serve più: sparisce da solo.
+		if (this.count >= this.total) {
+			setTimeout(() => this.hide(), 1500);
+		}
+	},
+
+	render() {
+		this.ensure().textContent = `${this.count}/${this.total}`;
+	},
+
+	hide() {
+		this.total = 0;
+		this.count = 0;
+		this.element?.classList.remove('visible');
+	}
+};
 
 // -----------------------------------------------------------------------------
 // CarCrash — animazione dell'incidente (scena Continua_Depressione).
@@ -4737,7 +4736,6 @@ const BreathingGame = {
 	},
 };
 
-
 const BlinkOverlay = {
 	speed: 300,
 	overlay: null,
@@ -4832,106 +4830,6 @@ const BlinkOverlay = {
 		}
 	} 
 }
-
-function startAcceleratingClock(options = {}) {
-	return new Promise((resolve) => {
-		// Overlay + cielo notte: singolo punto di controllo per entrambi i layer
-		const DayCycle = (() => {
-			let overlayEl = null;
-			let skyEl = null;
-
-			function init() {
-				overlayEl = document.createElement('div');
-				overlayEl.className = 'daycycle-layer';
-				document.body.appendChild(overlayEl);
-
-				skyEl = document.createElement('div');
-				skyEl.className = 'sky-night';
-				skyEl.style.backgroundImage = 'url("assets/scenes/cielo_notte.png")'; // path fisso, una volta sola
-				document.body.appendChild(skyEl);
-			}
-
-			function set(isNight) {
-				if (!overlayEl) init();
-				overlayEl.classList.toggle('active', isNight);
-				skyEl.classList.toggle('active', isNight);
-			}
-
-			return { set };
-		})();
-
-		// rampMs: durata dell'accelerazione iniziale. plateauMs: durata nominale a velocità costante.
-		// speedPerMs: minuti simulati per ms reale a regime (hardcoded, unica fonte di velocità).
-		const { rampMs = 3000, plateauMs = 6000 } = options;
-		const speedPerMs = 1.3;
-
-		const timeEl = document.getElementById('lock-time');
-		const dateEl = document.getElementById('phone-lock-date');
-
-		PhoneUI.stopClock(); // sospende il clock reale per non farlo litigare col nostro rendering
-
-		const WEEKDAYS = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
-		const isNight = (h) => h < 7 || h > 20;
-
-		// Parte dall'ora "di gioco" se PhoneUI.setTime() è stato usato in questa
-		// scena, altrimenti dall'ora reale come prima.
-		let current = PhoneUI.timeOffset !== null
-			? new Date(Date.now() + PhoneUI.timeOffset)
-			: new Date();	
-
-		let dayIndex = current.getDay();
-		let wasNight = isNight(current.getHours());
-		let frameId, lastTs, elapsed = 0, stopping = false;
-
-		function render() {
-			timeEl.textContent = `${String(current.getHours()).padStart(2,'0')}:${String(current.getMinutes()).padStart(2,'0')}`;
-
-			const nightNow = isNight(current.getHours());
-			if (wasNight && !nightNow) dayIndex = (dayIndex + 1) % 7; // avanza il giorno solo al varco notte->giorno
-			wasNight = nightNow;
-
-			dateEl.textContent = WEEKDAYS[dayIndex];
-			DayCycle.set(nightNow);
-		}
-
-		timeEl.classList.add('clock-glitch'); // solo effetto CSS (blur/flicker): il tempo resta lineare, niente salti random
-
-		function loop(ts) {
-			if (lastTs === undefined) lastTs = ts;
-			const dt = ts - lastTs;
-			lastTs = ts;
-			elapsed += dt;
-
-			// Velocità: ease-in quadratico durante il ramp, poi costante (plateau + eventuale extra)
-			const rampProgress = Math.min(1, elapsed / rampMs);
-			const speed = speedPerMs * rampProgress * rampProgress;
-
-			current = new Date(current.getTime() + speed * dt * 60000);
-			render();
-
-			// Oltre il plateau nominale: si ferma solo se è giorno, altrimenti continua un altro giro
-			const pastPlateau = elapsed >= rampMs + plateauMs;
-			if (pastPlateau && !isNight(current.getHours())) {
-				stopping = true;
-				timeEl.classList.remove('clock-glitch');
-
-				// Fissa l'offset all'ora raggiunta dall'accelerazione, così il clock
-				// normale riprende da qui invece di tornare all'ora reale.
-				PhoneUI.timeOffset = current.getTime() - Date.now();
-
-				PhoneUI.startClock();
-				resolve(); // taglio secco, nessun cooldown
-				return;
-			}
-
-			frameId = requestAnimationFrame(loop);
-		};
-
-		frameId = requestAnimationFrame(loop);
-	});
-}
-	
-
 
 const AudioManager = {
 	//Dizionario delle tracce audio già create, indicizzato per ID
@@ -5538,97 +5436,103 @@ const BWFilter = {
     }
 };
 
-/*OGGETTI CLICKABILI*/
-// function showClickableObjects(){
-// 	const container = document.createElement("div");
-// 	container.id = "clickable-objects";
-// 	container.style.position = "absolute";
-// 	container.style.top = "0";
-// 	container.style.left = "0";
-// 	container.style.width = "100%";
-// 	container.style.height = "100%";
-// 	container.style.pointerEvents = "none"; //gli oggetti stessi avranno pointerEvents
+function startAcceleratingClock(options = {}) {
+	return new Promise((resolve) => {
+		// Overlay + cielo notte: singolo punto di controllo per entrambi i layer
+		const DayCycle = (() => {
+			let overlayEl = null;
+			let skyEl = null;
 
-// 	const objects = [
-// 		{ id: "obj1", img: "assets/images/placeholder.png", x:"70%", y:"60%", w:"80px"},
-// 		{ id: "obj2", img: "assets/images/placeholder.png", x: "20%", y: "50%", w: "100px"}
-// 	];
+			function init() {
+				overlayEl = document.createElement('div');
+				overlayEl.className = 'daycycle-layer';
+				document.body.appendChild(overlayEl);
 
-// 	objects.forEach(o => {
-// 		const element = document.createElement("img");
-// 		element.src = o.img;
-// 		element.id = o.id;
-// 		element.classList.add('clickable-object');
-// 		element.style.position = "absolute";
-// 		element.style.left = o.x;
-// 		element.style.top = o.y;
-// 		element.style.width = o.w;
-// 		element.style.pointerEvents = "auto";
-// 		element.addEventListener("click", (e) => {
-// 			e.stopPropagation(); //NON TOGLIERE, necessario per non far mangiare il click dal global listener di monogatari
-// 			monogatari.storage().lastClickedObject = o.id; //Mantengo in memoria l'ultimo oggetto clickato
-// 			showDetail(o.id, o.img);
-// 		});
-// 		container.appendChild(element);
-// 	});
+				skyEl = document.createElement('div');
+				skyEl.className = 'sky-night';
+				skyEl.style.backgroundImage = 'url("assets/scenes/cielo_notte.png")'; // path fisso, una volta sola
+				document.body.appendChild(skyEl);
+			}
 
-// 	document.body.appendChild(container);
-// }
+			function set(isNight) {
+				if (!overlayEl) init();
+				overlayEl.classList.toggle('active', isNight);
+				skyEl.classList.toggle('active', isNight);
+			}
 
-// function hideClickableObjects(){
-// 	document.getElementById("clickable-objects")?.remove();
-// }
+			return { set };
+		})();
 
-// function showDetail(objectId, imageSrc) {
-// 	const store = monogatari.storage();
-// 	NightOverlay.isFrozen = true;
-	
-// 	store.lastClickedObject = objectId;
-	
-// 	// Overlay blur
-// 	const blur = document.createElement("div");
-// 	blur.id = "detail-blur";
-// 	blur.className = "detail-blur";
+		// rampMs: durata dell'accelerazione iniziale. plateauMs: durata nominale a velocità costante.
+		// speedPerMs: minuti simulati per ms reale a regime (hardcoded, unica fonte di velocità).
+		const { rampMs = 3000, plateauMs = 6000 } = options;
+		const speedPerMs = 1.3;
 
-// 	// Immagine zoommata
-// 	const zoom = document.createElement("img");
-// 	zoom.id = "detail-zoom";
-// 	zoom.className = "detail-zoom";
-// 	zoom.src = imageSrc;
+		const timeEl = document.getElementById('lock-time');
+		const dateEl = document.getElementById('phone-lock-date');
 
-// 	// Descrizione
-// 	const desc = document.createElement("div");
-// 	desc.id = "detail-desc";
-// 	desc.className ="detail-desc";
-// 	desc.textContent = store.objectDescriptions[objectId];
+		PhoneUI.stopClock(); // sospende il clock reale per non farlo litigare col nostro rendering
 
-// 	// Pulsante indietro
-// 	const back = document.createElement("div");
-// 	back.id = "detail-back";
-// 	back.className = "detail-back";
-// 	back.innerText = "Chiudi";
-// 	back.onclick = () => hideDetail(objectId);
+		const WEEKDAYS = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+		const isNight = (h) => h < 7 || h > 20;
 
-// 	document.body.appendChild(blur);
-// 	document.body.appendChild(zoom);
-// 	document.body.appendChild(back);
-// 	document.body.appendChild(desc);
-// }
+		// Parte dall'ora "di gioco" se PhoneUI.setTime() è stato usato in questa
+		// scena, altrimenti dall'ora reale come prima.
+		let current = PhoneUI.timeOffset !== null
+			? new Date(Date.now() + PhoneUI.timeOffset)
+			: new Date();	
 
-// function hideDetail(objectId) {	
-// 	NightOverlay.isFrozen = false;
-// 	const store = monogatari.storage();
+		let dayIndex = current.getDay();
+		let wasNight = isNight(current.getHours());
+		let frameId, lastTs, elapsed = 0, stopping = false;
 
-// 	if(!store.clickedObjects.includes(objectId)){
-// 		store.clickedObjects.push(objectId);
-// 	}
+		function render() {
+			timeEl.textContent = `${String(current.getHours()).padStart(2,'0')}:${String(current.getMinutes()).padStart(2,'0')}`;
 
-// 	document.getElementById("detail-blur")?.remove();
-// 	document.getElementById("detail-zoom")?.remove();
-// 	document.getElementById("detail-back")?.remove();
-// 	document.getElementById("detail-desc")?.remove();
+			const nightNow = isNight(current.getHours());
+			if (wasNight && !nightNow) dayIndex = (dayIndex + 1) % 7; // avanza il giorno solo al varco notte->giorno
+			wasNight = nightNow;
 
-// }
+			dateEl.textContent = WEEKDAYS[dayIndex];
+			DayCycle.set(nightNow);
+		}
+
+		timeEl.classList.add('clock-glitch'); // solo effetto CSS (blur/flicker): il tempo resta lineare, niente salti random
+
+		function loop(ts) {
+			if (lastTs === undefined) lastTs = ts;
+			const dt = ts - lastTs;
+			lastTs = ts;
+			elapsed += dt;
+
+			// Velocità: ease-in quadratico durante il ramp, poi costante (plateau + eventuale extra)
+			const rampProgress = Math.min(1, elapsed / rampMs);
+			const speed = speedPerMs * rampProgress * rampProgress;
+
+			current = new Date(current.getTime() + speed * dt * 60000);
+			render();
+
+			// Oltre il plateau nominale: si ferma solo se è giorno, altrimenti continua un altro giro
+			const pastPlateau = elapsed >= rampMs + plateauMs;
+			if (pastPlateau && !isNight(current.getHours())) {
+				stopping = true;
+				timeEl.classList.remove('clock-glitch');
+
+				// Fissa l'offset all'ora raggiunta dall'accelerazione, così il clock
+				// normale riprende da qui invece di tornare all'ora reale.
+				PhoneUI.timeOffset = current.getTime() - Date.now();
+
+				PhoneUI.startClock();
+				resolve(); // taglio secco, nessun cooldown
+				return;
+			}
+
+			frameId = requestAnimationFrame(loop);
+		};
+
+		frameId = requestAnimationFrame(loop);
+	});
+}
 
 function manageAllClicks(lock){
 	if(lock)
@@ -5675,74 +5579,6 @@ function buildAlphaMap(imgElement) {
 	return map;
 }
 
-
-// function isClickOnVisiblePixel(imgElement, point) {
-// 	if (!imgElement.naturalWidth || !imgElement.naturalHeight) 
-//         return false;
-	
-// 	const canvas = document.createElement('canvas');
-// 	const ctx = canvas.getContext('2d');
-	
-// 	// Use natural dimensions for accurate pixel sampling
-// 	canvas.width = imgElement.naturalWidth;
-// 	canvas.height = imgElement.naturalHeight;
-	
-// 	try {
-//         ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-//     } catch (error) {
-//         // drawImage fallisce se l'immagine non è completamente decodificata
-//         console.warn('drawImage failed, image may not be decoded yet:', imgElement.id);
-//         return false;
-//     }
-	
-// 	const rect = imgElement.getBoundingClientRect();
-// 	const x = point.clientX - rect.left;
-// 	const y = point.clientY - rect.top;
-	
-// 	// L'immagine è mostrata con object-fit:cover + object-position:center
-// 	// (vedi .wrapper-item in main.css): viene scalata di un UNICO fattore e
-// 	// centrata, con l'eccedenza ritagliata — NON riempie il box in modo lineare.
-// 	// Invertiamo quella trasformazione per campionare il pixel corretto. Con la
-// 	// vecchia mappatura "fill" (scaleX/scaleY separati) il tocco colpirebbe il
-// 	// pixel sbagliato appena lo schermo non è in proporzione 1440:2560.
-// 	const nW = imgElement.naturalWidth;
-// 	const nH = imgElement.naturalHeight;
-// 	const scale = Math.max(rect.width / nW, rect.height / nH);
-// 	const offsetX = (rect.width  - nW * scale) / 2; // ≤ 0: bordi ritagliati
-// 	const offsetY = (rect.height - nH * scale) / 2;
-// 	const pixelX = Math.floor((x - offsetX) / scale);
-// 	const pixelY = Math.floor((y - offsetY) / scale);
-
-// 	 if (!Number.isFinite(pixelX) || !Number.isFinite(pixelY)) {
-// 		// console.warn(x, " ", scaleX, " ", y, " ", scaleY);
-// 		// console.log({
-// 		// 	id: imgElement.id,
-// 		// 	naturalWidth: imgElement.naturalWidth,
-// 		// 	naturalHeight: imgElement.naturalHeight,
-// 		// 	rectWidth: rect.width,
-// 		// 	rectHeight: rect.height,
-// 		// 	clientX: event.clientX,
-// 		// 	clientY: event.clientY,
-// 		// 	rectLeft: rect.left,
-// 		// 	rectTop: rect.top,
-// 		// 	scaleX,
-// 		// 	scaleY,
-// 		// 	pixelX,
-// 		// 	pixelY
-// 		// });
-//         return false;
-//     }
-
-// 	try {
-// 		const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
-// 		// console.log('Alpha value:', pixelData[3]);
-// 		return pixelData[3] > 0;
-// 	} catch (error) {
-// 		console.error('Error getting pixel data:', error);
-// 		return false;
-// 	}
-// }
-
 //Per performance, il calcolo lo faccio su una mappa equivalente ma di dimensioni ridotte
 function isClickOnVisiblePixel(imgElement, point) {
     if (!imgElement.naturalWidth || !imgElement.naturalHeight) {
@@ -5786,6 +5622,43 @@ function isClickOnVisiblePixel(imgElement, point) {
 	return map.data[mapY * map.width + mapX] > 8;
 }
 
+const GameTimer = {
+	start() { monogatari.storage().gameStartTime = Date.now(); },
+
+	getElapsedMs() {
+		const s = monogatari.storage();
+		const end = Date.now();
+		return Math.max(0, end - (s.gameStartTime ?? end));
+	},
+
+	format(ms) {
+		const total = Math.floor(ms / 1000);
+		const m = String(Math.floor(total / 60)).padStart(2, '0');
+		const s = String(total % 60).padStart(2, '0');
+		return `${m}:${s}`;
+	}
+};
+
+const ClearTimeScreen = {
+	async play() {
+		const overlay = document.createElement('div');
+		overlay.className = 'clear-time-overlay';
+		overlay.innerHTML = `
+			<div class="clear-time-title">Clear Time</div>
+			<div class="clear-time-value">${GameTimer.format(GameTimer.getElapsedMs())}</div>
+			<div class="clear-time-hint">Titoli di coda ></div>
+		`;
+		document.body.appendChild(overlay);
+
+		await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+		overlay.classList.add('visible');
+
+		await new Promise(resolve => overlay.addEventListener('click', resolve, { once: true }));
+
+		overlay.classList.remove('visible');
+		setTimeout(() => overlay.remove(), 800);
+	}
+};
 /*
 TITOLI DI CODA
 Overlay nero a schermo intero con scorrimento verticale stile film.

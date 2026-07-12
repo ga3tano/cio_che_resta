@@ -30,5 +30,5 @@ monogatari.storage ({
 	torchInitialized: false,
 	glitchGameCompleted: false,
 	glitchGamePhase: 1,
-
+	gameStartTime: null,
 });
