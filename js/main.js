@@ -4164,10 +4164,10 @@ const BreathingGame = {
 
 	// Durata di ciascuna fase in millisecondi
 	durations: {
-		'inhale':  4000,  // il cerchio cresce lentamente
-		'hold-in': 2000,  // il cerchio resta grande
-		'exhale':  5000,  // il cerchio si riduce (espirazione più lunga = più calmante)
-		'pause':   2000,  // piccola pausa prima del ciclo successivo
+		'inhale':  2500,  // il cerchio cresce lentamente
+		'hold-in': 1200,  // il cerchio resta grande
+		'exhale':  3000,  // il cerchio si riduce (espirazione più lunga = più calmante)
+		'pause':   1200,  // piccola pausa prima del ciclo successivo
 	},
 
 	// Testo mostrato sotto il cerchio per ciascuna fase.
@@ -4229,6 +4229,7 @@ const BreathingGame = {
 		this.isHeld = false;
 		this.currentPhase = 'pause';
 		this.currentScale = this.scaleMin;
+		this._awaitingRelease = false;
 
 		// Resetta il cerchio alla scala minima prima del fade-in, così non
 		// appare già espanso durante la transizione di ingresso.
@@ -4276,11 +4277,13 @@ const BreathingGame = {
 	//
 	// MECCANICA TOCCO PER FASE:
 	//   inhale / hold-in → dito PREMUTO; se si alza → restart (onUp in _bindInput)
-	//   exhale           → dito ALZATO;  se si preme → restart (onDown in _bindInput)
+	//   exhale           → dito ALZATO;  se si preme → restart (onDown in _bindInput);
+	//                       se il dito è ancora giù all'inizio della fase, il
+	//                       minigioco si mette in PAUSA (nessun fallimento) finché
+	//                       non viene alzato (vedi _awaitingRelease e onUp).
 	//   pause            → nessun vincolo
 	//
-	// I timer di grazia gestiscono la transizione: all'inizio di ogni fase attiva
-	// il giocatore ha 1 secondo per adeguarsi allo stato richiesto.
+
 	// -------------------------------------------------------------------------
 	_startPhase(index) {
 		if (this.state !== 'running') return;
@@ -4293,6 +4296,7 @@ const BreathingGame = {
 		this.currentPhase = phase;
 
 		clearTimeout(this._holdGraceTimer);
+		this._awaitingRelease = false;
 
 		if (phase === 'inhale' || phase === 'hold-in') {
 			// Fase PREMUTA: il giocatore deve tenere il dito giù.
@@ -4300,16 +4304,6 @@ const BreathingGame = {
 			if (!this.isHeld) {
 				this._holdGraceTimer = setTimeout(() => {
 					if (this.state === 'running' && !this.isHeld && (this.currentPhase === 'inhale' || this.currentPhase === 'hold-in')) {
-						this._restart();
-					}
-				}, 1000);
-			}
-		} else if (phase === 'exhale') {
-			// Fase RILASCIATA: il giocatore deve alzare il dito.
-			// Se sta ancora premendo (transizione da hold-in), ha 1 secondo per rilasciare.
-			if (this.isHeld) {
-				this._holdGraceTimer = setTimeout(() => {
-					if (this.state === 'running' && this.isHeld && this.currentPhase === 'exhale') {
 						this._restart();
 					}
 				}, 1000);
@@ -4334,6 +4328,25 @@ const BreathingGame = {
 			}
 		}
 
+		if (phase === 'exhale' && this.isHeld) {
+			// Il dito è ancora premuto (transizione da hold-in): niente fallimento,
+			// il cerchio resta fermo e il timer non parte finché non viene alzato
+			// (ripreso in onUp, vedi _bindInput).
+			this._awaitingRelease = true;
+			return;
+		}
+
+		this._runPhase(phase, index, duration);
+	},
+
+
+	// -------------------------------------------------------------------------
+	// _runPhase(phase, index, duration) — avvia effettivamente l'animazione,
+	// l'audio e il timer di una fase. Separato da _startPhase perché la fase
+	// 'exhale' può restare in pausa (_awaitingRelease) prima di partire
+	// davvero, quando il dito viene alzato in ritardo.
+	// -------------------------------------------------------------------------
+	_runPhase(phase, index, duration) {
 		this._animateScale(phase, duration);
 		this._playAudio(phase);
 
@@ -4487,10 +4500,15 @@ const BreathingGame = {
 				this._restart();
 			} else if (this.currentPhase === 'exhale') {
 				// Rilasciato durante l'espirazione: azione corretta.
-				// Annulla il timer di grazia "stai ancora premendo".
-				clearTimeout(this._holdGraceTimer);
 				// Nasconde l'hint "Alza il dito": il giocatore ha già obbedito.
 				if (this.hint) this.hint.classList.remove('visible');
+
+				if (this._awaitingRelease) {
+					// La fase 'exhale' era in pausa in attesa del rilascio:
+					// la avviamo ora, con la sua durata piena.
+					this._awaitingRelease = false;
+					this._runPhase('exhale', this.sequence.indexOf('exhale'), this.durations['exhale']);
+				}
 			}
 		};
 
