@@ -3978,11 +3978,11 @@ const ObjectCounter = {
 // Lo script attende la Promise: `async () => await CarCrash.start()`.
 // -----------------------------------------------------------------------------
 const CarCrash = {
-	duration: 2500,     // ms dall'apparizione dell'auto allo schermo nero completo
+	duration: 4500,     // ms dall'apparizione dell'auto allo schermo nero completo
 	impactTime: 6200,   // ms nel file sfx_incidente.mp3 in cui il botto è compiuto (picco a ~6.0s);
 	                    // l'audio viene troncato all'inizio: parte da (impactTime - duration)
-	scaleFrom: 0.15,    // scala iniziale (auto lontana)
-	scaleTo: 8,         // scala finale (auto addosso)
+	scaleFrom: 0.05,    // scala iniziale (auto lontana)
+	scaleTo: 1.5,         // scala finale (auto addosso)
 	blackoutLead: 500,  // ms prima della fine: parte il fade a nero (l'auto sparisce "un po' prima")
 	audio: null,
 
