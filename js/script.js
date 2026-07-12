@@ -124,6 +124,7 @@ monogatari.script ({
 	// The game starts here.
 
 	'Tutorial': [
+		'jump Start', //Per saltare, finchè non è finito
 		() => showTextBox(),
 		'guide Benvenuto! Mi presento, io sono Jizo.',
 		'guide Prima di iniziare, lascia che ti guidi attraverso questo mondo.',
