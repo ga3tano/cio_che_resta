@@ -3903,6 +3903,7 @@ const SceneFade = {
 // prende il suo posto.
 const WatchOnlyIcon = {
 	element: null,
+	
 	ensure() {
 		if (!this.element) {
 			this.element = document.createElement('div');
@@ -3917,7 +3918,17 @@ const WatchOnlyIcon = {
 		}
 		return this.element;
 	},
-	show() { this.ensure().classList.add('visible'); },
+
+	show() { 
+		const el = this.ensure()
+		
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				el.classList.add('visible');
+			});
+		});
+	},
+
 	hide() { this.element?.classList.remove('visible'); }
 };
 
@@ -5736,6 +5747,29 @@ const EndCredits = {
 	}
 };
 
+// Intro allo start: pulsanti out, titolo in zoom, fade nero sincronizzato
+const StartIntro = {
+	play() {
+		return new Promise((resolve) => {
+			const menu = document.querySelector('main-menu');
+			const title = document.querySelector('.main-title');
+			// const fade = document.getElementById('sceneFadeOverlay');
+
+			if (!menu || !title) { resolve(); return; }
+
+			menu.classList.add('intro-hide-buttons');
+			title.classList.add('intro-zoom');
+
+			// Fade nero: parte a 2s, dura 1s (si risolve a 3s, fine zoom)
+			setTimeout(() => {
+				requestAnimationFrame(() => { SceneFade.toVisible({duration: 1}) });
+			}, 2000);
+
+			setTimeout(resolve, 3000);
+		});
+	}
+};
+
 /*
 TUTORIAL INIZIALE
 4 slide fullscreen, tap per avanzare. Mostrato una sola volta (flag in storage).
@@ -5743,89 +5777,130 @@ Le icone reali (phone-toggle, object-counter, watch-only) sono clonate via CSS
 per coerenza visiva col gioco vero.
 */
 const Tutorial = {
-	slides: [
-		{
-			icon: 'object',
-			text: 'Quando vedi oggetti che lampeggiano così, puoi cliccarci sopra per interagire.'
-		},
-		{
-			icon: 'phone',
-			text: 'Tocca questa icona per aprire il telefono: leggi le notifiche, apri le conversazioni e scegli le risposte per andare avanti nella storia.'
-		},
-		{
-			icon: 'watch',
-			text: 'Quando vedi questa icona, è in corso un\'animazione: non devi interagire, limitati a osservare.'
-		},
-		{
-			icon: 'counter',
-			text: 'Questo numero indica quanti oggetti della scena ti restano ancora da trovare.'
-		}
-	],
+	element: null,
+	img: null,
+	resolver: null,
+	ring: null,
 
-	index: 0,
-	overlay: null,
+	SRC: 'assets/images/Orsacchiotto.png', // hardcoded come richiesto
 
-	storageKey: 'tutorialShown',
-
-	shouldShow() {
-		return !monogatari.storage()[this.storageKey];
+	targets: {
+		ciak: '#watch-only-icon',
+		objectCounter: '#object-counter',
+		phone: '#phone-toggle'
 	},
 
-	play() {
-		if (!this.shouldShow()) return Promise.resolve();
+	ensure(){
+		if (this.ring) return this.ring;
+
+		this.ring = document.createElement('div');
+		this.ring.id = 'tutorial-highlight-ring';
+		this.ring.className = 'tutorial-highlight-ring';
+		document.body.appendChild(this.ring);
+		return this.ring;
+	},
+
+	init(){
+		if (this.element) return;
+
+		this.element = document.createElement('div');
+		this.element.id = 'tutorial-object';
+		this.element.className = 'tutorial-object';
+
+		this.img = document.createElement('img');
+		this.img.src = this.SRC;
+		this.img.className = 'clickable-object';
+
+		const glow = this.img.cloneNode();
+		glow.removeAttribute('id');
+		glow.className = 'clickable-object glow-clone';
+
+		this.element.appendChild(this.img);
+		this.element.appendChild(glow);
+		document.body.appendChild(this.element);
+
+		// Il click va catturato dal container, non dalle img (hanno pointer-events:none)
+		this.element.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this._onClick();
+		});
+	},
+
+	// Mostra l'oggetto: slide-in dal basso + bounce all'arrivo + highlight
+	showObject(){
+		this.init();
+
+		this.element.classList.remove('tutorial-object-clicked');
+		this.img.classList.remove('highlight');
+		this.element.classList.remove('tutorial-object-enter', 'visible');
+		void this.element.offsetWidth;
+
+		this.element.classList.add('visible', 'tutorial-object-enter');
+		this.element.style.pointerEvents = 'none'; // non cliccabile durante l'ingresso
+
+		this.element.addEventListener('animationend', () => {
+			this.img.classList.add('highlight');
+			this.element.style.pointerEvents = 'auto'; // cliccabile solo ora
+		}, { once: true });
+	},
+
+	// Risolve quando l'utente clicca l'oggetto
+	objectClicked(){
+		this.init();
 
 		return new Promise((resolve) => {
-			this.index = 0;
-			this.build();
-			this.render();
 			this.resolver = resolve;
 		});
 	},
 
-	build() {
-		this.overlay = document.createElement('div');
-		this.overlay.id = 'tutorial-overlay';
-		this.overlay.addEventListener('click', () => this.next());
-		document.body.appendChild(this.overlay);
-	},
+	_onClick(){
+		if (!this.resolver) return; // ignora click random se nessuna Promise pendente
+		this.img.classList.remove('highlight');
+		this.element.classList.add('tutorial-object-clicked');
+		this.element.style.pointerEvents = 'none';	
 
-	render() {
-		const slide = this.slides[this.index];
-
-		// Icona: riusa i marker reali via classe CSS invece di duplicare markup
-		this.overlay.innerHTML = `
-			<div class="tutorial-icon tutorial-icon-${slide.icon}"></div>
-			<p class="tutorial-text">${slide.text}</p>
-			<div class="tutorial-progress">${this.index + 1} / ${this.slides.length}</div>
-			<div class="tutorial-hint">tocca per continuare</div>
-		`;
-
-		requestAnimationFrame(() => this.overlay.classList.add('visible'));
-	},
-
-	next() {
-		this.index++;
-
-		if (this.index >= this.slides.length) {
-			this.close();
-			return;
-		}
-
-		this.overlay.classList.remove('visible');
-		setTimeout(() => this.render(), 200);
-	},
-
-	close() {
-		monogatari.storage()[this.storageKey] = true;
-
-		this.overlay.classList.remove('visible');
+		// Durata = animazione di scomparsa in CSS
 		setTimeout(() => {
-			this.overlay.remove();
-			this.overlay = null;
-			const resolve = this.resolver;
+			this.element.classList.remove('visible');
+			this.resolver?.();
 			this.resolver = null;
-			resolve?.();
-		}, 300);
+		}, 450);
+	},
+
+	// highlight(key, duration): evidenzia per una durata, poi si nasconde da solo
+	highlight(key, duration = 3000){
+		const selector = this.targets[key];
+		const targetEl = selector && document.querySelector(selector);
+		if (!targetEl) return Promise.resolve();
+
+		const rect = targetEl.getBoundingClientRect();
+		console.log(this);
+		const ring = this.ensure();
+		const pad = 8; // margine attorno all'elemento
+
+		ring.style.left = `${rect.left - pad}px`;
+		ring.style.top = `${rect.top - pad}px`;
+		ring.style.width = `${rect.width + pad * 2}px`;
+		ring.style.height = `${rect.height + pad * 2}px`;
+
+		ring.classList.remove('visible');
+		void ring.offsetWidth; // reflow, stesso pattern del fade-in
+
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => ring.classList.add('visible'));
+		});
+
+		return new Promise((resolve) => {
+			setTimeout(() => {
+				ring.classList.remove('visible');
+				resolve();
+			}, duration);
+		});
+	},
+
+	// Nasconde subito, utile se serve chiudere prima del timeout naturale
+	hideRing(){
+		this.ring?.classList.remove('visible');
 	}
 };
 
@@ -6411,6 +6486,20 @@ $_ready (() => {
 	})
 
 	monogatari.init ('#monogatari').then (() => {
+
+		//Listener del pulsante start che fa partire l'animazione monogatari prima di far partire il gioco
+		document.addEventListener('click', async (e) => {
+			const startBtn = e.target.closest('[data-action="start"], [data-open="game"]');
+			if (!startBtn) return;
+
+			e.preventDefault();
+			e.stopImmediatePropagation();
+
+			await StartIntro.play();
+			monogatari.run('jump Tutorial'); // o quale che sia il label iniziale
+		}, true); // capture: true per anticipare il listener nativo di Monogatari
+
+		
 		// 3. Inside the init function:
 		// Il telefono viene inizializzato subito, ma resta nascosto finche una scena lo apre.
 		PhoneUI.init();
@@ -6418,6 +6507,8 @@ $_ready (() => {
 		// Il toggle e' indipendente dal telefono: decide solo quando mostrare il pulsante e il badge.
 		PhoneToggle.init();
 
+
+		
 		//Cambia automaticamente la classe del body in base al nome dello speaker attivo, per permettere stili dinamici (es. ombra vs tu)
 		const speakerClassMap = {
 			'Tu': 'speaker-dad',

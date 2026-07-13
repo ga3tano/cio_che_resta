@@ -156,6 +156,17 @@ main-menu {
     text-transform: lowercase;
 }
 
+main-menu.intro-hide-buttons button {
+	transition: opacity 0.6s ease;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.main-title.intro-zoom {
+	transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);
+	transform: translate(-50%, -50%) scale(1.4);
+}
+
 /* Settings Screen — stessa identità visiva del menu principale: sfondo camera
    da letto ancora più scuro (velo 0.9 invece di 0.82), testo bianco, stesso font. */
 [data-screen="settings"] {
@@ -303,7 +314,7 @@ main-menu {
 [data-component="text-box"] {
     display: none !important;
     opacity: 0;
-    transition: opacity 0.4s ease;
+    transition: opacity 0.5s ease;
     font-family: 'Pangolin', sans-serif;
     /* display: none !important; */
 }
@@ -315,7 +326,7 @@ body.show-textbox [data-component="text-box"]{
 
 body.hide-textbox [data-component="text-box"]{
     opacity: 0;
-    transition: opacity 0.4s ease;
+    transition: opacity 0.5s ease;
 }
 
 /**
@@ -600,10 +611,10 @@ html.block-all body {
 }
 
 /* --- TUTORIAL INIZIALE --- */
-#tutorial-overlay {
+/* #tutorial-overlay {
 	position: fixed;
 	inset: 0;
-	z-index: 1000003; /* sopra debug menu */
+	z-index: 1000003; /* sopra debug menu 
 	background: rgba(5, 7, 11, 0.96);
 	display: flex;
 	flex-direction: column;
@@ -623,9 +634,9 @@ html.block-all body {
 	border-radius: 50%;
 	background: rgba(255,255,255,0.08);
 	border: 1px solid rgba(255,255,255,0.2);
-}
+} */
 /* Placeholder oggetto: stesso glow di .clickable-object.highlight */
-.tutorial-icon-object {
+/* .tutorial-icon-object {
 	filter: drop-shadow(0 0 8px rgba(255,255,255,0.7));
 	animation: highlight-pulse 2s ease-in-out infinite;
 }
@@ -676,6 +687,82 @@ html.block-all body {
 	font-size: 0.8rem;
 	letter-spacing: 0.15em;
 	animation: pulse-hint 2s ease-in-out infinite;
+} */
+
+/* --- TUTORIAL OBJECT --- */
+.tutorial-object {
+	position: fixed;
+	left: 50%;
+	bottom: -20%;
+	transform: translateX(-50%);
+	width: 20%;
+	height: 20%; /* necessario ora che i figli sono absolute */
+	z-index: 400;
+	display: none;
+	pointer-events: none;
+	cursor: pointer;
+}
+
+.tutorial-object.visible {
+	display: block;
+	pointer-events: auto;
+}
+
+/* Entrambe le img si sovrappongono esattamente */
+.tutorial-object img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	display: block;
+	pointer-events: none;
+	object-fit: contain;
+	scale: 1.8;
+}
+
+/* Slide dal basso al centro + bounce all'arrivo, un solo keyframe */
+.tutorial-object-enter {
+	animation: tutorialObjectEnter 900ms cubic-bezier(.34, 1.4, .64, 1) forwards;
+}
+
+@keyframes tutorialObjectEnter {
+	0%   { bottom: -20%; }
+	70%  { bottom: 42vh; }   /* leggero overshoot verso il centro */
+	85%  { bottom: 38vh; }   /* bounce back */
+	100% { bottom: 40vh; }   /* posizione di riposo, centrata verticalmente */
+}
+
+/* Feedback al click: pop + fade, comunica chiaramente l'interazione riuscita */
+.tutorial-object-clicked {
+	animation: tutorialObjectClicked 450ms ease-out forwards;
+	pointer-events: none;
+}
+
+@keyframes tutorialObjectClicked {
+	0%   { transform: translateX(-50%) scale(1); opacity: 1; }
+	40%  { transform: translateX(-50%) scale(1.25); opacity: 1; }
+	100% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+}
+
+.tutorial-highlight-ring {
+	position: fixed;
+	z-index: 350; /* sopra gli elementi che evidenzia (300), sotto debug menu */
+	border-radius: 50%;
+	border: 2px solid rgba(255, 255, 255, 0.9);
+	box-shadow:
+		0 0 0 4px rgba(255, 255, 255, 0.15),
+		0 0 18px 4px rgba(255, 255, 255, 0.55);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.4s ease-in-out;
+	animation: tutorialHighlightPulse 1.4s ease-in-out infinite;
+}
+
+.tutorial-highlight-ring.visible { opacity: 1; }
+
+@keyframes tutorialHighlightPulse {
+	0%, 100% { transform: scale(1); }
+	50%      { transform: scale(1.08); }
 }
 
 /* Clear time */
@@ -743,7 +830,7 @@ html.block-all body {
 	font-size: 16px;
 	opacity: 0;
 	pointer-events: none;
-	transition: opacity 0.4s ease, right 0.3s ease;
+	transition: opacity 0.4s ease-in-out, right 0.3s ease;
 }
 .watch-only-icon.visible { opacity: 1; }
 /* Se il counter è attivo, l'icona si sposta a sinistra del counter invece di sovrapporsi */

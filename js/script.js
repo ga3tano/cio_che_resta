@@ -124,31 +124,36 @@ monogatari.script ({
 	// The game starts here.
 
 	'Tutorial': [
-		'jump Start', //Per saltare, finchè non è finito
-		() => showTextBox(),
-		'guide Benvenuto! Mi presento, io sono Jizo.',
-		'guide Prima di iniziare, lascia che ti guidi attraverso questo mondo.',
-		'guide Stai per giocare ad una visual novel nella quale saranno presenti elementi con cui potrai interagire.',
-		'guide Quando vedrai qualcosa lampeggiare in questo modo, potrai toccarlo per scoprire cosa nasconde.',
-
-		async () => {
-			hideTextBox(false);
-			// await Tutorial.showObject();
+		// 'jump Start', //Per saltare, finchè non è finito
+		() => {
+			SceneFade.toHidden();
 			showTextBox();
 		},
 
-		"guide Prova a ad interagire con l'oggetto per continuare.",
+		'guide Benvenuto! Mi presento, io sono Jizo.',
+		'guide Prima di iniziare, lascia che ti guidi attraverso questo mondo.',
+		'guide Stai per giocare ad una visual novel nella quale saranno presenti elementi con cui potrai interagire.',
+
+		async () => {
+			// hideTextBox(false);
+			Tutorial.showObject();
+			// showTextBox();
+		},
+
+		"guide Quando vedrai qualcosa lampeggiare in questo modo, potrai toccarlo per scoprire cosa nasconde. Prova a ad interagire con l'oggetto per continuare.",
 		'clear',
 
 		async () => {
 			hideTextBox(false);
-			await sleep(3000);
-			//await Tutorial.objectClicked();
-			//In tutorial objectClciked, faccio qualcosa (un glow, una dissolvenza, nu sacciu)
+			await Tutorial.objectClicked();
+			//In tutorial objectClciked, faccio qualcosa (un glow, una dissolvenza)
 			showTextBox();
 		},
-				
+	
 		'guide Questa icona, in basso a destra, è il tuo telefono: toccala per leggere i messaggi e scegliere come rispondere.',
+
+		'play sound phone_notification',
+		'play sound phone_vibration',
 
 		async () => {
 			hideTextBox();
@@ -221,7 +226,7 @@ monogatari.script ({
 		async () => {
 			hideTextBox(false);
 			WatchOnlyIcon.show();
-			//Tutorial.highlight('ciak');
+			await Tutorial.highlight('ciak');
 			await sleep(3000);
 			WatchOnlyIcon.hide();
 			showTextBox();
@@ -233,8 +238,7 @@ monogatari.script ({
 		async () => {
 			hideTextBox(false);
 			ObjectCounter.show(4);
-			//Tutorial.highlight('objectCounter');
-			await sleep(3000);
+			await Tutorial.highlight('objectCounter');
 			ObjectCounter.hide();
 			showTextBox();
 		},
@@ -245,7 +249,10 @@ monogatari.script ({
 			'Choice': {
 				'Inizia':{
 					'Text': 'INIZIA',
-					'Do': 'jump Start' 
+					'Do': 'jump Start',
+					'onChosen': function(){
+						hideTextBox(false);
+					} 
 				}
 			}
 		}
