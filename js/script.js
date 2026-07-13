@@ -948,7 +948,7 @@ monogatari.script ({
 		'dad Dai, forza, appassisci!',
 		'dad LASCIAMI ANCHE TU!',
 		async () => {
-			hideTextBox();
+			hideTextBox(false);
 			WordsGame.unlock();
 			await Glitch.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'pianta_1'));
 			await sleep(1000);
@@ -963,7 +963,7 @@ monogatari.script ({
 		'dad ...',
 		'dad È TUTTA COLPA MIA!!',
 		async () => {
-			hideTextBox();
+			hideTextBox(false);
 			WordsGame.unlock();
 			await Glitch.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'cornice_rotta'));
 			await sleep(1000);
@@ -979,7 +979,7 @@ monogatari.script ({
 		'dad ...non potrai mai...',
 		'dad ...NON CI SEI PIÙ!!!',
 		async () => {
-			hideTextBox();
+			hideTextBox(false);
 			WordsGame.unlock();
 			await Glitch.animateObjectSwap(SCENE_IMAGES.rabbia.find(o => o.id === 'vestiti'), { roomShake: true });
 			await sleep(1000);
@@ -1274,7 +1274,7 @@ monogatari.script ({
 
 			PhoneUI.addIncoming("Oggi è più difficile degli altri giorni, non devi essere sempre forte.");
 			await PhoneUI.waitUntilAllNotificationsRead();
-			await sleep(4000);
+			await sleep(2000);
 
 			PhoneUI.addIncoming("Va bene anche così", {notify: false});
 			await sleep (2000);
@@ -1305,7 +1305,7 @@ monogatari.script ({
 		// Il suono crash lo lancia CarCrash, sincronizzato col buio.
 		async() => await CarCrash.start(),
 
-		'wait 4000',
+		'wait 2000',
 		async() =>{
 			await SceneFade.toVisible({duration: 0.25});
 			AudioManager.setLowPass(400, 1.5);
@@ -1355,17 +1355,20 @@ monogatari.script ({
 		() => showTextBox(),
 		'dad ...',
 		'dad Non eri nel tuo letto quando mi sono svegliato.',
-		'dad Non eri in giro per casa, {pause:500}non facevi colazione con i biscotti che tanto ti piacciono.',
+		'dad Non eri in giro per casa, non facevi colazione con i biscotti che tanto ti piacciono.',
 		'dad Non eri neanche a scuola.',
-		'dad Ho passato settimane a raccontarmi che eri solo nell’altra stanza, {pause:5000}che bastava non guardare per farti rimanere qui con me.',
-		() => pauseTextBox(),
+		'dad Ho passato settimane a raccontarmi che eri solo nell’altra stanza, che bastava non guardare per farti rimanere qui con me.',
+		// () => hideTextBox(),
+		// 'wait 3000',
+		// () => showTextBox(),
+		async () => await pauseTextBox(),
 		'dad ...ma tu non ci sei più.',
-		'dad Non come dovresti',
-		'dad Ieri sono tornato dove tutto è successo ed io...{pause:500} io...',
+		'dad Non come dovresti.',
+		'dad Ieri sono tornato dove tutto è successo ed io...io...',
 		
 		//Inserire pianto quando pronto
 		async () =>{
-				hideTextBox();
+				hideTextBox(false);
 				await AudioManager.play('cry', {
 					volume: 0.7,
 					fade: 0.5
@@ -1382,17 +1385,17 @@ monogatari.script ({
 		'dad Il rumore dei freni che non hanno risposto, la macchina capovolta e accartocciata.',
 		'dad Ho tentato di allungare il braccio verso il sedile posteriore, ma non ci arrivavo.',
 		'dad Ero incastrato e non sono riuscito a raggiungerti.',
-		'dad Tu eri lì...{pause:500}...ed io non sono riuscito ad aiutarti.',
-		() => pauseTextBox(),
-		'dad Se solo...{pause:500} se solo avessi preso una decisione diversa, se solo avessi avuto un momento di lucidità in più, ora tu saresti qui.',
+		'dad Tu eri lì... ed io non sono riuscito ad aiutarti.',
+		async () => await pauseTextBox(),
+		'dad Se solo... se solo avessi preso una decisione diversa, se solo avessi avuto un momento di lucidità in più, ora tu saresti qui.',
 		
 		'shadow Non è colpa tua, papà, tu volevi salvarmi',
 		
 		'dad Avrei dovuto esserci io al tuo posto, prendere tutto il dolore che hai provato e riversarlo solo e solamente dentro di me.',
 		'dad Ma il mondo continua ad andare avanti anche senza di te.',
 		'dad Le giornate sono sempre le stesse, ma sono vuote e tristi e sembrano inutili e dolorose.',
-		() => pauseTextBox(),
-		'dad Mi sento un guscio vuoto e non voglio...{pause:500} non riesco a svegliarmi ancora con questa consapevolezza.',
+		async () => await pauseTextBox(),
+		'dad Mi sento un guscio vuoto e non voglio... non riesco a svegliarmi ancora con questa consapevolezza.',
 		'dad Non avrai più il futuro che sognavamo...',
 
 		'shadow Ma papà, tu sì! Puoi costruirlo tu per tutti e due!',
@@ -1402,7 +1405,7 @@ monogatari.script ({
 		'shadow Non devi correre papà, devi imparare di nuovo a camminare, come hai insegnato a me quando ero piccolo!',
 		
 		'dad ...',
-		'dad Ma fa troppo male... {pause:500} io non ci riesco.',
+		'dad Ma fa troppo male... io non ci riesco.',
 
 		'shadow Fai un solo passo, papà.',
 		'shadow Esci fuori da questa stanza, continua a controllare i mostri sotto al mio letto, a raccogliere i fiori nel parco dove andavamo sempre',
@@ -1410,7 +1413,7 @@ monogatari.script ({
 
 		'dad Attraverso i miei occhi...',
 
-		() => pauseTextBox(10000),
+		async () => await pauseTextBox(10000),
 
 		'shadow Papà, ti ricordi quando giocavamo a nascondino in giardino?',
 		'shadow Tu contavi e io trovavo sempre un posto dove nascondermi',
@@ -1424,12 +1427,12 @@ monogatari.script ({
 		'shadow Ecco, sì! Le farfalle...mi piacevano le farfalle.',
 		'shadow Ecco. Adesso tocca a te contare. Io mi sono nascosto benissimo stavolta papà, ma se esci da questa stanza, se guardi bene intorno...',
 		'shadow ...mi troverai.',
-		() => pauseTextBox(),
+		async () => await pauseTextBox(),
 		'shadow Cerca le piccole cose colorate: ogni volta che ne vedrai una, io sono lì con te.',
 		'shadow Promettimi che le cercherai!',
 
 		'dad ...',
-		() => pauseTextBox(),
+		async () => await pauseTextBox(),
 		'dad ...va bene, te lo prometto. Le cercherò.',
 		
 		{'Choice': {
@@ -1446,13 +1449,13 @@ monogatari.script ({
 
 	'Lascia_Andare': [
 		'clear',
-		() => hideTextBox(),
+		() => hideTextBox(false),
 		'jump Accettazione'
 	],
 
 	'Non_Pronto': [
 		async () => {
-			hideTextBox(),
+			hideTextBox(false),
 			await SceneFade.toVisible();
 			await SceneUtility.loadScene("rabbia");
 		},

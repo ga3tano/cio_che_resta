@@ -6387,11 +6387,14 @@ function hideTextBox(phoneVisible = true){
 // textbox riapparirebbe da sola nella scena di destinazione.
 let pauseTextBoxTimer = null;
 
-function pauseTextBox(time=3000){
-	hideTextBox();
-	pauseTextBoxTimer = setTimeout(() => {
-		showTextBox();
-	}, time);
+function pauseTextBox(time = 3000){
+	return new Promise((resolve) => {
+		hideTextBox(false);
+		pauseTextBoxTimer = setTimeout(() => {
+			showTextBox();
+			resolve();
+		}, time);
+	});
 }
 		
 $_ready (() => {
