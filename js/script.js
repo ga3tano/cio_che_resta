@@ -125,7 +125,8 @@ monogatari.script ({
 
 	'Tutorial': [
 		// 'jump Start', //Per saltare, finchè non è finito
-		() => {
+		async () => {
+			await ContentWarning.play();
 			SceneFade.toHidden();
 			showTextBox();
 		},

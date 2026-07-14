@@ -5633,6 +5633,21 @@ function isClickOnVisiblePixel(imgElement, point) {
 	return map.data[mapY * map.width + mapX] > 8;
 }
 
+const ContentWarning = {
+    async play() {
+        const overlay = document.getElementById('content-warning-overlay');
+        if (!overlay) return;
+
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        overlay.classList.add('visible');
+
+        await new Promise(resolve => overlay.addEventListener('click', resolve, { once: true }));
+
+        overlay.classList.remove('visible');
+        await sleep(600); // combacia con transition CSS
+    }
+};
+
 const GameTimer = {
 	start() { monogatari.storage().gameStartTime = Date.now(); },
 
