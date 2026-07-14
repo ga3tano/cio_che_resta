@@ -3992,7 +3992,7 @@ const CarCrash = {
 	duration: 4500,     // ms dall'apparizione dell'auto allo schermo nero completo
 	impactTime: 6200,   // ms nel file sfx_incidente.mp3 in cui il botto è compiuto (picco a ~6.0s);
 	                    // l'audio viene troncato all'inizio: parte da (impactTime - duration)
-	scaleFrom: 0.05,    // scala iniziale (auto lontana)
+	scaleFrom: 0.01,    // scala iniziale (auto lontana)
 	scaleTo: 1.5,         // scala finale (auto addosso)
 	blackoutLead: 500,  // ms prima della fine: parte il fade a nero (l'auto sparisce "un po' prima")
 	audio: null,
@@ -4005,6 +4005,16 @@ const CarCrash = {
 		this.audio.currentTime = Math.max(0, (this.impactTime - this.duration) / 1000);
 		this.audio.play().catch(() => {});
 
+		// Bagliore fari lontani: molto sfumato, nessun bordo definito.
+		const glow = document.createElement('div');
+		glow.style.cssText =
+			'position:fixed;left:50%;top:50%;width:280px;height:280px;' +
+			'transform:translate(-50%,-50%) scale(1);opacity:0;' +
+			'border-radius:50%;' +
+			'background:radial-gradient(circle, rgba(255,255,240,0.55) 0%, rgba(255,250,220,0.22) 30%, rgba(255,245,200,0.06) 55%, transparent 75%);' +
+			'z-index:50;pointer-events:none;will-change:opacity,transform;';
+		document.body.appendChild(glow);
+
 		const img = document.createElement('img');
 		img.src = 'assets/scenes/Auto_auto.png';
 		img.alt = '';
@@ -4012,8 +4022,25 @@ const CarCrash = {
 		img.style.cssText =
 			'position:fixed;left:50%;top:50%;' +
 			`transform:translate(-50%,-50%) scale(${this.scaleFrom});` +
-			'max-width:90vw;z-index:50;pointer-events:none;will-change:transform;';
+			'max-width:90vw;z-index:49;pointer-events:none;will-change:transform;';
 		document.body.appendChild(img);
+
+		// Fase 1: il bagliore sale a piena opacità, l'auto resta invisibile.
+		const glowInDuration = 900;
+		await new Promise((resolve) => {
+			const t0 = performance.now();
+			const tick = (now) => {
+				const t = Math.min((now - t0) / glowInDuration, 1);
+				glow.style.opacity = String(t);
+				if (t < 1) requestAnimationFrame(tick);
+				else resolve();
+			};
+			requestAnimationFrame(tick);
+		});
+
+		// Fase 2: l'auto sbuca da dietro il bagliore (fade-in rapido) e parte la crescita.
+		img.style.transition = 'opacity 260ms ease-out';
+		requestAnimationFrame(() => { img.style.opacity = '1'; });
 
 		// Il buio parte blackoutLead ms prima della fine dell'animazione.
 		const blackoutAt = this.duration - this.blackoutLead;
@@ -4029,6 +4056,10 @@ const CarCrash = {
 				const scale = this.scaleFrom + (this.scaleTo - this.scaleFrom) * e;
 				img.style.transform = `translate(-50%, -50%) scale(${scale})`;
 
+				// Il glow si spegne durante tutta la crescita dell'auto, non solo a metà.
+				glow.style.opacity = String(1 - t);
+				glow.style.transform = `translate(-50%, -50%) scale(${1 + t * 0.5})`;
+
 				// Fade a nero mentre l'auto sta ancora crescendo: non aspettiamo
 				// la scala massima, il buio arriva prima dell'"impatto" visivo.
 				if (!fading && elapsed >= blackoutAt) {
@@ -4041,6 +4072,7 @@ const CarCrash = {
 			requestAnimationFrame(tick);
 		});
 
+		glow.remove();
 		img.remove();
 	},
 };
@@ -5731,9 +5763,44 @@ const EndCredits = {
 		const duration = distance * 28;
 		roll.style.transition = `transform ${duration}ms linear`;
 		roll.style.transform = `translateY(-${distance}px)`;
-		await wait(duration + 500);
-		roll.remove();
 
+		// === NUOVA SCRITTA "Tocca per saltare >" ===
+		const skipButton = document.createElement('div');
+		skipButton.className = 'credits-skip';
+		skipButton.textContent = 'Tocca per saltare >';
+		overlay.appendChild(skipButton);
+		await nextFrames();
+		skipButton.classList.add('visible');
+		
+		// Variabile per tracciare se è stato saltato
+		let skipped = false;
+		
+		skipButton.addEventListener('click', () => {
+			if (!skipped) {
+				skipped = true;
+				roll.style.transition = 'none';
+				roll.style.transform = `translateY(-${distance}px)`;
+				roll.remove();
+				skipButton.remove();
+				// Vai direttamente a "Fine"
+				setTimeout(() => {
+					const fine = document.createElement('div');
+					fine.className = 'credits-fine';
+					fine.textContent = 'Fine';
+					overlay.appendChild(fine);
+					nextFrames().then(() => {
+						fine.classList.add('visible');
+					});
+				}, 100);
+			}
+		});
+
+		await wait(duration + 500);
+		if (!skipped) {
+			roll.remove();
+			skipButton.remove();
+		}
+		
 		// "Fine" resta a schermo 10 secondi, poi serve un click per uscire
 		const fine = document.createElement('div');
 		fine.className = 'credits-fine';

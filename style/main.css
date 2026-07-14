@@ -3038,3 +3038,34 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 		left: 12px;
 	}
 }
+
+.credits-skip {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Azeret Mono', monospace;
+    font-size: clamp(0.8rem, 1.2vw, 1rem);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+	padding: 8px 12px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 10;
+
+    animation: pulse-skip 2s ease-in-out infinite;
+}
+
+.credits-skip.visible {
+    opacity: 1;
+}
+
+@keyframes pulse-skip {
+    0%, 100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 1;
+    }
+}
