@@ -94,12 +94,12 @@ monogatari.assets ('scenes', {
 	room_day_normal: 'stanza_sfondo_1.png',
 	room_day_dark: 'stanza_sfondo_3.png',
 	room_accettazione: 'stanza2_sfondo_1.png',
+	cornice_detail: 'cornice_dettaglio.png',
 	auto: 'Auto.png',
 	auto_back: 'Auto_back.png',
 	feet: 'Piedi.png',
 	teddybear: 'Orsacchiotto.png',
-	outside: 'scena2_mondo.png',
-	end: 'Foto.png'
+	outside: 'scena2_mondo.png'
 });
 
 
@@ -1521,6 +1521,7 @@ monogatari.script ({
 
 			// Il lampeggio parte solo dopo il dialogo (vedi blocco piu' sotto)
 			document.getElementById('porta_acc')?.classList.remove('highlight');
+			document.getElementById('cornice')?.classList.remove('highlight');
 
 			// Porta bloccata finche' il label non ha finito: un tap durante il
 			// nero/fade farebbe partire il jump con statement ancora pendenti
@@ -1538,12 +1539,55 @@ monogatari.script ({
 		'dad Pensiamo che il tempo ci appartenga, ma siamo noi ad appartenergli.',
 		// Solo ora il giocatore puo' cliccare la porta, e la porta inizia a lampeggiare
 		() => {
-			hideTextBox();
-			document.getElementById('porta_acc')?.classList.add('highlight');
+			hideTextBox(false);
+			document.getElementById('cornice')?.classList.add('highlight');
 			SceneUtility.unlockItemWrapper();
 		},
 		// Nessun jump qui: il flusso prosegue solo quando il giocatore clicca
 		// la porta (vedi commento sopra al label).
+	],
+
+	'Accettazione_Disegno':[
+		() => {
+			SceneUtility.lockItemWrapper();
+		},
+		
+		async () => {
+			await SceneFade.toVisible();		
+			SceneUtility.emptyScene();
+		},
+
+		'show scene cornice_detail',
+		'wait 1500',
+
+		async () => {
+			await SceneFade.toHidden();
+			showTextBox();
+		},
+		
+		'dad Cacca pupù pipo pipo',
+		'dad Pipì pupù ngue ngue palle pelose',
+		'dad xdxd 1!111!11!',
+
+		() => hideTextBox(false),
+
+		'wait 2000',
+		
+		async () => {
+			await SceneFade.toVisible({duration: 1});
+			await SceneUtility.loadScene("accettazione_porta");
+			
+			document.getElementById('cornice')?.classList.remove('highlight');
+			SceneUtility.unlockItemWrapper();
+		},
+
+		'show scene room_day_dark',
+		'wait 1500',
+
+		async () => {
+			await SceneFade.toHidden();
+			SceneUtility.unlockItemWrapper();
+		} 
 	],
 
 	'Scena_Accettazione': [
@@ -1662,7 +1706,7 @@ monogatari.script ({
 		'dad Il cielo sembrerà più luminoso, la musica avrà ancora una sua melodia, forse dolceamara.',
 		'dad Arriverà il giorno in cui la luce in fondo al tunnel non sarà più così lontana, non abbiate paura di raggiungerla. La vita non aspetta.',
 		() => {
-			hideTextBox();
+			hideTextBox(false);
 			// Solo ora gli oggetti lampeggiano e sono cliccabili
 			document.querySelectorAll('#details-wrapper .clickable-object')
 				.forEach(el => el.classList.add('highlight'));

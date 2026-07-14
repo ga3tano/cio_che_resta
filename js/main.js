@@ -3213,13 +3213,13 @@ const SCENE_IMAGES = {
 		{ id: 'porta_acc', src: 'assets/images/porta.png', onClick: 'assets/images/porta.png', dialog: 'jump Scena_Accettazione' },
 		// Oggetti già al loro posto ordinato (statici, non interattivi)
 		{ id: 'pianta_3', src: 'assets/images/pianta_3.png' },
-		{ id: 'cornice',  src: 'assets/images/cornice.png' }
+		{ id: 'cornice',  src: 'assets/images/cornice.png', onClick: 'assets/images/cornice.png', dialog: 'jump Accettazione_Disegno' }
 	],
 	'accettazione': [
 		// onClick: immagine sostituita dopo il click (stato "sistemato")
 		// dialog: label Monogatari lanciato dopo il click tramite lockContrattazioneObject
-		{ id: 'tenda',            src: 'assets/images/tenda_chiusa.png',      onClick: 'assets/images/tenda_aperta.png',      dialog: 'jump DialogoAccettazione_Tenda', deferSwap: true },
-		{ id: 'cesta',            src: 'assets/images/cesta_vuota.png',        onClick: 'assets/images/cesta_piena.png',        dialog: 'jump DialogoAccettazione_Cesta', deferSwap: true },
+		{ id: 'tenda', src: 'assets/images/tenda_chiusa.png', onClick: 'assets/images/tenda_aperta.png', dialog: 'jump DialogoAccettazione_Tenda', deferSwap: true },
+		{ id: 'cesta', src: 'assets/images/cesta_vuota.png', onClick: 'assets/images/cesta_piena.png', dialog: 'jump DialogoAccettazione_Cesta', deferSwap: true },
 		// Oggetto statico, già al suo posto (non interattivo)
 		{ id: 'porta_2', src: 'assets/images/porta_2.png' }
 		// La porta NON fa parte della stanza durante il riordino: la fase finale
