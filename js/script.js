@@ -142,13 +142,10 @@ monogatari.script ({
 		},
 
 		"guide Quando vedrai qualcosa lampeggiare in questo modo, potrai toccarlo per scoprire cosa nasconde. Prova a ad interagire con l'oggetto per continuare.",
-		'clear',
 
 		async () => {
-			hideTextBox(false);
 			await Tutorial.objectClicked();
 			//In tutorial objectClciked, faccio qualcosa (un glow, una dissolvenza)
-			showTextBox();
 		},
 	
 		'guide Questa icona, in basso a destra, è il tuo telefono: toccala per leggere i messaggi e scegliere come rispondere.',
@@ -158,20 +155,20 @@ monogatari.script ({
 
 		async () => {
 			hideTextBox();
-			PhoneUI.addIncoming("Cosa preferisci per cena?", {title: "Mamma"});
+			PhoneUI.addIncoming("Come stai?", {title: "Mamma"});
 			await PhoneUI.waitUntilAllNotificationsRead();
 			PhoneToggle.lockToggle(true);
 		},
 
 		{'PhoneChoice': 
 			{
-				'Lasagna': {
-					'Text': 'Lasagna',
+				'Bene': {
+					'Text': 'Bene',
 					'Do': 'jump TutorialChoice_1'
 				},
 
-				'Insalata': {
-					'Text': 'Insalata',
+				'Male': {
+					'Text': 'Male',
 					'Do': 'jump TutorialChoice_2'
 				},
 			}
@@ -180,12 +177,12 @@ monogatari.script ({
 
 	'TutorialChoice_1':[
 		async () => {
-			PhoneUI.addOutgoing("Sto morendo di fame, fammi la lasagna per favore");
-			await sleep(1500);
-			PhoneUI.addIncoming("Va bene amore, la faccio proprio come piace a te!", {notify: false});
+			PhoneUI.addOutgoing("Oggi mi sento un po' meglio, grazie...");
+			await sleep(1000);
+			PhoneUI.addIncoming("Mi fa piacere! Un giorno alla volta.", {notify: false});
 		},
 
-		'wait 2000',
+		'wait 1000',
 
 		{'PhoneChoice': {
 			'Blocca':{
@@ -197,12 +194,12 @@ monogatari.script ({
 
 	'TutorialChoice_2':[
 		async () => {
-			PhoneUI.addOutgoing("Non ho molta fame, preparami un'insalata");
-			await sleep(1500);
-			PhoneUI.addIncoming("Ti faccio anche due polpette, ti vedo sciupato a mamma", {notify: false});
+			PhoneUI.addOutgoing("Ho passato momenti migliori...");
+			await sleep(1000);
+			PhoneUI.addIncoming("Per qualsiasi cosa, chiamami. Io sono qui.", {notify: false});
 		},
 
-		'wait 2000',
+		'wait 1000',
 
 		{'PhoneChoice': {
 			'Blocca':{
@@ -223,25 +220,27 @@ monogatari.script ({
 
 		'guide A seconda delle scelte che farai, la storia si svilupperà in un modo diverso.',
 
-		'guide Se vedrai comparire questo simbolo {icona ciak}, vuol dire che sta accadendo qualcosa: osserva soltanto, non serve fare nulla.',
 		async () => {
 			hideTextBox(false);
 			WatchOnlyIcon.show();
 			await Tutorial.highlight('ciak');
-			await sleep(3000);
-			WatchOnlyIcon.hide();
 			showTextBox();
 		},
 
-		'clear',
-		'guide E quando in alto a destra vedrai un numero, saprai quanti dettagli di questa stanza aspettano ancora di essere trovati.',
-		
+		'guide Se vedrai comparire questo simbolo, vuol dire che sta accadendo qualcosa: osserva soltanto, non serve fare nulla.',
+
 		async () => {
+			WatchOnlyIcon.hide();
 			hideTextBox(false);
 			ObjectCounter.show(4);
 			await Tutorial.highlight('objectCounter');
-			ObjectCounter.hide();
 			showTextBox();
+		},
+
+		'guide E quando in alto a destra vedrai un numero, saprai quanti dettagli di questa stanza aspettano ancora di essere trovati.',
+		
+		async () => {
+			ObjectCounter.hide();
 		},
 
 		'guide Ora, respira. Sarò pronto quando lo sarai tu.',

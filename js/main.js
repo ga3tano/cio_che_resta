@@ -5920,16 +5920,17 @@ const Tutorial = {
 		this.element.classList.add('visible', 'tutorial-object-enter');
 		this.element.style.pointerEvents = 'none'; // non cliccabile durante l'ingresso
 
-		this.element.addEventListener('animationend', () => {
-			this.img.classList.add('highlight');
-			this.element.style.pointerEvents = 'auto'; // cliccabile solo ora
-		}, { once: true });
+		// this.element.addEventListener('animationend', () => {
+		// 	this.img.classList.add('highlight');
+		// }, { once: true });
 	},
 
 	// Risolve quando l'utente clicca l'oggetto
 	objectClicked(){
 		this.init();
 
+		this.img.classList.add('highlight');
+		this.element.style.pointerEvents = 'auto'; // cliccabile solo ora
 		return new Promise((resolve) => {
 			this.resolver = resolve;
 		});
