@@ -222,7 +222,7 @@ monogatari.script ({
 
 		async () => {
 			hideTextBox(false);
-			WatchOnlyIcon.show();
+			WatchOnlyIcon.show(false);
 			await Tutorial.highlight('ciak');
 			showTextBox();
 		},
@@ -475,8 +475,8 @@ monogatari.script ({
 			hideTextBox();
 			SceneUtility.addBlur(2000);
 			await BlinkOverlay.doubleBlink(400);
-			await SceneFade.toVisible({duration: 5});
-			await AudioManager.fadeOut('fan', 5);
+			await SceneFade.toVisible({duration: 4});
+			await AudioManager.fadeOut('fan', 4);
 		},
 		'jump Negazione_Cellulare'
 
@@ -555,6 +555,7 @@ monogatari.script ({
         async () => {
 			// await HeartbeatManager.start({bpm: 75, fadeIn: 1.5, volume: 1})
 			// HeartbeatManager.accelerate(120, 6);
+			WatchOnlyIcon.show();
 			await HeartbeatManager.start({ bpm: 75, fadeIn: 0.2, volume: 1 });
 			return new Promise(resolve => {
 				PhoneTyping.show('Si dai, perché no...fammi finire un paio di cose e ti aggiorno', 80, resolve);
@@ -597,7 +598,7 @@ monogatari.script ({
 			// SceneUtility.removeBlur(1000);
 			// await sleep(3000);
 			// HeartbeatManager.stop();
-			
+			WatchOnlyIcon.hide();
 			await sleep(2000);
 		},
 
@@ -627,6 +628,7 @@ monogatari.script ({
 		() => hideTextBox(),
 
 		async () => {
+			WatchOnlyIcon.show();
 			await sleep(6000);
 		},
 
@@ -648,6 +650,7 @@ monogatari.script ({
 		'play sound phone_notification',
 
         () => {
+				WatchOnlyIcon.hide();
                 // Nuovo messaggio: telefono chiuso, solo notifica/badge.
                 PhoneUI.setContactName('Giulia');
                 PhoneUI.addIncoming('Sai che può solo farti bene, hai bisogno di aria. Ti aspetto.');
@@ -668,6 +671,7 @@ monogatari.script ({
 
 	'Rimani':[
 		async () => {
+			WatchOnlyIcon.show();
 			PhoneToggle.show();
 			PhoneUI.hide();
 			SceneUtility.addDim(3000);
@@ -712,6 +716,7 @@ monogatari.script ({
 
 		() => {
 			PhoneUI.addIncoming('Fra poco vado via...');
+			WatchOnlyIcon.hide();
 			PhoneToggle.lockToggle(false);
 		},
 
@@ -736,6 +741,7 @@ monogatari.script ({
 
 	'Rimani_A_Casa':[
 		async () => {
+			WatchOnlyIcon.show();
 			await SceneFade.toVisible();
 			SceneUtility.emptyScene();
 			SceneUtility.removeDim();
@@ -758,6 +764,7 @@ monogatari.script ({
 				text: 'Non lasciarmi aspettare.'
 			})
 			PhoneUI.hide();
+			WatchOnlyIcon.hide();
 			// PhoneUI.vibrate();
 		},
 
@@ -783,6 +790,7 @@ monogatari.script ({
 		'show scene outside',
 		
 		async () => {
+			WatchOnlyIcon.show();
 			// Ambience parte subito
 			AudioManager.play('ambience', { volume: 1, loop: false, fade: 1 });
 			
@@ -857,6 +865,7 @@ monogatari.script ({
 		async () => {
 			await BlinkOverlay.blink(200);
 			await sleep(1500);
+			WatchOnlyIcon.hide();
 		},
 			
 		{'Choice':{
@@ -1025,10 +1034,14 @@ monogatari.script ({
 
 			PhoneUI.setTime("15:22");
 
+			WatchOnlyIcon.show();
+
 			await startAcceleratingClock();
 			await sleep (2000);
 			PhoneUI.reset();
 			PhoneUI.show('Giulia', { mode: 'chat' });
+
+			WatchOnlyIcon.hide();
 		},
 
 		// Mostriamo il comando come azione del telefono e poi scriviamo il messaggio scelto.
@@ -1215,7 +1228,7 @@ monogatari.script ({
 			await sleep (2000);
 
 			PhoneUI.addIncoming("Un giorno alla volta. Usciamo a fare una passeggiata? Ti vengo a prendere.", {notify: false});
-			await sleep (4000);
+			await sleep (2000);
 
 			await new Promise(resolve => PhoneTyping.show("D'accordo. Ti aspetto, grazie.", 80, resolve));
 			PhoneTyping.send();
@@ -1302,6 +1315,7 @@ monogatari.script ({
 		'wait 2000',
 		
 		async() => {
+			WatchOnlyIcon.show();
 			await SceneFade.toVisible({duration: 0.25});
 			SceneUtility.emptyScene();
 			AudioManager.setVolume('depression', 0.15, 1);
@@ -1355,6 +1369,7 @@ monogatari.script ({
 		// 'play music rain with loop volume 30',
 
 		async () => {
+			WatchOnlyIcon.hide();
 			await SceneFade.toHidden({duration: 3});
 			await SceneUtility.endClickedItems();
 		},
@@ -1376,12 +1391,14 @@ monogatari.script ({
 		//Inserire pianto quando pronto
 		async () =>{
 				hideTextBox(false);
+				WatchOnlyIcon.show();
 				await AudioManager.play('cry', {
 					volume: 0.7,
 					fade: 0.5
 				});
 				await AudioManager.waitEnded('cry');
 				await sleep(2000);
+				WatchOnlyIcon.hide();
 				showTextBox();
 		}, 
 
@@ -1420,7 +1437,9 @@ monogatari.script ({
 
 		'dad Attraverso i miei occhi...',
 
+		() => WatchOnlyIcon.show(),
 		async () => await pauseTextBox(10000),
+		() => WatchOnlyIcon.hide(),
 
 		'shadow Papà, ti ricordi quando giocavamo a nascondino in giardino?',
 		'shadow Tu contavi e io trovavo sempre un posto dove nascondermi',

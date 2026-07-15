@@ -3919,9 +3919,11 @@ const WatchOnlyIcon = {
 		return this.element;
 	},
 
-	show() { 
+	show(lock = true) { 
 		const el = this.ensure()
 		
+		manageAllClicks(lock);
+
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
 				el.classList.add('visible');
@@ -3929,7 +3931,10 @@ const WatchOnlyIcon = {
 		});
 	},
 
-	hide() { this.element?.classList.remove('visible'); }
+	hide() { 
+		this.element?.classList.remove('visible'); 
+		manageAllClicks(false);
+	}
 };
 
 // Contatore discreto "trovati/totale" per le scene a oggetti interattivi

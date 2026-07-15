@@ -2822,6 +2822,7 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	border-radius: 50%;
 	transform: translate(-50%, -50%) scale(0.35); /* stato iniziale = contratto */
 	will-change: transform;
+	/* border: 1px solid red; */
 
 	/* Gradiente: nucleo quasi-bianco → azzurro → trasparente */
 	background: radial-gradient(circle at center,
@@ -2858,10 +2859,10 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 */
 .breathing-label {
 	position: absolute;
-	top: 50%;
+	top: 20%;
 	left: 50%;
 	width: max-content;
-	transform: translate(-50%, calc(-50% + 165px));
+	transform: translateX(-50%);
 	font-family: 'Pangolin', sans-serif;
 	font-size: clamp(1.5rem, 4vw, 2.3rem);
 	font-weight: 400;
@@ -2870,7 +2871,7 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 	text-align: center;
 	text-transform: uppercase;
 	white-space: nowrap;
-	min-height: 2em; /* evita salti di layout quando il testo è vuoto (fase pausa) */
+	/* min-height: 2em; evita salti di layout quando il testo è vuoto (fase pausa) */
 	opacity: 0;
 	transition: opacity 0.45s ease;
 }
@@ -2886,12 +2887,12 @@ body.composite-sky-scene game-screen[data-component="game-screen"] {
 */
 .breathing-hint {
 	position: absolute;
-	top: 50%;
+	top: 13%;
 	left: 50%;
-	transform: translate(-50%, calc(-50% - 165px));
+	transform: translateX(-50%);
 	font-family: 'Pangolin', sans-serif;
 	font-size: clamp(1.4rem, 3.8vw, 1.9rem);
-	font-style: italic;
+	/* font-style: italic; */
 	color: rgba(145, 180, 218, 0.42); /* tenue: suggerimento, non istruzione imperativa */
 	text-align: center;
 	white-space: nowrap;
