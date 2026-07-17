@@ -129,14 +129,18 @@ monogatari.script ({
 			await ContentWarning.play();
 			SceneFade.toHidden();
 			showTextBox();
+			JizoGuide.show();
 		},
 
 		'guide Benvenuto! Mi presento, io sono Jizo.',
+		() => JizoGuide.next(),
 		'guide Prima di iniziare, lascia che ti guidi attraverso questo mondo.',
+		() => JizoGuide.next(),
 		'guide Stai per giocare ad una visual novel nella quale saranno presenti elementi con cui potrai interagire.',
 
 		async () => {
 			// hideTextBox(false);
+			JizoGuide.peek(); // l'orsacchiotto occupa il centro: Jizo sbircia dal bordo
 			Tutorial.showObject();
 			// showTextBox();
 		},
@@ -146,8 +150,9 @@ monogatari.script ({
 		async () => {
 			await Tutorial.objectClicked();
 			//In tutorial objectClciked, faccio qualcosa (un glow, una dissolvenza)
+			JizoGuide.next();
 		},
-	
+
 		'guide Questa icona, in basso a destra, è il tuo telefono: toccala per leggere i messaggi e scegliere come rispondere.',
 
 		'play sound phone_notification',
@@ -155,6 +160,7 @@ monogatari.script ({
 
 		async () => {
 			hideTextBox();
+			JizoGuide.peek(); // il telefono occupa lo schermo
 			PhoneUI.addIncoming("Come stai?", {title: "Mamma"});
 			await PhoneUI.waitUntilAllNotificationsRead();
 			PhoneToggle.lockToggle(true);
@@ -214,6 +220,7 @@ monogatari.script ({
 			PhoneUI.hide();
 			PhoneToggle.lockToggle(false);
 			PhoneToggle.hide();
+			JizoGuide.next();
 			await sleep (1500);
 			showTextBox();
 		},
@@ -222,6 +229,7 @@ monogatari.script ({
 
 		async () => {
 			hideTextBox(false);
+			JizoGuide.next('left'); // le icone evidenziate stanno in alto a destra
 			WatchOnlyIcon.show(false);
 			await Tutorial.highlight('ciak');
 			showTextBox();
@@ -232,15 +240,17 @@ monogatari.script ({
 		async () => {
 			WatchOnlyIcon.hide();
 			hideTextBox(false);
+			JizoGuide.next('left');
 			ObjectCounter.show(4);
 			await Tutorial.highlight('objectCounter');
 			showTextBox();
 		},
 
 		'guide E quando in alto a destra vedrai un numero, saprai quanti dettagli di questa stanza aspettano ancora di essere trovati.',
-		
+
 		async () => {
 			ObjectCounter.hide();
+			JizoGuide.next();
 		},
 
 		'guide Ora, respira. Sarò pronto quando lo sarai tu.',
@@ -252,7 +262,8 @@ monogatari.script ({
 					'Do': 'jump Start',
 					'onChosen': function(){
 						hideTextBox(false);
-					} 
+						JizoGuide.hide();
+					}
 				}
 			}
 		}

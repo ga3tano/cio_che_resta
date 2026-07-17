@@ -75,7 +75,9 @@ button:hover {
     text-shadow:
         0 2px 12px rgba(0, 0, 0, 0.75),
         0 0 50px rgba(10, 20, 50, 0.5);
-    pointer-events: none;
+    /* Cliccabile: serve per lo sblocco del menu debug con 10 tap. */
+    pointer-events: auto;
+    cursor: default;
     z-index: 5;
 }
 
@@ -156,6 +158,33 @@ main-menu {
     text-transform: lowercase;
 }
 
+/* Toast "Debug menu attivato" (sblocco con 10 tap sul titolo). */
+.debug-unlock-toast {
+    position: fixed;
+    bottom: 30vh;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    padding: 0.6em 1.4em;
+    color: rgba(235, 225, 208, 0.92);
+    background: rgba(8, 10, 14, 0.75);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.35rem;
+    letter-spacing: 0.08em;
+    pointer-events: none;
+    animation: debug-toast-fade 3s ease forwards;
+}
+
+@keyframes debug-toast-fade {
+    0% { opacity: 0; }
+    10%, 80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
 main-menu.intro-hide-buttons button {
 	transition: opacity 0.6s ease;
 	opacity: 0;
@@ -165,6 +194,8 @@ main-menu.intro-hide-buttons button {
 .main-title.intro-zoom {
 	transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);
 	transform: translate(-50%, -50%) scale(1.4);
+	/* Durante l'intro il titolo copre lo schermo: non deve bloccare i click. */
+	pointer-events: none;
 }
 
 /* Settings Screen — stessa identità visiva del menu principale: sfondo camera
@@ -666,6 +697,39 @@ html.block-all body {
 	letter-spacing: 0.08em;
     text-align: center;
     animation: pulse-hint 2s ease-in-out infinite; /* keyframe già esistente */
+}
+
+/* --- JIZO GUIDE (tutorial) --- */
+/* Posizione pilotata via inline style da JizoGuide (main.js); qui solo la
+   transizione che crea il movimento fluttuante tra una posizione e l'altra. */
+.jizo-guide {
+	--jizo-w: clamp(100px, 65vw, 300px); /* unica manopola per la dimensione */
+	position: fixed;
+	left: calc(96% - var(--jizo-w));
+	top: 14%;
+	width: var(--jizo-w);
+	z-index: 340; /* sopra la text-box (100), sotto il highlight ring (350) */
+	opacity: 0;
+	pointer-events: none;
+	transition:
+		left 1.4s ease-in-out,
+		top 1.4s ease-in-out,
+		transform 1.4s ease-in-out,
+		opacity 0.8s ease-in-out;
+}
+
+.jizo-guide.visible { opacity: 1; }
+
+/* Il bobbing è sull'img interna, così non litiga col transform del container */
+.jizo-guide img {
+	width: 100%;
+	display: block;
+	animation: jizoFloat 3s ease-in-out infinite;
+}
+
+@keyframes jizoFloat {
+	0%, 100% { transform: translateY(0); }
+	50%      { transform: translateY(-10px); }
 }
 
 /* --- TUTORIAL OBJECT --- */

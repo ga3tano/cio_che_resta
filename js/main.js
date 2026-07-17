@@ -5863,6 +5863,67 @@ TUTORIAL INIZIALE
 Le icone reali (phone-toggle, object-counter, watch-only) sono clonate via CSS
 per coerenza visiva col gioco vero.
 */
+// Jizo, la guida spirituale del tutorial: fluttua da un lato all'altro dello
+// schermo ad ogni dialogo (next), e quando il centro è occupato (orsacchiotto,
+// telefono) si sposta al bordo con solo la testa visibile (peek).
+// Il movimento è tutto CSS: transition su left/top/transform in .jizo-guide.
+const JizoGuide = {
+	element: null,
+	side: 'right',
+	tops: [12, 28, 16, 34], // % variate, per non fluttuare come un metronomo
+	step: 0,
+
+	init(){
+		if (this.element) return;
+
+		this.element = document.createElement('div');
+		this.element.id = 'jizo-guide';
+		this.element.className = 'jizo-guide';
+
+		const img = document.createElement('img');
+		img.src = 'assets/images/jizo.png';
+		img.alt = '';
+
+		this.element.appendChild(img);
+		document.body.appendChild(this.element);
+	},
+
+	_apply(left, top, transform){
+		this.element.style.left = left;
+		this.element.style.top = top;
+		this.element.style.transform = transform;
+	},
+
+	show(){
+		this.init();
+		this.side = 'right';
+		this.step = 0;
+		this._apply('calc(96% - var(--jizo-w))', '14%', 'none');
+		this.element.classList.add('visible');
+	},
+
+	// Fluttua verso il lato opposto (o quello forzato con side: 'left'/'right')
+	next(side){
+		this.init();
+		this.side = side || (this.side === 'left' ? 'right' : 'left');
+		const top = this.tops[this.step++ % this.tops.length];
+		this._apply(this.side === 'left' ? '6%' : 'calc(96% - var(--jizo-w))', `${top}%`, 'none');
+		this.element.classList.add('visible');
+	},
+
+	// Al bordo sinistro, ruotato: resta visibile solo la testa che sbircia
+	peek(){
+		this.init();
+		this.side = 'left';
+		this._apply('0%', '38%', 'translateX(-48%) rotate(80deg)');
+		this.element.classList.add('visible');
+	},
+
+	hide(){
+		this.element?.classList.remove('visible');
+	}
+};
+
 const Tutorial = {
 	element: null,
 	img: null,
@@ -5994,10 +6055,11 @@ const Tutorial = {
 
 /*
 DEBUG MENU
-Attivo solo in locale, mai in produzione. Disattivato: niente DOM, niente
-eventi, niente scorciatoia Ctrl/Cmd + Shift + D.
+Spento di default, si sblocca con 10 tap di fila sul titolo del menu
+principale (stile opzioni sviluppatore Android). Lo sblocco vale solo per
+la sessione corrente: un ricaricamento lo spegne di nuovo.
 */
-const DEBUG_MENU_ENABLED = ['localhost', '127.0.0.1'].includes(location.hostname);
+let DEBUG_MENU_ENABLED = false;
 
 const DebugMenu = {
 	// Elemento radice che contiene sia il bottone "Debug" sia il pannello.
@@ -6011,9 +6073,6 @@ const DebugMenu = {
 
 	// Bottone compatto visibile in alto a sinistra.
 	toggleButton: null,
-
-	// Chiave localStorage: ricorda se il pannello era aperto o chiuso.
-	storageKey: 'cio-debug-menu-open',
 
 	// Titolo dell'unico gruppo mostrato nel pannello.
 	groupTitle: 'Scene',
@@ -6052,13 +6111,9 @@ const DebugMenu = {
 		if (this.root) return;
 
 		// Costruisce il DOM del menu e poi collega click/scorciatoie.
+		// Il pannello parte sempre chiuso: resta visibile solo il bottone.
 		this.create();
 		this.bindEvents();
-
-		// Decide se partire aperto: query string, preferenza salvata o runtime locale.
-		if (this.shouldOpenOnLoad()) {
-			this.open();
-		}
 	},
 
 	create() {
@@ -6189,71 +6244,19 @@ const DebugMenu = {
 		});
 	},
 
-	shouldOpenOnLoad() {
-		// Query string manuale:
-		// ?debug=1 forza apertura, ?debug=0 forza chiusura.
-		const params = new URLSearchParams(window.location.search);
-		const debugParam = params.get('debug');
-
-		// Preferenza persistente salvata quando apri/chiudi il pannello.
-		const storedOpenState = this.getStoredOpenState();
-
-		if (debugParam === '0') return false;
-		if (debugParam === '1') return true;
-		if (storedOpenState === '0') return false;
-		if (storedOpenState === '1') return true;
-
-		// In sviluppo locale il menu parte aperto la prima volta.
-		return this.isLocalRuntime();
-	},
-
-	isLocalRuntime() {
-		// Live Server di solito usa localhost o 127.0.0.1.
-		return window.location.protocol === 'file:' ||
-			window.location.hostname === 'localhost' ||
-			window.location.hostname === '127.0.0.1' ||
-			window.location.hostname === '';
-	},
-
 	open() {
 		// La classe "open" attiva il pannello via CSS.
 		this.root.classList.add('open');
 		this.panel.setAttribute('aria-hidden', 'false');
 		this.toggleButton.setAttribute('aria-expanded', 'true');
-
-		// Ricorda che lo sviluppatore lo ha lasciato aperto.
-		this.setStoredOpenState('1');
 		this.refreshStatus();
 	},
 
-	close(persist = true) {
+	close() {
 		// Rimuove la classe "open" e aggiorna gli attributi aria.
 		this.root.classList.remove('open');
 		this.panel.setAttribute('aria-hidden', 'true');
 		this.toggleButton.setAttribute('aria-expanded', 'false');
-
-		// Ricorda che lo sviluppatore lo ha chiuso. La chiusura automatica
-		// dopo un salto passa persist=false per non toccare la preferenza.
-		if (persist) {
-			this.setStoredOpenState('0');
-		}
-	},
-
-	getStoredOpenState() {
-		try {
-			return localStorage.getItem(this.storageKey);
-		} catch (error) {
-			// Alcuni browser bloccano localStorage in modalita' particolari.
-			return null;
-		}
-	},
-
-	setStoredOpenState(value) {
-		try {
-			localStorage.setItem(this.storageKey, value);
-		} catch (error) {
-			// Il menu resta utilizzabile anche se localStorage non e' disponibile.
-		}
 	},
 
 	toggle() {
@@ -6399,6 +6402,9 @@ const DebugMenu = {
 
 		// Nasconde il contatore oggetti della scena precedente.
 		ObjectCounter.hide();
+
+		// Nasconde la guida Jizo del tutorial.
+		JizoGuide.hide();
 
 		// Chiude la textbox se un dialogo era a schermo e annulla un eventuale
 		// pauseTextBox in corso, che la farebbe riapparire nella scena nuova.
@@ -6698,10 +6704,27 @@ $_ready (() => {
 			}).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 })();
 
-		// Il toggle globale evita di creare il menu quando DEBUG_MENU_ENABLED e' false.
-		if (DEBUG_MENU_ENABLED) {
+		// Sblocco stile Android: 10 tap di fila (max 2s tra un tap e l'altro)
+		// sul titolo del menu principale. Vale solo per la sessione corrente.
+		// Delegato sul document cosi' sopravvive ai re-render di Monogatari.
+		let taps = 0;
+		let lastTap = 0;
+		document.addEventListener('click', (e) => {
+			if (DEBUG_MENU_ENABLED || !e.target.closest('.main-title')) return;
+			const now = Date.now();
+			taps = (now - lastTap < 2000) ? taps + 1 : 1;
+			lastTap = now;
+			if (taps < 10) return;
+
+			DEBUG_MENU_ENABLED = true;
 			DebugMenu.init();
-		}
+
+			const toast = document.createElement('div');
+			toast.className = 'debug-unlock-toast';
+			toast.textContent = 'Debug menu attivato';
+			document.body.appendChild(toast);
+			setTimeout(() => toast.remove(), 3000);
+		});
 
 		// document.getElementById('capture-btn')?.addEventListener('click', captureBuildAsset);
 
