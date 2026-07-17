@@ -5,7 +5,7 @@ const name = 'Ciò che resta';
 
 // The version of the cache, changing this will force everything to be cached
 // again.
-const version = '0.1.52';
+const version = '0.1.53';
 
 const files = [
 

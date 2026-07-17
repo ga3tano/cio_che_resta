@@ -1594,9 +1594,13 @@ monogatari.script ({
 		async () => {
 			await SceneFade.toVisible({duration: 1});
 			await SceneUtility.loadScene("accettazione_porta");
-			
+
 			document.getElementById('cornice')?.classList.remove('highlight');
-			SceneUtility.unlockItemWrapper();
+			// Porta bloccata finche' il label non ha finito: loadScene ricrea il
+			// wrapper sbloccato, e un tap durante nero/wait/fade farebbe partire
+			// il jump con statement ancora pendenti (stesso race della porta in
+			// Accettazione: il nuovo label avanzerebbe fuori ordine).
+			SceneUtility.lockItemWrapper();
 		},
 
 		'show scene room_day_dark',
@@ -1604,8 +1608,9 @@ monogatari.script ({
 
 		async () => {
 			await SceneFade.toHidden();
+			// Solo ora il giocatore puo' cliccare la porta
 			SceneUtility.unlockItemWrapper();
-		} 
+		}
 	],
 
 	'Scena_Accettazione': [
