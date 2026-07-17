@@ -3911,7 +3911,7 @@ const WatchOnlyIcon = {
 			this.element.className = 'watch-only-icon';
 			
 			const img = document.createElement('img');
-			img.src = '../assets/images/ciak.png';
+			img.src = 'assets/images/ciak.png';
 			
 			this.element.appendChild(img);
 			document.body.appendChild(this.element);
