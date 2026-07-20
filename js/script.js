@@ -1594,9 +1594,38 @@ monogatari.script ({
 			showTextBox();
 		},
 		
-		'dad Cacca pupù pipo pipo',
-		'dad Pipì pupù ngue ngue palle pelose',
-		'dad xdxd 1!111!11!',
+		"dad L'ho appeso proprio qui.",
+		'dad "Guarda papà, siamo noi due."',
+		"dad Era l'ultima cosa che avevi colorato prima di quel giorno.",
+		"dad Mi hai fatto promettere che non l'avrei mai tolto ed io te l'ho giurato.",
+		'dad A lungo ho pensato che questo fosse solo il ricordo di un mondo che ti è stato rubato...un richiamo costante a quella frazione di secondo che ha distrutto tutto.',
+		"dad Continuo a guardarlo...e mi accorgo di come hai disegnato il sole. Non piccolo, non sfocato, l'hai fatto gigante.",
+		'dad Per te il mondo era davvero un posto pieno di luce. Nel tuo modo di vedere le cose, tu vedevi solo noi due, felici, che camminavamo insieme su quel prato verde.',
+		
+		() => hideTextBox(false),
+		'wait 2000',
+		() => showTextBox(),
+
+		'dad E allora ho capito che non devo guardare questo disegno per ricordarmi come ti ho perso, ma per ricordarmi chi sono quando tu sei con me.',
+		'dad Tu credevi che io potessi proteggerti da tutto, ma la verità è che eri tu a proteggere me.',
+		'dad Eri tu a insegnarmi a guardare la luce.',
+
+		() => hideTextBox(false),
+		'wait 2000',
+		() => showTextBox(),
+
+		'dad Volevi un mondo perfetto, bambino mio.',
+		'dad Un mondo con il sole splendente e noi due che camminavamo mano nella mano, ti faceva sentire al sicuro.',
+		'dad Non posso riportarti indietro, è straziante, certo, ma posso ancora provare a costruire quel mondo che tanto volevi.',
+		'dad Posso portarlo dentro di me.',
+
+		() => hideTextBox(false),
+		'wait 2000',
+		() => showTextBox(),
+
+		'dad Ogni volta che vorrò arrendermi, guaderò questo sole.',
+		"dad Imparerò di nuovo a camminare, non più nell'ombra di quello che è successo, ma nella luce che mi hai lasciato.",
+		'dad Continuerò a tenerti per mano, in ogni passo che farò da oggi in poi.',
 
 		() => hideTextBox(false),
 
