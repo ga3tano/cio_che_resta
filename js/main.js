@@ -573,33 +573,6 @@ const PhoneUI = {
 		this.renderNotifications();
 	},
 
-	// addPlaceholder(){
-	// 	const item = document.createElement('div');
-	// 		item.className = 'lock-notification';
-
-	// 		const icon = document.createElement('div');
-	// 		icon.className = 'lock-notification-icon';
-	// 		icon.setAttribute('aria-hidden', 'true');
-
-	// 		const text = document.createElement('div');
-	// 		text.className = 'lock-notification-text';
-
-	// 		const title = document.createElement('div');
-	// 		title.className = 'lock-notification-title';
-	// 		title.textContent = "Nessun nuovo messaggio.";
-
-	// 		const subtitle = document.createElement('div');
-	// 		subtitle.className = 'lock-notification-subtitle';
-	// 		subtitle.textContent = "Messaggi";
-
-	// 		text.appendChild(title);
-	// 		text.appendChild(subtitle);
-	// 		item.appendChild(icon);
-	// 		item.appendChild(text);
-	// 		item.setAttribute('pointer-events', 'none');
-	// 		this.lockNotifications.appendChild(item);
-	// },
-
 	clearNotifications() {
 		this.unreadNotifications = [];
 		this.renderNotifications();
@@ -1159,143 +1132,6 @@ const PhoneToggle = {
 	}
 };
 
-//CREDITS TO STANKO: https://codepen.io/stanko/pen/emYEpvP
-// const PhoneGlitch = {
-//     PHONE_SNAPSHOT_URL: '/assets/images/phone-glitch-snapshot.png',
-
-//     colorPresets: [
-//         { c1: 'rgba(255,60,90,0.4)', c2: 'rgba(60,220,220,0.4)', hue: 0 },
-//         { c1: 'rgba(230,80,190,0.35)', c2: 'rgba(90,220,150,0.35)', hue: 35 },
-//         { c1: 'rgba(140,90,230,0.4)', c2: 'rgba(220,210,90,0.35)', hue: -30 },
-//         { c1: 'rgba(80,150,230,0.4)', c2: 'rgba(230,130,70,0.4)', hue: 20 }
-//     ],
-
-//     stripPool: [],
-//     running: false,
-//     timers: [],
-
-//     rand(min, max) {
-//         return Math.round(Math.random() * (max - min)) + min;
-//     },
-
-//     pick(arr) {
-//         return arr[Math.floor(Math.random() * arr.length)];
-//     },
-
-//     randomStripHeight() {
-//         const r = Math.random();
-//         if (r < 0.5) return this.rand(3, 10);
-//         if (r < 0.85) return this.rand(10, 26);
-//         return this.rand(26, 60);
-//     },
-
-//     nextShift() {
-//         const dir = Math.random() < 0.5 ? -1 : 1;
-//         const magnitude = this.rand(16, 48);
-//         return dir * magnitude;
-//     },
-
-//     buildStripPool(shellEl, glitchEl, imageUrl) {
-//         glitchEl.innerHTML = '';
-//         glitchEl.style.setProperty('--phone-snapshot', `url(${imageUrl})`);
-//         this.stripPool = [];
-
-//         const h = shellEl.offsetHeight;
-//         let y = 0;
-
-//         while (y < h) {
-//             let stripH = this.randomStripHeight();
-//             if (y + stripH > h) stripH = h - y;
-
-//             const strip = document.createElement('div');
-//             strip.className = 'phone-glitch-strip';
-//             strip.style.top = `${(y / h) * 100}%`;
-//             strip.style.height = `${(stripH / h) * 100}%`;
-//             strip.style.backgroundPosition = `0 ${(y / h) * 100}%`;
-//             strip.style.backgroundSize = `100% ${(h / stripH) * 100}%`;
-
-//             glitchEl.appendChild(strip);
-//             this.stripPool.push(strip);
-//             y += stripH;
-//         }
-//     },
-
-//     setStripState(strip, on, preset, xShift) {
-//         if (on) {
-//             const dir = xShift >= 0 ? 1 : -1;
-//             strip.style.transition = 'none';
-//             strip.style.transform = `translateX(${xShift}px)`;
-//             strip.style.filter = `saturate(1.7) contrast(1.2) hue-rotate(${preset.hue}deg) drop-shadow(${dir * 5}px 0 0 ${preset.c1}) drop-shadow(${-dir * 5}px 0 0 ${preset.c2})`;
-//         } else {
-//             strip.style.transition = 'transform 40ms linear, filter 40ms linear';
-//             strip.style.transform = 'translateX(0)';
-//             strip.style.filter = 'none';
-//         }
-//     },
-
-//     scheduleStrip(strip) {
-//         if (!this.running) return;
-
-//         const idleDelay = this.rand(30, 500);
-//         const t1 = setTimeout(() => {
-//             if (!this.running) return;
-
-//             const preset = this.pick(this.colorPresets);
-//             const xShift = this.nextShift();
-//             const holdDuration = this.pick([
-//                 this.rand(20, 60),
-//                 this.rand(60, 140),
-//                 this.rand(140, 320)
-//             ]);
-
-//             this.setStripState(strip, true, preset, xShift);
-
-//             const t2 = setTimeout(() => {
-//                 if (!this.running) return;
-//                 this.setStripState(strip, false);
-//                 this.scheduleStrip(strip);
-//             }, holdDuration);
-//             this.timers.push(t2);
-//         }, idleDelay);
-//         this.timers.push(t1);
-//     },
-
-//     trigger(totalDuration = 5000) {
-//         const shell = document.getElementById('phone-shell');
-//         const glitch = document.getElementById('phone-glitch');
-
-//         if (this.stripPool.length === 0) {
-//             this.buildStripPool(shell, glitch, this.PHONE_SNAPSHOT_URL);
-//         }
-
-//         this.running = true;
-//         glitch.classList.add('active');
-
-//         const activeCount = Math.max(5, Math.round(this.stripPool.length * 0.55));
-//         const shuffled = this.stripPool.slice().sort(() => Math.random() - 0.5);
-//         for (let i = 0; i < activeCount; i++) {
-//             this.scheduleStrip(shuffled[i]);
-//         }
-
-//         setTimeout(() => {
-//             this.running = false;
-//             this.timers.forEach(clearTimeout);
-//             this.timers = [];
-//             this.stripPool.forEach(s => this.setStripState(s, false));
-//             glitch.classList.remove('active');
-//         }, totalDuration);
-//     },
-
-//     stop() {
-//         this.running = false;
-//         this.timers.forEach(clearTimeout);
-//         this.timers = [];
-//         this.stripPool.forEach(s => this.setStripState(s, false));
-//         const glitch = document.getElementById('phone-glitch');
-//         if (glitch) glitch.classList.remove('active');
-//     }
-// };
-
 const PhoneGlitch = {
 	async glitchText(el, newText, newClass, duration = 800) {
 		const originalText = el.textContent;
@@ -1734,93 +1570,6 @@ const Glitch={
 	resumeAfterPhase2() { this._phaseResolvers.phase2?.(); },
 	finishAfterFinalDialogue() { this._phaseResolvers.final?.(); },
 
-//Implemento un wrapper che contiene i vari elementi del DOM in questa scena, così da applicare le trasformazioni al wrapper e non ad ogni elemento singolarmente
-//GESTIONE WRAPPER
-	// prepareShakeWrapper() {
-	// 	if (this.shakeWrapper?.isConnected) {
-	// 		return true;
-	// 	}
-
-	// 	const layers = this.sceneLayerSelectors
-	// 		.map(selector => document.querySelector(selector))
-	// 		.filter(layer => layer);
-
-	// 	if (!layers.length) {
-	// 		return false;
-	// 	}
-
-	// 	let viewport = document.getElementById("glitch-shake-viewport");
-	// 	let wrapper = document.getElementById("glitch-shake-wrapper");
-
-	// 	if (!viewport) {
-	// 		viewport = document.createElement("div");
-	// 		viewport.id = "glitch-shake-viewport";
-	// 	}
-
-	// 	if (!wrapper) {
-	// 		wrapper = document.createElement("div");
-	// 		wrapper.id = "glitch-shake-wrapper";
-	// 	}
-
-	// 	const firstLayer = layers[0];
-	// 	firstLayer.parentNode.insertBefore(viewport, firstLayer);
-
-	// 	if (!viewport.contains(wrapper)) {
-	// 		viewport.appendChild(wrapper);
-	// 	}
-
-	// 	this.originalLayerPositions.clear();
-
-	// 	// layers.forEach(layer => {
-	// 	// 	const placeholder = document.createComment(`glitch-placeholder:${layer.id || layer.className || "layer"}`);
-
-	// 	// 	layer.parentNode.insertBefore(placeholder, layer);
-
-	// 	// 	this.originalLayerPositions.set(layer, {
-	// 	// 		placeholder,
-	// 	// 		inlinePosition: layer.style.position,
-	// 	// 		inlineInset: layer.style.inset,
-	// 	// 		inlineWidth: layer.style.width,
-	// 	// 		inlineHeight: layer.style.height
-	// 	// 	});
-
-	// 	// 	wrapper.appendChild(layer);
-	// 	// });
-
-	// 	layers.forEach(layer => {
-	// 	// CREA UNA COPIA ESATTA DELL'ELEMENTO
-	// 	const clone = layer.cloneNode(true);
-	// 	clone.id = layer.id + '-clone'; // Cambia ID per evitare conflitti
-		
-	// 	// COPIA GLI STILI CALCOLATI
-	// 	const computedStyle = window.getComputedStyle(layer);
-	// 	clone.style.position = computedStyle.position || 'absolute';
-	// 	clone.style.top = computedStyle.top || '0';
-	// 	clone.style.left = computedStyle.left || '0';
-	// 	clone.style.width = computedStyle.width || '100%';
-	// 	clone.style.height = computedStyle.height || '100%';
-	// 	clone.style.inset = computedStyle.inset || '0';
-	// 	clone.style.objectFit = computedStyle.objectFit || 'cover';
-	// 	clone.style.objectPosition = computedStyle.objectPosition || 'center';
-		
-	// 	// Se è un'immagine, copia anche l'src
-	// 	if (layer.tagName === 'IMG') {
-	// 		clone.src = layer.src;
-	// 	}
-		
-	// 	// Aggiungi la copia al wrapper
-	// 	wrapper.appendChild(clone);
-	// });
-
-	// 	this.shakeViewport = viewport;
-	// 	this.shakeWrapper = wrapper;
-	// 	this.originalWrapperTransform = wrapper.style.transform || "";
-
-	// 	wrapper.style.willChange = "transform";
-
-	// 	return true;
-	// },
-
 	// Versione che clona ricorsivamente tutto perfettamente
 	prepareShakeWrapper() {
 		if (this.shakeWrapper?.isConnected) {
@@ -1927,38 +1676,6 @@ const Glitch={
 		this.shakeWrapper.style.transform =
 			`${this.originalWrapperTransform} ${glitchTransform}`.trim();
 	},
-
-	// restoreSceneTransforms() {
-	// 	 if (!this.shakeWrapper) {
-    //     return;
-    // }
-
-    // this.shakeWrapper.style.transform = this.originalWrapperTransform;
-    // this.shakeWrapper.style.willChange = "";
-
-    // this.originalLayerPositions.forEach((position, layer) => {
-    //     if (!position.placeholder?.parentNode) {
-    //         return;
-    //     }
-
-    //     position.placeholder.parentNode.insertBefore(layer, position.placeholder);
-    //     position.placeholder.remove();
-
-    //     layer.style.position = position.inlinePosition;
-    //     layer.style.inset = position.inlineInset;
-    //     layer.style.width = position.inlineWidth;
-    //     layer.style.height = position.inlineHeight;
-    // });
-
-    // if (this.shakeViewport) {
-    //     this.shakeViewport.remove();
-    // }
-
-    // this.shakeViewport = null;
-    // this.shakeWrapper = null;
-    // this.originalWrapperTransform = "";
-    // this.originalLayerPositions.clear();
-	// },
 
 	restoreSceneTransforms() {
 		if (!this.shakeWrapper) {
@@ -2278,18 +1995,6 @@ const Glitch={
 		HeartbeatManager.start({ bpm: 75, volume: 0.4, fadeIn: 0.5 });
 	},
 
-	//Metodo utility utile al cooldown, calcola le effettive dimensioni iniziali della scena 
-	// getWrapperNeutralScale(){
-	// 	const overscan = 64;	//valore in px della proprietà "inset" del wrapper nel css
-	// 	const scaleX = window.innerWidth / (window.innerWidth + overscan * 2);
-	// 	const scaleY = window.innerHeight / (window.innerHeight + overscan * 2);
-
-	// 	return {
-	// 		x: scaleX,
-	// 		y: scaleY
-	// 	};
-	// },
-
 	//Stessa animazione, ma a specchio e molto più brusca. Evito l'effetto "taglio netto".
 	cooldown(duration = 700, targetIntensity = 0, bpmRange = null, restoreAtEnd = false) {
 		if (!this.shakeWrapper?.isConnected) {
@@ -2381,14 +2086,6 @@ const Glitch={
 
 				let totalScaleX = 1 + emotionalZoom;
 				let totalScaleY = 1 + emotionalZoom;
-
-				// if (restoreAtEnd) {
-				// 	const neutralScale = this.getWrapperNeutralScale();
-				// 	const neutralProgress = eased;
-
-				// 	totalScaleX += (neutralScale.x - 1) * neutralProgress;
-				// 	totalScaleY += (neutralScale.y - 1) * neutralProgress;
-				// }
 
 				if (border) {
 					border.style.opacity = `${currentIntensity * 0.45}`;
@@ -5454,35 +5151,35 @@ const HeartbeatManager = {
 	}
 };
 
-const BWFilter = {
-    overlay: null,
+// const BWFilter = {
+//     overlay: null,
     
-    // Inizializza - chiamare in init o nel costruttore principale
-    init() {
-        this.overlay = document.getElementById('bw-filter-overlay');
-    },
+//     // Inizializza - chiamare in init o nel costruttore principale
+//     init() {
+//         this.overlay = document.getElementById('bw-filter-overlay');
+//     },
     
-    // Attiva il filtro bianco e nero
-    enable(duration = 800) {
-        if (!this.overlay) return;
-        this.overlay.style.transition = `background-color ${duration}ms ease`;
-        this.overlay.classList.add('active');
-    },
+//     // Attiva il filtro bianco e nero
+//     enable(duration = 800) {
+//         if (!this.overlay) return;
+//         this.overlay.style.transition = `background-color ${duration}ms ease`;
+//         this.overlay.classList.add('active');
+//     },
     
-    // Disattiva il filtro
-    disable(duration = 800) {
-        if (!this.overlay) return;
-        this.overlay.style.transition = `background-color ${duration}ms ease`;
-        this.overlay.classList.remove('active');
-    },
+//     // Disattiva il filtro
+//     disable(duration = 800) {
+//         if (!this.overlay) return;
+//         this.overlay.style.transition = `background-color ${duration}ms ease`;
+//         this.overlay.classList.remove('active');
+//     },
     
-    // Attiva/disattiva immediatamente senza transizione
-    set(active) {
-        if (!this.overlay) return;
-        this.overlay.style.transition = 'none';
-        active ? this.overlay.classList.add('active') : this.overlay.classList.remove('active');
-    }
-};
+//     // Attiva/disattiva immediatamente senza transizione
+//     set(active) {
+//         if (!this.overlay) return;
+//         this.overlay.style.transition = 'none';
+//         active ? this.overlay.classList.add('active') : this.overlay.classList.remove('active');
+//     }
+// };
 
 function startAcceleratingClock(options = {}) {
 	return new Promise((resolve) => {
@@ -6726,44 +6423,6 @@ $_ready (() => {
 			setTimeout(() => toast.remove(), 3000);
 		});
 
-		// document.getElementById('capture-btn')?.addEventListener('click', captureBuildAsset);
-
-		// async function captureBuildAsset() {
-
-		//  	if (typeof html2canvas === 'undefined') {
-		// 		await new Promise((resolve, reject) => {
-		// 			const script = document.createElement('script');
-		// 			script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-		// 			script.onload = resolve;
-		// 			script.onerror = reject;
-		// 			document.head.appendChild(script);
-		// 		});
-		// 	}
-
-		// 	const shell = document.getElementById('phone-shell');
-		// 	const layer = document.getElementById('phone-layer');
-
-		// 	layer.style.display = 'flex';
-		// 	shell.style.transform = 'none';
-			
-		// 	await new Promise(r => setTimeout(r, 500));
-
-		// 	const canvas = await html2canvas(shell, {
-		// 		backgroundColor: null,
-		// 		scale: 3,
-		// 		useCORS: true,
-		// 		logging: true
-		// 	});
-
-		// 	canvas.toBlob(blob => {
-		// 		const a = document.createElement('a');
-		// 		a.download = 'phone-glitch-snapshot.png';
-		// 		a.href = URL.createObjectURL(blob);
-		// 		a.click();
-		// 	});
-
-		// 	shell.style.transform = '';
-		// }
 	});
 });
 
