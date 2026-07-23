@@ -791,7 +791,7 @@ monogatari.script ({
 		async () => {
 			AudioManager.setLowPass(20000, 1.5);
 			AudioManager.fadeOut('fan', 2.5);
-			AudioManager.fadeOut('brids', 2.5);
+			AudioManager.fadeOut('birds', 2.5);
 			SceneUtility.removeDim();
 			PhoneUI.hide();
 			await SceneFade.toVisible({ color: '#fff' });
